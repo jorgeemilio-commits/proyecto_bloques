@@ -1,5 +1,5 @@
 // Validador de color Rojo / Amarillo
-bool puedeInsertarRA(List<int> numeros, int nuevoNumero) {
+bool reglaRojoAmarillo(List<int> numeros, int nuevoNumero) {
   // Checa si la lista no contiene duplicados.
   if (numeros.toSet().length != numeros.length) {
     return false;
@@ -9,39 +9,54 @@ bool puedeInsertarRA(List<int> numeros, int nuevoNumero) {
 }
 
 // Validador de color Azul
-bool puedeInsertarZ(List<int> numeros, int nuevoNumero) {
+bool reglaAzul(List<int> numeros, int nuevoNumero) {
   // Checa que todos los numeros sean iguales al nuevo 
   return numeros.every((numero) => numero == nuevoNumero);
 }
 
 // Validador de color Verde
-bool puedeInsertarV(List<int> numeros, int nuevoNumero) {
+bool reglaVerde(List<int> numeros, int nuevoNumero) {
   // Siempre es valido en el caso de verde
   return true;
 }
 
 // Validador de color Purpura / Lila
-bool puedeInsertarPL(List<int> numeros, int nuevoNumero) {
+bool reglaPurpuraLila(List<int> numeros, int nuevoNumero) {
   return {...numeros, nuevoNumero}.length <= 2;
+}
+
+typedef ReglaRegion = bool Function(List<int> numeros, int nuevoNumero);
+
+enum ColorRegion {
+  amarillo,
+  rojo,
+  azul,
+  verde,
+  lila,
 }
 
 // Regiones de los colores del tablero
 enum Region {
-  amarillo1,
-  amarillo2,
-  amarillo3,
-  rojo1,
-  rojo2,
-  rojo3,
-  azul1,
-  azul2,
-  azul3,
-  verde1,
-  verde2,
-  verde3,
-  lila1,
-  lila2,
-  lila3,
+  amarillo1(ColorRegion.amarillo, reglaRojoAmarillo),
+  amarillo2(ColorRegion.amarillo, reglaRojoAmarillo),
+  amarillo3(ColorRegion.amarillo, reglaRojoAmarillo),
+  rojo1(ColorRegion.rojo, reglaRojoAmarillo),
+  rojo2(ColorRegion.rojo, reglaRojoAmarillo),
+  rojo3(ColorRegion.rojo, reglaRojoAmarillo),
+  azul1(ColorRegion.azul, reglaAzul),
+  azul2(ColorRegion.azul, reglaAzul),
+  azul3(ColorRegion.azul, reglaAzul),
+  verde1(ColorRegion.verde, reglaVerde),
+  verde2(ColorRegion.verde, reglaVerde),
+  verde3(ColorRegion.verde, reglaVerde),
+  lila1(ColorRegion.lila, reglaPurpuraLila),
+  lila2(ColorRegion.lila, reglaPurpuraLila),
+  lila3(ColorRegion.lila, reglaPurpuraLila);
+
+  final ColorRegion color;
+  final ReglaRegion regla;
+
+  const Region(this.color, this.regla);
 }
 
 // Clase para representar una celda del tablero
