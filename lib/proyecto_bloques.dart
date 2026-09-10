@@ -35,28 +35,40 @@ enum ColorRegion {
   lila,
 }
 
-// Regiones de los colores del tablero
-enum Region {
-  amarillo1(ColorRegion.amarillo, reglaRojoAmarillo),
-  amarillo2(ColorRegion.amarillo, reglaRojoAmarillo),
-  amarillo3(ColorRegion.amarillo, reglaRojoAmarillo),
-  rojo1(ColorRegion.rojo, reglaRojoAmarillo),
-  rojo2(ColorRegion.rojo, reglaRojoAmarillo),
-  rojo3(ColorRegion.rojo, reglaRojoAmarillo),
-  azul1(ColorRegion.azul, reglaAzul),
-  azul2(ColorRegion.azul, reglaAzul),
-  azul3(ColorRegion.azul, reglaAzul),
-  verde1(ColorRegion.verde, reglaVerde),
-  verde2(ColorRegion.verde, reglaVerde),
-  verde3(ColorRegion.verde, reglaVerde),
-  lila1(ColorRegion.lila, reglaPurpuraLila),
-  lila2(ColorRegion.lila, reglaPurpuraLila),
-  lila3(ColorRegion.lila, reglaPurpuraLila);
-
+class TipoRegion {
   final ColorRegion color;
   final ReglaRegion regla;
 
-  const Region(this.color, this.regla);
+  const TipoRegion(this.color, this.regla);
+
+  static const amarillo = TipoRegion(ColorRegion.amarillo, reglaRojoAmarillo);
+  static const rojo = TipoRegion(ColorRegion.rojo, reglaRojoAmarillo);
+  static const azul = TipoRegion(ColorRegion.azul, reglaAzul);
+  static const verde = TipoRegion(ColorRegion.verde, reglaVerde);
+  static const lila = TipoRegion(ColorRegion.lila, reglaPurpuraLila);
+}
+
+// Regiones de los colores del tablero
+enum Region {
+  amarillo1(TipoRegion.amarillo),
+  amarillo2(TipoRegion.amarillo),
+  amarillo3(TipoRegion.amarillo),
+  rojo1(TipoRegion.rojo),
+  rojo2(TipoRegion.rojo),
+  rojo3(TipoRegion.rojo),
+  azul1(TipoRegion.azul),
+  azul2(TipoRegion.azul),
+  azul3(TipoRegion.azul),
+  verde1(TipoRegion.verde),
+  verde2(TipoRegion.verde),
+  verde3(TipoRegion.verde),
+  lila1(TipoRegion.lila),
+  lila2(TipoRegion.lila),
+  lila3(TipoRegion.lila);
+
+  final TipoRegion tipo;
+
+  const Region(this.tipo);
 }
 
 // Clase para representar una celda del tablero

@@ -74,23 +74,25 @@ void main() {
 
   group('Pruebas para tipos de regiones', () {
     test('Cada region contiene su color y su regla', () {
-      expect(Region.amarillo1.color, ColorRegion.amarillo);
-      expect(Region.amarillo1.regla, reglaRojoAmarillo);
-      expect(Region.rojo2.color, ColorRegion.rojo);
-      expect(Region.rojo2.regla, reglaRojoAmarillo);
-      expect(Region.azul3.color, ColorRegion.azul);
-      expect(Region.azul3.regla, reglaAzul);
-      expect(Region.verde1.color, ColorRegion.verde);
-      expect(Region.verde1.regla, reglaVerde);
-      expect(Region.lila2.color, ColorRegion.lila);
-      expect(Region.lila2.regla, reglaPurpuraLila);
+      expect(Region.amarillo1.tipo, TipoRegion.amarillo);
+      expect(Region.rojo2.tipo, TipoRegion.rojo);
+      expect(Region.azul3.tipo, TipoRegion.azul);
+      expect(Region.verde1.tipo, TipoRegion.verde);
+      expect(Region.lila2.tipo, TipoRegion.lila);
+    });
+
+    test('El tipo de region contiene su color y su regla', () {
+      expect(TipoRegion.amarillo.color, ColorRegion.amarillo);
+      expect(TipoRegion.amarillo.regla, reglaRojoAmarillo);
+      expect(TipoRegion.azul.color, ColorRegion.azul);
+      expect(TipoRegion.azul.regla, reglaAzul);
     });
 
     test('La regla asociada a una region se puede aplicar', () {
-      expect(Region.amarillo1.regla([1, 2], 3), isTrue);
-      expect(Region.azul1.regla([4, 4], 4), isTrue);
-      expect(Region.verde1.regla([1, 1], 2), isTrue);
-      expect(Region.lila1.regla([1, 2], 3), isFalse);
+      expect(Region.amarillo1.tipo.regla([1, 2], 3), isTrue);
+      expect(Region.azul1.tipo.regla([4, 4], 4), isTrue);
+      expect(Region.verde1.tipo.regla([1, 1], 2), isTrue);
+      expect(Region.lila1.tipo.regla([1, 2], 3), isFalse);
     });
   });
 
