@@ -1,52 +1,125 @@
-// Validador de color Rojo / Amarillo
-bool reglaRojoAmarillo(List<int> numeros, int nuevoNumero) {
-  // Checa si la lista no contiene duplicados.
-  if (numeros.toSet().length != numeros.length) {
-    return false;
+import 'package:flutter/material.dart';
+
+abstract class TipoRegion {
+  const TipoRegion();
+
+  Color get color;
+  String get descripcion;
+  bool esPosibleAgregar(List<int> actuales, int posible);
+  Map<int, int> get puntuaciones;
+
+  static const TipoRegion amarillo = TipoAmarillo();
+  static const TipoRegion rojo = TipoRojo();
+  static const TipoRegion azul = TipoAzul();
+  static const TipoRegion verde = TipoVerde();
+  static const TipoRegion lila = TipoLila();
+}
+
+class TipoAzul extends TipoRegion {
+  const TipoAzul();
+
+  @override
+  Color get color => const Color.fromARGB(255, 138, 180, 251);
+
+  @override
+  String get descripcion => 'Todos los números deben ser iguales.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return actuales.isEmpty || actuales.every((element) => element == posible);
   }
-  // Checa si el nuevo número ya existe en la lista.
-  return !numeros.contains(nuevoNumero);
+
+  @override
+  Map<int, int> get puntuaciones => {
+  1: 7, 
+  2: 5, 
+  3: 3};
 }
 
-// Validador de color Azul
-bool reglaAzul(List<int> numeros, int nuevoNumero) {
-  // Checa que todos los numeros sean iguales al nuevo 
-  return numeros.every((numero) => numero == nuevoNumero);
+class TipoRojo extends TipoRegion {
+  const TipoRojo();
+
+  @override
+  Color get color => const Color(0xFFFF0000);
+
+  @override
+  String get descripcion => 'No se permiten duplicados.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return actuales.toSet().length == actuales.length && !actuales.contains(posible);
+  }
+
+  @override
+  Map<int, int> get puntuaciones => {
+    1: 6, 
+    2: 4, 
+    3: 2};
 }
 
-// Validador de color Verde
-bool reglaVerde(List<int> numeros, int nuevoNumero) {
-  // Siempre es valido en el caso de verde
-  return true;
+class TipoAmarillo extends TipoRegion {
+  const TipoAmarillo();
+
+  @override
+  Color get color => const Color(0xFFFFFF00);
+
+  @override
+  String get descripcion => 'No se permiten duplicados.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return actuales.toSet().length == actuales.length && !actuales.contains(posible);
+  }
+
+  @override
+  Map<int, int> get puntuaciones => {
+    1: 8, 
+    2: 6, 
+    3: 4};
 }
 
-// Validador de color Purpura / Lila
-bool reglaPurpuraLila(List<int> numeros, int nuevoNumero) {
-  return {...numeros, nuevoNumero}.length <= 2;
+class TipoVerde extends TipoRegion {
+  const TipoVerde();
+
+  @override
+  Color get color => const Color(0xFF00FF00);
+
+  @override
+  String get descripcion => 'Cualquier número es válido.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return true;
+  }
+
+  @override
+  Map<int, int> get puntuaciones => {
+    1: 4, 
+    2: 3, 
+    3: 2};
 }
 
-typedef ReglaRegion = bool Function(List<int> numeros, int nuevoNumero);
+class TipoLila extends TipoRegion {
+  const TipoLila();
 
-enum ColorRegion {
-  amarillo,
-  rojo,
-  azul,
-  verde,
-  lila,
+  @override
+  Color get color => const Color(0xFF800080);
+
+  @override
+  String get descripcion => 'Solo se permiten hasta dos números diferentes.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return {...actuales, posible}.length <= 2;
+  }
+
+  @override
+  Map<int, int> get puntuaciones => {
+    1: 6, 
+    2: 4, 
+    3: 2};
 }
 
-class TipoRegion {
-  final ColorRegion color;
-  final ReglaRegion regla;
-
-  const TipoRegion(this.color, this.regla);
-
-  static const amarillo = TipoRegion(ColorRegion.amarillo, reglaRojoAmarillo);
-  static const rojo = TipoRegion(ColorRegion.rojo, reglaRojoAmarillo);
-  static const azul = TipoRegion(ColorRegion.azul, reglaAzul);
-  static const verde = TipoRegion(ColorRegion.verde, reglaVerde);
-  static const lila = TipoRegion(ColorRegion.lila, reglaPurpuraLila);
-}
 
 // Regiones de los colores del tablero
 enum Region {
