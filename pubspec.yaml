@@ -1,5 +1,5 @@
 name: proyecto_bloques
-description: A sample command-line application.
+description: Aplicacion Flutter para el juego Proyecto Bloques.
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
 
@@ -13,5 +13,9 @@ dependencies:
   path: ^1.9.0
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   lints: ^6.0.0
-  test: ^1.25.6
+
+flutter:
+  uses-material-design: true

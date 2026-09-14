@@ -1,6 +1,6 @@
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:flutter/material.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Pruebas para Insertar Rojo / Amarillo', () {

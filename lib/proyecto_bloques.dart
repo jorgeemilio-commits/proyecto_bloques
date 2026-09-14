@@ -19,7 +19,7 @@ class TipoAzul extends TipoRegion {
   const TipoAzul();
 
   @override
-  Color get color => const Color.fromARGB(255, 138, 180, 251);
+  Color get color => const Color(0xFF0000FF);
 
   @override
   String get descripcion => 'Todos los números deben ser iguales.';
