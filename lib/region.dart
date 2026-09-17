@@ -45,6 +45,8 @@ List<int> obtenerNumerosRegion(
 
 abstract class Region {
   final TipoRegion tipo;
+
+	const Region(this.tipo);
 }
 
 class Coordenada {
@@ -53,6 +55,18 @@ class Coordenada {
 
   const Coordenada(this.x, this.y);
 }
+
+// super permite que se pueda crear una region de un tipo especifico (por ejemplo, RegionAzulUno hijo de tipo azul y herada sus caracteristicas)
+class RegionAzulUno extends Region {
+	const RegionAzulUno() : super(TipoRegion.azul);
+}
+
+class RegionAzulDos extends Region {
+	const RegionAzulDos() : super(TipoRegion.azul);
+}
+
+
+
 
 //cual sistema de coordenadas se usa para el tablero
 //que dificultad hay de capturar la informacion
