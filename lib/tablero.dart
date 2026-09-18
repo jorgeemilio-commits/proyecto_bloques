@@ -2,12 +2,12 @@ import 'region.dart';
 
 // Clase para representar una celda del tablero
 class Celda {
-  final Region region;
+  final Region? region;
   final Coordenada coordenada;
   int? numero;
 
   Celda({
-    required this.region,
+    this.region,
     required this.coordenada,
     this.numero,
   });
@@ -44,8 +44,14 @@ class Tablero {
     }
 
     return [
-      for (final fila in celdas)
-        [for (final celda in fila) celda!],
+      for (int y = 0; y < filas; y++)
+        [
+          for (int x = 0; x < columnas; x++)
+            celdas[y][x] ??
+                Celda(
+                  coordenada: Coordenada(x, y),
+                ),
+        ],
     ];
   }
 }
