@@ -78,10 +78,12 @@ void main() {
       expect(tablero.columnas, 7);
       expect(tablero.celdas.length, 7);
       expect(tablero.celdas.every((fila) => fila.length == 7), isTrue);
-      expect(tablero.celdas[2][2].region, isA<RegionAzulUno>());
-      expect(tablero.celdas[1][2].region, isA<RegionRojaUno>());
+      expect(tablero.celdas[0][2].region, isA<RegionAzulUno>());
+      expect(tablero.celdas[2][1].region, isA<RegionRojaUno>());
       expect(tablero.celdas[3][3].region, isA<RegionAmarilla>());
-      expect(tablero.celdas[2][2].coordenada, const Coordenada(2, 2));
+      expect(tablero.celdas[0][2].coordenada, const Coordenada(2, 0));
+      expect(tablero.celdas[2][1].coordenada, const Coordenada(1, 2));
+      expect(tablero.celdas[3][3].coordenada, const Coordenada(3, 3));
     });
   });
 }
