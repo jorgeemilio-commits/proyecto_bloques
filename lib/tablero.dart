@@ -15,7 +15,6 @@ class Celda {
 class Tablero {
   final int filas;
   final int columnas;
-  // Las regiones pertenecen al tablero, no a cada una de sus celdas.
   final List<Region> regiones;
   // La matriz se consulta como celdas[fila][columna], es decir, [y][x].
   final List<List<Celda>> celdas;
