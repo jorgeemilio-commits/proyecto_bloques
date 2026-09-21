@@ -56,17 +56,24 @@ class Coordenada {
 
   const Coordenada(this.x, this.y);
 
+	// Dos coordenadas son iguales cuando representan la misma posición.
 	@override
-	bool operator ==(Object other) {
-		return other is Coordenada && other.x == x && other.y == y;
+	bool operator ==(Object objetoComparado) {
+		if (objetoComparado is! Coordenada) {
+			return false;
+		}
+
+		return objetoComparado.x == x && objetoComparado.y == y;
 	}
 
+	// Los objetos iguales deben producir el mismo hashCode.
+	// Esto permite usar Coordenada correctamente en Set, Map y contains.
 	@override
 	int get hashCode => Object.hash(x, y);
 }
 
 // Regiones y coordenadas
-// super permite que se pueda crear una region de un tipo especifico (por ejemplo, RegionAzulUno hijo de tipo azul y herada sus caracteristicas)
+// Super permite que se pueda crear una region de un tipo especifico (por ejemplo, RegionAzulUno hijo de tipo azul y herada sus caracteristicas)
 class RegionAzulUno extends Region {
 	const RegionAzulUno()
 			: super(TipoRegion.azul, const [

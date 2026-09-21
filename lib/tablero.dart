@@ -1,6 +1,6 @@
 import 'region.dart';
 
-// Clase para representar una celda del tablero
+// Representa una casilla: su posición y el número que contiene.
 class Celda {
   final Coordenada coordenada;
   int? numero;
@@ -11,10 +11,13 @@ class Celda {
   });
 }
 
+// Representa el tablero de juego, con sus celdas y regiones.
 class Tablero {
   final int filas;
   final int columnas;
+  // Las regiones pertenecen al tablero, no a cada una de sus celdas.
   final List<Region> regiones;
+  // La matriz se consulta como celdas[fila][columna], es decir, [y][x].
   final List<List<Celda>> celdas;
 
   Tablero.desdeRegiones({
@@ -24,7 +27,9 @@ class Tablero {
   })  : regiones = List.unmodifiable(regiones),
         celdas = _crearCeldas(filas, columnas);
 
+  // Busca qué región contiene una coordenada determinada.
   Region? obtenerRegion(Coordenada coordenada) {
+    // Se revisan al revés para conservar la última región en caso de solapamiento.
     for (final region in regiones.reversed) {
       final coordenadaPerteneceARegion = region.coordenadas.any(
         (coordenadaDeRegion) =>
@@ -40,6 +45,7 @@ class Tablero {
     return null;
   }
 
+  // Crea todas las celdas del tablero sin asignarles una región.
   static List<List<Celda>> _crearCeldas(
     int filas,
     int columnas,
