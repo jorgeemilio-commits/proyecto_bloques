@@ -55,6 +55,14 @@ class Coordenada {
   final int y;
 
   const Coordenada(this.x, this.y);
+
+	@override
+	bool operator ==(Object other) {
+		return other is Coordenada && other.x == x && other.y == y;
+	}
+
+	@override
+	int get hashCode => Object.hash(x, y);
 }
 
 // Regiones y coordenadas

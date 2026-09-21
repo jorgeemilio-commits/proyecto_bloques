@@ -63,7 +63,7 @@ void main() {
       expect(regionAmarilla.coordenadas, contains(const Coordenada(3, 3)));
     });
 
-    test('Tablero construye celdas con sus regiones y coordenadas', () {
+    test('Tablero construye celdas y conserva las regiones por separado', () {
       final tablero = Tablero.desdeRegiones(
         filas: 7,
         columnas: 7,
@@ -78,9 +78,20 @@ void main() {
       expect(tablero.columnas, 7);
       expect(tablero.celdas.length, 7);
       expect(tablero.celdas.every((fila) => fila.length == 7), isTrue);
-      expect(tablero.celdas[0][2].region, isA<RegionAzulUno>());
-      expect(tablero.celdas[2][1].region, isA<RegionRojaUno>());
-      expect(tablero.celdas[3][3].region, isA<RegionAmarilla>());
+      expect(tablero.regiones, hasLength(3));
+      expect(
+        tablero.obtenerRegion(const Coordenada(2, 0)),
+        isA<RegionAzulUno>(),
+      );
+      expect(
+        tablero.obtenerRegion(const Coordenada(1, 2)),
+        isA<RegionRojaUno>(),
+      );
+      expect(
+        tablero.obtenerRegion(const Coordenada(3, 3)),
+        isA<RegionAmarilla>(),
+      );
+      expect(tablero.celdas[0][2].numero, isNull);
       expect(tablero.celdas[0][2].coordenada, const Coordenada(2, 0));
       expect(tablero.celdas[2][1].coordenada, const Coordenada(1, 2));
       expect(tablero.celdas[3][3].coordenada, const Coordenada(3, 3));
