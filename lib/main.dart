@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'region.dart';
 import 'tablero.dart';
-import 'widgets/celda_widget.dart';
+import 'widgets/tablero_widget.dart';
 
 void main() {
   runApp(const ProyectoBloquesApp());
@@ -19,55 +19,32 @@ class ProyectoBloquesApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const VistaPreviaCelda(),
+      home: const VistaPreviaTablero(),
     );
   }
 }
 
-class VistaPreviaCelda extends StatelessWidget {
-  const VistaPreviaCelda({super.key});
+class VistaPreviaTablero extends StatelessWidget {
+  const VistaPreviaTablero({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final celdaInicial = Celda(
-      coordenada: const Coordenada(0, 0),
-      numero: 4,
+    final tablero = Tablero.desdeRegiones(
+      filas: 7,
+      columnas: 7,
+      regiones: regionesMapa,
     );
-    final celdaVacia = Celda(coordenada: const Coordenada(1, 1));
-    final celdaConRegion = Celda(coordenada: const Coordenada(2, 0));
+    tablero.celdasIniciales.first.numero = 4;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Vista previa de celdas')),
+      appBar: AppBar(title: const Text('Tablero de Proyecto Bloques')),
       body: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: CeldaWidget(
-                celda: celdaInicial,
-                region: null,
-                esInicial: true,
-              ),
-            ),
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: CeldaWidget(
-                celda: celdaVacia,
-                region: null,
-              ),
-            ),
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: CeldaWidget(
-                celda: celdaConRegion,
-                region: const RegionAzulUno(),
-              ),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: TableroWidget(tablero: tablero),
+          ),
         ),
       ),
     );
