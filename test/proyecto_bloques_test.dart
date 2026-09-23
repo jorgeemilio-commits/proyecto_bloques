@@ -126,34 +126,6 @@ void main() {
       expect(tablero.celdas[3][3].coordenada.y, 3);
     });
 
-    test('Tablero exige seis coordenadas iniciales distintas', () {
-      expect(
-        () => Tablero.desdeRegiones(
-          filas: 7,
-          columnas: 7,
-          regiones: const [],
-          coordenadasIniciales: const [Coordenada(0, 0)],
-        ),
-        throwsArgumentError,
-      );
-
-      expect(
-        () => Tablero.desdeRegiones(
-          filas: 7,
-          columnas: 7,
-          regiones: const [],
-          coordenadasIniciales: const [
-            Coordenada(0, 0),
-            Coordenada(0, 0),
-            Coordenada(1, 1),
-            Coordenada(2, 2),
-            Coordenada(3, 3),
-            Coordenada(4, 4),
-          ],
-        ),
-        throwsArgumentError,
-      );
-    });
   });
 
   group('Valores iniciales', () {

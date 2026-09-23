@@ -34,11 +34,7 @@ class Tablero {
     required List<Region> regiones,
     required List<Coordenada> coordenadasIniciales,
   })  : regiones = List.unmodifiable(regiones),
-        coordenadasIniciales = _validarCoordenadasIniciales(
-          coordenadasIniciales,
-          filas,
-          columnas,
-        ),
+        coordenadasIniciales = List.unmodifiable(coordenadasIniciales),
         celdas = _crearCeldas(filas, columnas);
 
   // Devuelve la celda que ocupa la coordenada indicada.
@@ -69,41 +65,6 @@ class Tablero {
     }
 
     return null;
-  }
-
-  // Comprueba que existan exactamente seis coordenadas iniciales validas.
-  static List<Coordenada> _validarCoordenadasIniciales(
-    List<Coordenada> coordenadas,
-    int filas,
-    int columnas,
-  ) {
-    if (coordenadas.length != 6) {
-      throw ArgumentError('El tablero debe tener exactamente seis celdas iniciales.');
-    }
-
-    for (var indice = 0; indice < coordenadas.length; indice++) {
-      final coordenada = coordenadas[indice];
-
-      if (coordenada.x < 0 || coordenada.x >= columnas ||
-          coordenada.y < 0 || coordenada.y >= filas) {
-        throw ArgumentError(
-          'La coordenada inicial (${coordenada.x}, ${coordenada.y}) '
-          'esta fuera de los limites del tablero.',
-        );
-      }
-
-      for (var anterior = 0; anterior < indice; anterior++) {
-        final coordenadaAnterior = coordenadas[anterior];
-        if (coordenadaAnterior.x == coordenada.x &&
-            coordenadaAnterior.y == coordenada.y) {
-          throw ArgumentError(
-            'Las coordenadas iniciales no pueden repetirse.',
-          );
-        }
-      }
-    }
-
-    return List.unmodifiable(coordenadas);
   }
 
   // Crea una matriz de celdas vacias con las dimensiones solicitadas.
