@@ -21,8 +21,8 @@ class Tablero {
   // Lista de regiones que componen el tablero.
   final List<Region> regiones;
 
-  // Coordenadas de las seis celdas que deben recibir los valores iniciales.
-  final List<Coordenada> coordenadasIniciales;
+  // Celdas fijas que deben recibir los valores iniciales.
+  late final List<Celda> celdasIniciales;
 
   // Matriz de celdas organizada como celdas[fila][columna], o sea [y][x].
   final List<List<Celda>> celdas;
@@ -32,10 +32,13 @@ class Tablero {
     required this.filas,
     required this.columnas,
     required List<Region> regiones,
-    required List<Coordenada> coordenadasIniciales,
   })  : regiones = List.unmodifiable(regiones),
-        coordenadasIniciales = List.unmodifiable(coordenadasIniciales),
-        celdas = _crearCeldas(filas, columnas);
+        celdas = _crearCeldas(filas, columnas) {
+    // Relaciona las coordenadas fijas con las celdas reales del tablero.
+    celdasIniciales = List.unmodifiable(
+      coordenadasIniciales.map(obtenerCelda),
+    );
+  }
 
   // Devuelve la celda que ocupa la coordenada indicada.
   Celda obtenerCelda(Coordenada coordenada) {

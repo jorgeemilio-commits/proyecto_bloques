@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import 'region.dart';
 import 'tablero.dart';
 
 class ValoresInicialesEstado {
@@ -12,8 +11,10 @@ class ValoresInicialesEstado {
     this.mensajeError,
   });
 
+  // Indica si todas las celdas iniciales ya tienen un numero.
   bool get estanCompletos => valores.every((valor) => valor != null);
 
+  // Indica si los numeros iniciales son todos diferentes.
   bool get noHayRepetidos {
     final valoresDefinidos = valores.whereType<int>().toSet();
     return valoresDefinidos.length == valores.whereType<int>().length;
@@ -24,31 +25,19 @@ class ValoresInicialesEstado {
 
 class ValoresInicialesBloc extends ChangeNotifier {
   final Tablero tablero;
-  final List<int?> _valores;
   String? _mensajeError;
 
-  ValoresInicialesBloc(this.tablero)
-      : _valores = List<int?>.filled(
-          tablero.coordenadasIniciales.length,
-          null,
-        );
+  ValoresInicialesBloc(this.tablero);
 
+  // Crea una fotografia de los numeros actuales de las celdas iniciales.
   ValoresInicialesEstado get estado => ValoresInicialesEstado(
-        valores: List.unmodifiable(_valores),
+        valores: List.unmodifiable(
+          tablero.celdasIniciales.map((celda) => celda.numero),
+        ),
         mensajeError: _mensajeError,
       );
 
-  void actualizarValor(Coordenada coordenada, int? valor) {
-    final indice = _indiceDeCoordenada(coordenada);
-    if (indice == -1) {
-      throw ArgumentError('La coordenada no es una celda inicial.');
-    }
-
-    _valores[indice] = valor;
-    _mensajeError = null;
-    notifyListeners();
-  }
-
+  // Lee el estado actual y decide si el juego puede continuar.
   bool avanzar() {
     if (estado.puedeAvanzar) {
       _mensajeError = null;
@@ -60,21 +49,5 @@ class ValoresInicialesBloc extends ChangeNotifier {
         : 'Debes completar las seis celdas iniciales.';
     notifyListeners();
     return false;
-  }
-
-  void reiniciar() {
-    for (var indice = 0; indice < _valores.length; indice++) {
-      _valores[indice] = null;
-    }
-    _mensajeError = null;
-    notifyListeners();
-  }
-
-  int _indiceDeCoordenada(Coordenada coordenada) {
-    return tablero.coordenadasIniciales.indexWhere(
-      (coordenadaInicial) =>
-          coordenadaInicial.x == coordenada.x &&
-          coordenadaInicial.y == coordenada.y,
-    );
   }
 }

@@ -13,6 +13,16 @@ class Coordenada {
   const Coordenada(this.x, this.y);
 }
 
+// Coordenadas fijas de las seis celdas que se llenan al iniciar el juego.
+const List<Coordenada> coordenadasIniciales = [
+	Coordenada(0, 0),
+	Coordenada(1, 1),
+	Coordenada(2, 2),
+	Coordenada(3, 3),
+	Coordenada(4, 4),
+	Coordenada(5, 5),
+];
+
 // Regiones y coordenadas
 // super permite que se pueda crear una region de un tipo especifico (por ejemplo, RegionAzulUno hijo de tipo azul y herada sus caracteristicas)
 class RegionAzulUno extends Region {

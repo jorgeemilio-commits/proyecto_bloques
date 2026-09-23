@@ -2,21 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 
-const coordenadasInicialesDePrueba = [
-  Coordenada(0, 0),
-  Coordenada(1, 1),
-  Coordenada(2, 2),
-  Coordenada(3, 3),
-  Coordenada(4, 4),
-  Coordenada(5, 5),
-];
-
 Tablero crearTableroDePrueba() {
   return Tablero.desdeRegiones(
     filas: 7,
     columnas: 7,
     regiones: const [],
-    coordenadasIniciales: coordenadasInicialesDePrueba,
   );
 }
 
@@ -90,20 +80,13 @@ void main() {
           const RegionRojaUno(),
           const RegionAmarilla(),
         ],
-        coordenadasIniciales: const [
-          Coordenada(0, 0),
-          Coordenada(1, 1),
-          Coordenada(2, 2),
-          Coordenada(3, 3),
-          Coordenada(4, 4),
-          Coordenada(5, 5),
-        ],
       );
 
       expect(tablero.filas, 7);
       expect(tablero.columnas, 7);
       expect(tablero.celdas.length, 7);
       expect(tablero.celdas.every((fila) => fila.length == 7), isTrue);
+      expect(tablero.celdasIniciales, hasLength(6));
       expect(tablero.regiones, hasLength(3));
       expect(
         tablero.obtenerRegion(const Coordenada(2, 0)),
@@ -130,36 +113,44 @@ void main() {
 
   group('Valores iniciales', () {
     test('No permite avanzar hasta completar seis valores diferentes', () {
-      final bloc = ValoresInicialesBloc(crearTableroDePrueba());
+      final tablero = crearTableroDePrueba();
+      final bloc = ValoresInicialesBloc(tablero);
 
       expect(bloc.estado.puedeAvanzar, isFalse);
       expect(bloc.avanzar(), isFalse);
       expect(bloc.estado.mensajeError, isNotNull);
 
       for (var indice = 0; indice < 5; indice++) {
-        bloc.actualizarValor(
-          coordenadasInicialesDePrueba[indice],
-          indice + 1,
-        );
+        tablero.celdasIniciales[indice].numero = indice + 1;
       }
 
       expect(bloc.estado.puedeAvanzar, isFalse);
 
-      bloc.actualizarValor(coordenadasInicialesDePrueba[5], 5);
+      tablero.celdasIniciales[5].numero = 5;
       expect(bloc.estado.puedeAvanzar, isFalse);
       expect(bloc.avanzar(), isFalse);
 
-      bloc.actualizarValor(coordenadasInicialesDePrueba[5], 6);
+      tablero.celdasIniciales[5].numero = 6;
       expect(bloc.estado.puedeAvanzar, isTrue);
       expect(bloc.avanzar(), isTrue);
     });
 
-    test('Solo permite actualizar coordenadas iniciales', () {
-      final bloc = ValoresInicialesBloc(crearTableroDePrueba());
+    test('Avanzar no modifica los numeros del tablero', () {
+      final tablero = crearTableroDePrueba();
+      final bloc = ValoresInicialesBloc(tablero);
 
+      for (var indice = 0; indice < tablero.celdasIniciales.length; indice++) {
+        tablero.celdasIniciales[indice].numero = indice + 1;
+      }
+
+      final valoresAntes = tablero.celdasIniciales
+          .map((celda) => celda.numero)
+          .toList();
+
+      expect(bloc.avanzar(), isTrue);
       expect(
-        () => bloc.actualizarValor(const Coordenada(6, 6), 1),
-        throwsArgumentError,
+        tablero.celdasIniciales.map((celda) => celda.numero).toList(),
+        valoresAntes,
       );
     });
   });
