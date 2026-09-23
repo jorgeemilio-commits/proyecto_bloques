@@ -2,6 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 
+const coordenadasInicialesDePrueba = [
+  Coordenada(0, 0),
+  Coordenada(1, 1),
+  Coordenada(2, 2),
+  Coordenada(3, 3),
+  Coordenada(4, 4),
+  Coordenada(5, 5),
+];
+
+Tablero crearTableroDePrueba() {
+  return Tablero.desdeRegiones(
+    filas: 7,
+    columnas: 7,
+    regiones: const [],
+    coordenadasIniciales: coordenadasInicialesDePrueba,
+  );
+}
+
 void main() {
   group('Validación de reglas por tipo de región', () {
     test('Rojo no permite duplicados ni repetidos', () {
@@ -72,6 +90,14 @@ void main() {
           const RegionRojaUno(),
           const RegionAmarilla(),
         ],
+        coordenadasIniciales: const [
+          Coordenada(0, 0),
+          Coordenada(1, 1),
+          Coordenada(2, 2),
+          Coordenada(3, 3),
+          Coordenada(4, 4),
+          Coordenada(5, 5),
+        ],
       );
 
       expect(tablero.filas, 7);
@@ -98,6 +124,71 @@ void main() {
       expect(tablero.celdas[2][1].coordenada.y, 2);
       expect(tablero.celdas[3][3].coordenada.x, 3);
       expect(tablero.celdas[3][3].coordenada.y, 3);
+    });
+
+    test('Tablero exige seis coordenadas iniciales distintas', () {
+      expect(
+        () => Tablero.desdeRegiones(
+          filas: 7,
+          columnas: 7,
+          regiones: const [],
+          coordenadasIniciales: const [Coordenada(0, 0)],
+        ),
+        throwsArgumentError,
+      );
+
+      expect(
+        () => Tablero.desdeRegiones(
+          filas: 7,
+          columnas: 7,
+          regiones: const [],
+          coordenadasIniciales: const [
+            Coordenada(0, 0),
+            Coordenada(0, 0),
+            Coordenada(1, 1),
+            Coordenada(2, 2),
+            Coordenada(3, 3),
+            Coordenada(4, 4),
+          ],
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('Valores iniciales', () {
+    test('No permite avanzar hasta completar seis valores diferentes', () {
+      final bloc = ValoresInicialesBloc(crearTableroDePrueba());
+
+      expect(bloc.estado.puedeAvanzar, isFalse);
+      expect(bloc.avanzar(), isFalse);
+      expect(bloc.estado.mensajeError, isNotNull);
+
+      for (var indice = 0; indice < 5; indice++) {
+        bloc.actualizarValor(
+          coordenadasInicialesDePrueba[indice],
+          indice + 1,
+        );
+      }
+
+      expect(bloc.estado.puedeAvanzar, isFalse);
+
+      bloc.actualizarValor(coordenadasInicialesDePrueba[5], 5);
+      expect(bloc.estado.puedeAvanzar, isFalse);
+      expect(bloc.avanzar(), isFalse);
+
+      bloc.actualizarValor(coordenadasInicialesDePrueba[5], 6);
+      expect(bloc.estado.puedeAvanzar, isTrue);
+      expect(bloc.avanzar(), isTrue);
+    });
+
+    test('Solo permite actualizar coordenadas iniciales', () {
+      final bloc = ValoresInicialesBloc(crearTableroDePrueba());
+
+      expect(
+        () => bloc.actualizarValor(const Coordenada(6, 6), 1),
+        throwsArgumentError,
+      );
     });
   });
 }
