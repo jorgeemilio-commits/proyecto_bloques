@@ -1,0 +1,11 @@
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/icudtl.dat
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/flutter_windows.dll
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/native_assets.json
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/AssetManifest.bin
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/AssetManifest.json
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/FontManifest.json
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/fonts/MaterialIcons-Regular.otf
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/kernel_blob.bin
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/NativeAssetsManifest.json
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/NOTICES.Z
+D:/TallerDeApps/proyecto_bloques/build/windows/x64/runner/Debug/data/flutter_assets/shaders/ink_sparkle.frag
