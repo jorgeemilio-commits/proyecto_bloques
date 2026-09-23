@@ -112,46 +112,54 @@ void main() {
   });
 
   group('Valores iniciales', () {
-    test('No permite avanzar hasta completar seis valores diferentes', () {
+    test('No permite avanzar con un tablero vacio', () {
       final tablero = crearTableroDePrueba();
       final bloc = ValoresInicialesBloc(tablero);
 
+      expect(bloc.estado.valores, everyElement(isNull));
+      expect(bloc.estado.estanCompletos, isFalse);
       expect(bloc.estado.puedeAvanzar, isFalse);
       expect(bloc.avanzar(), isFalse);
-      expect(bloc.estado.mensajeError, isNotNull);
-
-      for (var indice = 0; indice < 5; indice++) {
-        tablero.celdasIniciales[indice].numero = indice + 1;
-      }
-
-      expect(bloc.estado.puedeAvanzar, isFalse);
-
-      tablero.celdasIniciales[5].numero = 5;
-      expect(bloc.estado.puedeAvanzar, isFalse);
-      expect(bloc.avanzar(), isFalse);
-
-      tablero.celdasIniciales[5].numero = 6;
-      expect(bloc.estado.puedeAvanzar, isTrue);
-      expect(bloc.avanzar(), isTrue);
+      expect(
+        bloc.estado.mensajeError,
+        'Debes completar las seis celdas iniciales.',
+      );
     });
 
-    test('Avanzar no modifica los numeros del tablero', () {
+    test('Permite avanzar con un tablero lleno y sin repetidos', () {
       final tablero = crearTableroDePrueba();
-      final bloc = ValoresInicialesBloc(tablero);
 
       for (var indice = 0; indice < tablero.celdasIniciales.length; indice++) {
         tablero.celdasIniciales[indice].numero = indice + 1;
       }
 
-      final valoresAntes = tablero.celdasIniciales
-          .map((celda) => celda.numero)
-          .toList();
+      final bloc = ValoresInicialesBloc(tablero);
 
+      expect(bloc.estado.valores, [1, 2, 3, 4, 5, 6]);
+      expect(bloc.estado.estanCompletos, isTrue);
+      expect(bloc.estado.noHayRepetidos, isTrue);
+      expect(bloc.estado.puedeAvanzar, isTrue);
       expect(bloc.avanzar(), isTrue);
+    });
+
+    test('No permite avanzar con valores iniciales repetidos', () {
+      final tablero = crearTableroDePrueba();
+
+      for (final celda in tablero.celdasIniciales) {
+        celda.numero = 1;
+      }
+
+      final bloc = ValoresInicialesBloc(tablero);
+
+      expect(bloc.estado.estanCompletos, isTrue);
+      expect(bloc.estado.noHayRepetidos, isFalse);
+      expect(bloc.estado.puedeAvanzar, isFalse);
+      expect(bloc.avanzar(), isFalse);
       expect(
-        tablero.celdasIniciales.map((celda) => celda.numero).toList(),
-        valoresAntes,
+        bloc.estado.mensajeError,
+        'Los valores iniciales no pueden repetirse.',
       );
     });
+
   });
 }

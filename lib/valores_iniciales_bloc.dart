@@ -39,12 +39,20 @@ class ValoresInicialesBloc extends ChangeNotifier {
 
   // Lee el estado actual y decide si el juego puede continuar.
   bool avanzar() {
-    if (estado.puedeAvanzar) {
+    final estadoActual = estado;
+
+    // Muestra en la terminal lo que el BLoC esta leyendo del tablero.
+    debugPrint('Valores iniciales: ${estadoActual.valores}');
+    debugPrint('Estan completos: ${estadoActual.estanCompletos}');
+    debugPrint('No hay repetidos: ${estadoActual.noHayRepetidos}');
+    debugPrint('Puede avanzar: ${estadoActual.puedeAvanzar}');
+
+    if (estadoActual.puedeAvanzar) {
       _mensajeError = null;
       return true;
     }
 
-    _mensajeError = estado.estanCompletos
+    _mensajeError = estadoActual.estanCompletos
         ? 'Los valores iniciales no pueden repetirse.'
         : 'Debes completar las seis celdas iniciales.';
     notifyListeners();
