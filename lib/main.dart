@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'proyecto_bloques.dart';
-
 void main() {
   runApp(const ProyectoBloquesApp());
 }
