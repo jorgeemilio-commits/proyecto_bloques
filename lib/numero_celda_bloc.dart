@@ -35,7 +35,7 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
     NumeroCeldaSeleccionado evento,
     Emitter<NumeroCeldaEstado> emit,
   ) {
-    if (evento.numero < 1 || evento.numero > 9) {
+    if (evento.numero < 1 || evento.numero > 6) {
       return;
     }
 

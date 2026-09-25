@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -60,39 +62,123 @@ class CeldaWidget extends StatelessWidget {
   }
 
   Future<void> _mostrarSelectorNumero(BuildContext context) async {
-    await showDialog<void>(
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox) {
+      return;
+    }
+    final bloc = context.read<NumeroCeldaBloc>();
+
+    final centroDeLaCelda = renderObject.localToGlobal(
+      renderObject.size.center(Offset.zero),
+    );
+
+    await showGeneralDialog<void>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Selecciona un numero'),
-          content: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var numero = 1; numero <= 9; numero++)
-                TextButton(
-                  onPressed: () {
-                    context
-                        .read<NumeroCeldaBloc>()
-                        .add(NumeroCeldaSeleccionado(numero));
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: Text(numero.toString()),
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar selector de numero',
+      barrierColor: Colors.transparent,
+      pageBuilder: (dialogContext, _, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            const tamanoMenu = 190.0;
+            final left = (centroDeLaCelda.dx - tamanoMenu / 2).clamp(
+              8.0,
+              constraints.maxWidth - tamanoMenu - 8,
+            );
+            final top = (centroDeLaCelda.dy - tamanoMenu / 2).clamp(
+              8.0,
+              constraints.maxHeight - tamanoMenu - 8,
+            );
+
+            return Stack(
+              children: [
+                Positioned(
+                  left: left,
+                  top: top,
+                  child: _menuRadial(
+                    context: context,
+                    dialogContext: dialogContext,
+                    bloc: bloc,
+                  ),
                 ),
-              TextButton(
-                onPressed: () {
-                  context
-                      .read<NumeroCeldaBloc>()
-                      .add(const NumeroCeldaBorrado());
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text('Borrar'),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _menuRadial({
+    required BuildContext context,
+    required BuildContext dialogContext,
+    required NumeroCeldaBloc bloc,
+  }) {
+    return SizedBox(
+      width: 190,
+      height: 190,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          for (var numero = 1; numero <= 6; numero++)
+            _botonRadial(
+              context: context,
+              dialogContext: dialogContext,
+              bloc: bloc,
+              numero: numero,
+            ),
+          IconButton(
+            tooltip: 'Borrar',
+            onPressed: () {
+              bloc.add(const NumeroCeldaBorrado());
+              Navigator.of(dialogContext).pop();
+            },
+            icon: Icon(
+              Icons.backspace_outlined,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _botonRadial({
+    required BuildContext context,
+    required BuildContext dialogContext,
+    required NumeroCeldaBloc bloc,
+    required int numero,
+  }) {
+    const radio = 66.0;
+    final angulo = -math.pi / 2 + (numero - 1) * (math.pi * 2 / 6);
+
+    return Transform.translate(
+      offset: Offset(radio * math.cos(angulo), radio * math.sin(angulo)),
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: TextButton(
+          onPressed: () {
+            bloc.add(NumeroCeldaSeleccionado(numero));
+            Navigator.of(dialogContext).pop();
+          },
+          style: TextButton.styleFrom(
+            backgroundColor: const Color.fromRGBO(210, 210, 210, 0.72),
+            foregroundColor: Colors.grey.shade900,
+            shape: const CircleBorder(),
+            padding: EdgeInsets.zero,
+            side: const BorderSide(
+              color: Color.fromRGBO(120, 120, 120, 0.72),
+              width: 2,
+            ),
+            elevation: 2,
+          ),
+          child: Text(
+            numero.toString(),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ),
     );
   }
 }

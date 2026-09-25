@@ -59,7 +59,10 @@ void main() {
 
     await tester.tap(find.byType(CeldaWidget));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '5'));
+    expect(find.text('7'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
+    await tester.tap(find.text('5'));
     await tester.pumpAndSettle();
 
     expect(celda.numero, 5);
