@@ -42,4 +42,27 @@ void main() {
 
     expect(fuePulsada, isTrue);
   });
+
+  testWidgets('permite insertar un numero mediante el selector', (tester) async {
+    final celda = Celda(coordenada: const Coordenada(0, 0));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CeldaWidget(
+            celda: celda,
+            region: null,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(CeldaWidget));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '5'));
+    await tester.pumpAndSettle();
+
+    expect(celda.numero, 5);
+    expect(find.text('5'), findsOneWidget);
+  });
 }
