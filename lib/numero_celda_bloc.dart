@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'tablero.dart';
@@ -24,8 +25,9 @@ class NumeroCeldaEstado {
 
 class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
   final Celda celda;
+  final VoidCallback? onCambio;
 
-  NumeroCeldaBloc(this.celda)
+  NumeroCeldaBloc(this.celda, {this.onCambio})
       : super(NumeroCeldaEstado(numero: celda.numero)) {
     on<NumeroCeldaSeleccionado>(_seleccionarNumero);
     on<NumeroCeldaBorrado>(_borrarNumero);
@@ -41,6 +43,7 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
 
     celda.numero = evento.numero;
     emit(NumeroCeldaEstado(numero: celda.numero));
+    onCambio?.call();
   }
 
   void _borrarNumero(
@@ -53,5 +56,6 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
 
     celda.numero = null;
     emit(const NumeroCeldaEstado());
+    onCambio?.call();
   }
 }

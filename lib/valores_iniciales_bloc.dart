@@ -29,6 +29,11 @@ class ValoresInicialesBloc extends ChangeNotifier {
 
   ValoresInicialesBloc(this.tablero);
 
+  void notificarCambio() {
+    _mensajeError = null;
+    notifyListeners();
+  }
+
   // Crea una fotografia de los numeros actuales de las celdas iniciales.
   ValoresInicialesEstado get estado => ValoresInicialesEstado(
         valores: List.unmodifiable(

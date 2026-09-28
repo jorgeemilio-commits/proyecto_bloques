@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
 import 'package:proyecto_bloques/proyecto_bloques.dart';
+import 'package:proyecto_bloques/widgets/celda_widget.dart';
 
 Tablero crearTableroDePrueba() {
   return Tablero.desdeRegiones(
@@ -11,6 +13,62 @@ Tablero crearTableroDePrueba() {
 }
 
 void main() {
+  testWidgets('muestra las reglas y desactiva Listo al iniciar', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: VistaPreviaTablero()),
+    );
+
+    expect(
+      find.text(
+        'Completa las seis casillas iniciales con números distintos del 1 al 6.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Listo'))
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('habilita Listo con valores distintos y lo bloquea al repetirlos',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: VistaPreviaTablero()),
+    );
+
+    final celdasIniciales = find.byWidgetPredicate(
+      (widget) => widget is CeldaWidget && widget.esInicial,
+    );
+    const numerosUnicos = [1, 2, 3, 5, 6];
+
+    for (var indice = 0; indice < numerosUnicos.length; indice++) {
+      await tester.tap(celdasIniciales.at(indice + 1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('${numerosUnicos[indice]}').last);
+      await tester.pumpAndSettle();
+    }
+
+    var botonListo = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Listo'),
+    );
+    expect(botonListo.onPressed, isNotNull);
+
+    await tester.tap(celdasIniciales.last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('4').last);
+    await tester.pumpAndSettle();
+
+    botonListo = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Listo'),
+    );
+    expect(botonListo.onPressed, isNull);
+    expect(
+      find.text('Las casillas iniciales deben tener números distintos.'),
+      findsOneWidget,
+    );
+  });
+
   group('Validación de reglas por tipo de región', () {
     test('Rojo no permite duplicados ni repetidos', () {
       expect(TipoRegion.rojo.esPosibleAgregar([], 5), isTrue);

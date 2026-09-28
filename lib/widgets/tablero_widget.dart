@@ -6,11 +6,13 @@ import 'celda_widget.dart';
 class TableroWidget extends StatelessWidget {
   final Tablero tablero;
   final ValueChanged<Celda>? onCeldaTap;
+  final VoidCallback? onNumeroCambiado;
 
   const TableroWidget({
     super.key,
     required this.tablero,
     this.onCeldaTap,
+    this.onNumeroCambiado,
   });
 
   @override
@@ -33,6 +35,7 @@ class TableroWidget extends StatelessWidget {
             region: tablero.obtenerRegion(celda.coordenada),
             esInicial: tablero.celdasIniciales.contains(celda),
             onTap: onCeldaTap == null ? null : () => onCeldaTap!(celda),
+            onNumeroCambiado: onNumeroCambiado,
           );
         },
       ),

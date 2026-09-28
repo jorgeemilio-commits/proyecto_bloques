@@ -12,6 +12,7 @@ class CeldaWidget extends StatelessWidget {
   final Region? region;
   final bool esInicial;
   final VoidCallback? onTap;
+  final VoidCallback? onNumeroCambiado;
 
   const CeldaWidget({
     super.key,
@@ -19,12 +20,13 @@ class CeldaWidget extends StatelessWidget {
     required this.region,
     this.esInicial = false,
     this.onTap,
+    this.onNumeroCambiado,
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NumeroCeldaBloc(celda),
+      create: (_) => NumeroCeldaBloc(celda, onCambio: onNumeroCambiado),
       child: BlocBuilder<NumeroCeldaBloc, NumeroCeldaEstado>(
         builder: (context, estado) {
           final colorDeFondo = region == null
