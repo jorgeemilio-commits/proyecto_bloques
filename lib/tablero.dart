@@ -8,10 +8,14 @@ class Celda {
   // Numero colocado en la celda; es null cuando aun esta vacia.
   int? numero;
 
+  // Indica si las reglas actuales permiten insertar o borrar un numero.
+  bool esInsertable;
+
   // Crea una celda indicando su posicion y, opcionalmente, su numero inicial.
   Celda({
     required this.coordenada,
     this.numero,
+    this.esInsertable = false,
   });
 }
 
@@ -38,6 +42,9 @@ class Tablero {
     celdasIniciales = List.unmodifiable(
       coordenadasIniciales.map(obtenerCelda),
     );
+    for (final celda in celdasIniciales) {
+      celda.esInsertable = true;
+    }
   }
 
   // Devuelve la celda que ocupa la coordenada indicada.

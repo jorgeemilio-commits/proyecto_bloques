@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/numero_celda_bloc.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 
@@ -24,7 +25,10 @@ void main() {
 
   testWidgets('permite reaccionar al toque', (tester) async {
     var fuePulsada = false;
-    final celda = Celda(coordenada: const Coordenada(1, 1));
+    final celda = Celda(
+      coordenada: const Coordenada(1, 1),
+      esInsertable: true,
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -32,7 +36,6 @@ void main() {
           body: CeldaWidget(
             celda: celda,
             region: null,
-            esInicial: true,
             onTap: () => fuePulsada = true,
           ),
         ),
@@ -45,7 +48,10 @@ void main() {
   });
 
   testWidgets('permite insertar un numero mediante el selector', (tester) async {
-    final celda = Celda(coordenada: const Coordenada(0, 0));
+    final celda = Celda(
+      coordenada: const Coordenada(0, 0),
+      esInsertable: true,
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -53,7 +59,6 @@ void main() {
           body: CeldaWidget(
             celda: celda,
             region: null,
-            esInicial: true,
           ),
         ),
       ),
@@ -91,7 +96,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fuePulsada, isFalse);
-    expect(find.text('Selecciona un numero'), findsNothing);
+    expect(find.text('1'), findsNothing);
+    expect(find.byTooltip('Borrar'), findsNothing);
     expect(celda.numero, isNull);
+  });
+
+  test('el bloc rechaza insertar y borrar en una celda no insertable', () async {
+    final celda = Celda(coordenada: const Coordenada(1, 1), numero: 4);
+    final bloc = NumeroCeldaBloc(celda);
+
+    bloc.add(const NumeroCeldaSeleccionado(2));
+    bloc.add(const NumeroCeldaBorrado());
+    await bloc.close();
+
+    expect(celda.numero, 4);
   });
 }

@@ -32,12 +32,12 @@ class CeldaWidget extends StatelessWidget {
               : Color.lerp(Colors.white, region!.tipo.color, 0.25)!;
 
           return InkWell(
-                onTap: esInicial
-                    ? () {
-                        onTap?.call();
-                        _mostrarSelectorNumero(context);
-                      }
-                    : null,
+            onTap: celda.esInsertable
+                ? () {
+                    onTap?.call();
+                    _mostrarSelectorNumero(context);
+                  }
+                : null,
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(

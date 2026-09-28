@@ -35,7 +35,7 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
     NumeroCeldaSeleccionado evento,
     Emitter<NumeroCeldaEstado> emit,
   ) {
-    if (evento.numero < 1 || evento.numero > 6) {
+    if (!celda.esInsertable || evento.numero < 1 || evento.numero > 6) {
       return;
     }
 
@@ -47,6 +47,10 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
     NumeroCeldaBorrado evento,
     Emitter<NumeroCeldaEstado> emit,
   ) {
+    if (!celda.esInsertable) {
+      return;
+    }
+
     celda.numero = null;
     emit(const NumeroCeldaEstado());
   }

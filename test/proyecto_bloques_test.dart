@@ -87,6 +87,17 @@ void main() {
       expect(tablero.celdas.length, 7);
       expect(tablero.celdas.every((fila) => fila.length == 7), isTrue);
       expect(tablero.celdasIniciales, hasLength(6));
+      expect(
+        tablero.celdasIniciales.every((celda) => celda.esInsertable),
+        isTrue,
+      );
+      expect(
+        tablero.celdas
+            .expand((fila) => fila)
+            .where((celda) => !tablero.celdasIniciales.contains(celda))
+            .every((celda) => !celda.esInsertable),
+        isTrue,
+      );
       expect(tablero.regiones, hasLength(3));
       expect(
         tablero.obtenerRegion(const Coordenada(2, 0)),
