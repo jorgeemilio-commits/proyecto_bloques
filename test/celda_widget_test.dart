@@ -32,6 +32,7 @@ void main() {
           body: CeldaWidget(
             celda: celda,
             region: null,
+            esInicial: true,
             onTap: () => fuePulsada = true,
           ),
         ),
@@ -52,6 +53,7 @@ void main() {
           body: CeldaWidget(
             celda: celda,
             region: null,
+            esInicial: true,
           ),
         ),
       ),
@@ -67,5 +69,29 @@ void main() {
 
     expect(celda.numero, 5);
     expect(find.text('5'), findsOneWidget);
+  });
+
+  testWidgets('no permite editar una celda que no es inicial', (tester) async {
+    var fuePulsada = false;
+    final celda = Celda(coordenada: const Coordenada(1, 1));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CeldaWidget(
+            celda: celda,
+            region: null,
+            onTap: () => fuePulsada = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(CeldaWidget));
+    await tester.pumpAndSettle();
+
+    expect(fuePulsada, isFalse);
+    expect(find.text('Selecciona un numero'), findsNothing);
+    expect(celda.numero, isNull);
   });
 }
