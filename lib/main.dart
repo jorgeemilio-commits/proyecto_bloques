@@ -88,7 +88,9 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                     animation: _valoresInicialesBloc,
                     builder: (context, _) {
                       final estado = _valoresInicialesBloc.estado;
-                      final mensaje = !estado.estanCompletos
+                        final mensaje = estado.confirmado
+                          ? 'Valores iniciales confirmados.'
+                          : !estado.estanCompletos
                           ? 'Completa las seis casillas iniciales con números distintos del 1 al 6.'
                           : !estado.noHayRepetidos
                               ? 'Las casillas iniciales deben tener números distintos.'
@@ -104,9 +106,24 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                           ),
                           const SizedBox(width: 12),
                           FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: estado.confirmado
+                                  ? Colors.grey.shade500
+                                  : null,
+                              foregroundColor: estado.confirmado
+                                  ? Colors.white
+                                  : null,
+                              disabledBackgroundColor: estado.confirmado
+                                ? Colors.grey.shade500
+                                : null,
+                              disabledForegroundColor: estado.confirmado
+                                ? Colors.white
+                                : null,
+                            ),
                             onPressed: estado.puedeAvanzar
                                 ? () {
                                     if (_valoresInicialesBloc.avanzar()) {
+                                      setState(() {});
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(

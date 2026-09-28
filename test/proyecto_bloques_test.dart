@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
+import 'package:proyecto_bloques/widgets/menu_casilla_widget.dart';
 
 Tablero crearTableroDePrueba() {
   return Tablero.desdeRegiones(
@@ -67,6 +68,50 @@ void main() {
       find.text('Las casillas iniciales deben tener números distintos.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Listo bloquea las casillas iniciales', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: VistaPreviaTablero()),
+    );
+
+    final celdasIniciales = find.byWidgetPredicate(
+      (widget) => widget is CeldaWidget && widget.esInicial,
+    );
+    const numeros = [1, 2, 3, 5, 6];
+
+    for (var indice = 0; indice < numeros.length; indice++) {
+      await tester.tap(celdasIniciales.at(indice + 1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('${numeros[indice]}').last);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Listo'));
+    await tester.pumpAndSettle();
+
+    final botonListo = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Listo'),
+    );
+    expect(botonListo.onPressed, isNull);
+    expect(
+      botonListo.style!.backgroundColor!.resolve({WidgetState.disabled}),
+      Colors.grey.shade500,
+    );
+    expect(find.text('Valores iniciales confirmados.'), findsOneWidget);
+
+    final menuDeCasillaInicial = find.descendant(
+      of: celdasIniciales.first,
+      matching: find.byType(MenuCasillaWidget),
+    );
+    expect(
+      tester.widget<MenuCasillaWidget>(menuDeCasillaInicial).esInsertable,
+      isFalse,
+    );
+
+    await tester.tap(celdasIniciales.first);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Borrar'), findsNothing);
   });
 
   group('Validación de reglas por tipo de región', () {
@@ -209,6 +254,8 @@ void main() {
       expect(bloc.estado.noHayRepetidos, isTrue);
       expect(bloc.estado.puedeAvanzar, isTrue);
       expect(bloc.avanzar(), isTrue);
+      expect(bloc.estado.confirmado, isTrue);
+      expect(bloc.estado.puedeAvanzar, isFalse);
     });
 
     test('No permite avanzar con valores iniciales repetidos', () {

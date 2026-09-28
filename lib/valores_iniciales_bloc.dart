@@ -5,10 +5,12 @@ import 'tablero.dart';
 class ValoresInicialesEstado {
   final List<int?> valores;
   final String? mensajeError;
+  final bool confirmado;
 
   const ValoresInicialesEstado({
     required this.valores,
     this.mensajeError,
+    this.confirmado = false,
   });
 
   // Indica si todas las celdas iniciales ya tienen un numero.
@@ -20,12 +22,14 @@ class ValoresInicialesEstado {
     return valoresDefinidos.length == valores.whereType<int>().length;
   }
 
-  bool get puedeAvanzar => estanCompletos && noHayRepetidos;
+  bool get puedeAvanzar =>
+      !confirmado && estanCompletos && noHayRepetidos;
 }
 
 class ValoresInicialesBloc extends ChangeNotifier {
   final Tablero tablero;
   String? _mensajeError;
+  bool _confirmado = false;
 
   ValoresInicialesBloc(this.tablero);
 
@@ -40,6 +44,7 @@ class ValoresInicialesBloc extends ChangeNotifier {
           tablero.celdasIniciales.map((celda) => celda.numero),
         ),
         mensajeError: _mensajeError,
+        confirmado: _confirmado,
       );
 
   // Lee el estado actual y decide si el juego puede continuar.
@@ -54,6 +59,11 @@ class ValoresInicialesBloc extends ChangeNotifier {
 
     if (estadoActual.puedeAvanzar) {
       _mensajeError = null;
+      _confirmado = true;
+      for (final celda in tablero.celdasIniciales) {
+        celda.esInsertable = false;
+      }
+      notifyListeners();
       return true;
     }
 
