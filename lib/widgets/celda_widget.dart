@@ -28,9 +28,10 @@ class CeldaWidget extends StatelessWidget {
       create: (_) => NumeroCeldaBloc(celda, onCambio: onNumeroCambiado),
       child: BlocBuilder<NumeroCeldaBloc, NumeroCeldaEstado>(
         builder: (context, estado) {
+          final colores = Theme.of(context).colorScheme;
           final colorDeFondo = region == null
-              ? Theme.of(context).colorScheme.surfaceContainerHighest
-              : Color.lerp(Colors.white, region!.tipo.color, 0.25)!;
+              ? colores.surfaceContainerHighest
+              : Color.lerp(Colors.white, region!.tipo.color, 0.35)!;
 
           return MenuCasillaWidget(
             esInsertable: celda.esInsertable,
@@ -40,19 +41,23 @@ class CeldaWidget extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: colorDeFondo,
-                border: Border.all(
-                  color: esInicial
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).colorScheme.outlineVariant,
-                  width: esInicial ? 2 : 1,
-                ),
+                borderRadius: BorderRadius.circular(6),
+                border: esInicial
+                    ? Border.all(color: colores.onSurface, width: 2)
+                    : null,
               ),
-              child: Text(
-                estado.numero?.toString() ?? '',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight:
-                          esInicial ? FontWeight.bold : FontWeight.normal,
-                    ),
+              child: FittedBox(
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Text(
+                    estado.numero?.toString() ?? '',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.black87,
+                          fontWeight:
+                              esInicial ? FontWeight.w800 : FontWeight.w500,
+                        ),
+                  ),
+                ),
               ),
             ),
           );

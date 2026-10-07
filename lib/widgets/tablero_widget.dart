@@ -21,8 +21,11 @@ class TableroWidget extends StatelessWidget {
       aspectRatio: tablero.columnas / tablero.filas,
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: tablero.columnas,
+          mainAxisSpacing: 3,
+          crossAxisSpacing: 3,
         ),
         itemCount: tablero.filas * tablero.columnas,
         itemBuilder: (context, indice) {

@@ -28,6 +28,7 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      borderRadius: BorderRadius.circular(6),
       onTap: widget.esInsertable
           ? () {
               widget.onTap?.call();
