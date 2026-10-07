@@ -100,9 +100,12 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
               widget.bloc.add(const NumeroCeldaBorrado());
               Navigator.of(dialogContext).pop();
             },
+            style: IconButton.styleFrom(
+              backgroundColor: const Color.fromRGBO(40, 40, 40, 0.92),
+            ),
             icon: Icon(
               Icons.backspace_outlined,
-              color: Colors.grey.shade700,
+              color: Colors.grey.shade300,
             ),
           ),
         ],
@@ -125,12 +128,12 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
             Navigator.of(dialogContext).pop();
           },
           style: TextButton.styleFrom(
-            backgroundColor: const Color.fromRGBO(210, 210, 210, 0.72),
-            foregroundColor: Colors.grey.shade900,
+            backgroundColor: const Color.fromRGBO(40, 40, 40, 0.92),
+            foregroundColor: Colors.white,
             shape: const CircleBorder(),
             padding: EdgeInsets.zero,
             side: const BorderSide(
-              color: Color.fromRGBO(120, 120, 120, 0.72),
+              color: Color.fromRGBO(140, 140, 140, 0.8),
               width: 2,
             ),
             elevation: 2,

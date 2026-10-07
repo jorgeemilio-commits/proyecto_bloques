@@ -4,7 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../numero_celda_bloc.dart';
 import '../region.dart';
 import '../tablero.dart';
+import '../tipo.dart';
 import 'menu_casilla_widget.dart';
+
+// Color de una casilla segun el tipo de su region, mezclado con gris oscuro
+// para que no deslumbre sobre el fondo negro.
+Color colorDeRegion(TipoRegion tipo) =>
+    Color.lerp(const Color(0xFF2A2A2A), tipo.color, 0.5)!;
 
 class CeldaWidget extends StatelessWidget {
   final Celda celda;
@@ -31,7 +37,11 @@ class CeldaWidget extends StatelessWidget {
           final colores = Theme.of(context).colorScheme;
           final colorDeFondo = region == null
               ? colores.surfaceContainerHighest
-              : Color.lerp(Colors.white, region!.tipo.color, 0.35)!;
+              : colorDeRegion(region!.tipo);
+          // En los colores claros (amarillo, verde) el texto va en negro.
+          final colorDeTexto = colorDeFondo.computeLuminance() > 0.2
+              ? Colors.black87
+              : Colors.white;
 
           return MenuCasillaWidget(
             esInsertable: celda.esInsertable,
@@ -52,7 +62,7 @@ class CeldaWidget extends StatelessWidget {
                   child: Text(
                     estado.numero?.toString() ?? '',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.black87,
+                          color: colorDeTexto,
                           fontWeight:
                               esInicial ? FontWeight.w800 : FontWeight.w500,
                         ),

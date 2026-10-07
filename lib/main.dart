@@ -4,6 +4,7 @@ import 'region.dart';
 import 'tablero.dart';
 import 'tipo.dart';
 import 'valores_iniciales_bloc.dart';
+import 'widgets/celda_widget.dart';
 import 'widgets/tablero_widget.dart';
 
 // Ancho maximo del contenido para que la app se vea como en un telefono
@@ -23,7 +24,14 @@ class ProyectoBloquesApp extends StatelessWidget {
       title: 'Proyecto Bloques',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+        ).copyWith(
+          // Fondo negro grisaceo y tarjetas un poco mas claras.
+          surfaceContainerLow: const Color(0xFF2B2B2E),
+          surface: const Color(0xFF38383C),
+        ),
         useMaterial3: true,
       ),
       home: const VistaPreviaTablero(),
@@ -254,7 +262,7 @@ class _LeyendaRegiones extends StatelessWidget {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Color.lerp(Colors.white, tipo.color, 0.45),
+                  color: colorDeRegion(tipo),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
