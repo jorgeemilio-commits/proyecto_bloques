@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'dados_bloc.dart';
 import 'region.dart';
 import 'tablero.dart';
 import 'tipo.dart';
 import 'valores_iniciales_bloc.dart';
 import 'widgets/celda_widget.dart';
+import 'widgets/dados_widget.dart';
 import 'widgets/tablero_widget.dart';
 
 // Ancho maximo del contenido para que la app se vea como en un telefono
@@ -49,6 +51,7 @@ class VistaPreviaTablero extends StatefulWidget {
 class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   late final Tablero _tablero;
   late final ValoresInicialesBloc _valoresInicialesBloc;
+  final DadosBloc _dadosBloc = DadosBloc();
 
   @override
   void initState() {
@@ -65,6 +68,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   @override
   void dispose() {
     _valoresInicialesBloc.dispose();
+    _dadosBloc.close();
     super.dispose();
   }
 
@@ -117,7 +121,11 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                       const SizedBox(height: 12),
                       const _LeyendaRegiones(),
                       const SizedBox(height: 16),
-                      _botonListo(estado),
+                      // Al confirmar los valores iniciales inicia la partida
+                      // y el boton Listo se cambia por los dados.
+                      estado.confirmado
+                          ? DadosWidget(bloc: _dadosBloc)
+                          : _botonListo(estado),
                     ],
                   ),
                 );
@@ -142,24 +150,10 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
-          backgroundColor: estado.confirmado ? Colors.grey.shade500 : null,
-          foregroundColor: estado.confirmado ? Colors.white : null,
-          disabledBackgroundColor:
-              estado.confirmado ? Colors.grey.shade500 : null,
-          disabledForegroundColor: estado.confirmado ? Colors.white : null,
         ),
+        // avanzar() notifica al AnimatedBuilder, que redibuja la pantalla.
         onPressed: estado.puedeAvanzar
-            ? () {
-                if (_valoresInicialesBloc.avanzar()) {
-                  setState(() {});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      content: Text('Valores iniciales correctos.'),
-                    ),
-                  );
-                }
-              }
+            ? () => _valoresInicialesBloc.avanzar()
             : null,
         child: const Text('Listo'),
       ),

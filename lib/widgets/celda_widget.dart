@@ -7,10 +7,13 @@ import '../tablero.dart';
 import '../tipo.dart';
 import 'menu_casilla_widget.dart';
 
-// Color de una casilla segun el tipo de su region, mezclado con gris oscuro
-// para que no deslumbre sobre el fondo negro.
-Color colorDeRegion(TipoRegion tipo) =>
-    Color.lerp(const Color(0xFF2A2A2A), tipo.color, 0.5)!;
+// Color de una casilla segun el tipo de su region: conserva el tono pero con
+// saturacion y luminosidad fijas, para que se vea desaturado sobre el fondo
+// oscuro y el texto blanco se lea bien en todos los colores.
+Color colorDeRegion(TipoRegion tipo) => HSLColor.fromColor(tipo.color)
+    .withSaturation(0.4)
+    .withLightness(0.4)
+    .toColor();
 
 class CeldaWidget extends StatelessWidget {
   final Celda celda;
@@ -38,10 +41,7 @@ class CeldaWidget extends StatelessWidget {
           final colorDeFondo = region == null
               ? colores.surfaceContainerHighest
               : colorDeRegion(region!.tipo);
-          // En los colores claros (amarillo, verde) el texto va en negro.
-          final colorDeTexto = colorDeFondo.computeLuminance() > 0.2
-              ? Colors.black87
-              : Colors.white;
+          const colorDeTexto = Colors.white;
 
           return MenuCasillaWidget(
             esInsertable: celda.esInsertable,
@@ -53,21 +53,49 @@ class CeldaWidget extends StatelessWidget {
                 color: colorDeFondo,
                 borderRadius: BorderRadius.circular(6),
                 border: esInicial
-                    ? Border.all(color: colores.onSurface, width: 2)
+                    ? Border.all(
+                        color: colores.onSurface.withValues(alpha: 0.25),
+                      )
                     : null,
               ),
-              child: FittedBox(
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: Text(
-                    estado.numero?.toString() ?? '',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: colorDeTexto,
-                          fontWeight:
-                              esInicial ? FontWeight.w800 : FontWeight.w500,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final numero = FittedBox(
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Text(
+                        estado.numero?.toString() ?? '',
+                        style:
+                            Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: colorDeTexto,
+                                  fontWeight: esInicial
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                ),
+                      ),
+                    ),
+                  );
+
+                  if (!esInicial) {
+                    return Center(child: numero);
+                  }
+
+                  // Estrella en la esquina, como en el tablero del juego de mesa.
+                  return Stack(
+                    children: [
+                      Center(child: numero),
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: Icon(
+                          Icons.star_rounded,
+                          size: constraints.maxWidth * 0.28,
+                          color: colorDeTexto.withValues(alpha: 0.75),
                         ),
-                  ),
-                ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           );

@@ -90,14 +90,9 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Listo'));
     await tester.pumpAndSettle();
 
-    final botonListo = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Listo'),
-    );
-    expect(botonListo.onPressed, isNull);
-    expect(
-      botonListo.style!.backgroundColor!.resolve({WidgetState.disabled}),
-      Colors.grey.shade500,
-    );
+    // Al iniciar la partida el boton Listo se cambia por los dados.
+    expect(find.text('Listo'), findsNothing);
+    expect(find.text('Tirar dados'), findsOneWidget);
     expect(find.text('Valores iniciales confirmados.'), findsOneWidget);
 
     final menuDeCasillaInicial = find.descendant(

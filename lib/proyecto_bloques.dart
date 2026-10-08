@@ -1,3 +1,4 @@
+export 'dados_bloc.dart';
 export 'region.dart';
 export 'tablero.dart';
 export 'tipo.dart';
