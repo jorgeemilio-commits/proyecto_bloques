@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/numero_celda_bloc.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
+import 'consola.dart';
 
 void main() {
   testWidgets('muestra una celda inicial con su numero', (tester) async {
@@ -11,24 +12,18 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: CeldaWidget(
-            celda: celda,
-            region: null,
-            esInicial: true,
-          ),
+          body: CeldaWidget(celda: celda, region: null, esInicial: true),
         ),
       ),
     );
 
     expect(find.text('4'), findsOneWidget);
+    mostrar('La celda inicial muestra el numero ${celda.numero}.');
   });
 
   testWidgets('permite reaccionar al toque', (tester) async {
     var fuePulsada = false;
-    final celda = Celda(
-      coordenada: const Coordenada(1, 1),
-      esInsertable: true,
-    );
+    final celda = Celda(coordenada: const Coordenada(1, 1), esInsertable: true);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -45,22 +40,17 @@ void main() {
     await tester.tap(find.byType(CeldaWidget));
 
     expect(fuePulsada, isTrue);
+    mostrar('Toque recibido en la celda insertable: $fuePulsada.');
   });
 
-  testWidgets('permite insertar un numero mediante el selector', (tester) async {
-    final celda = Celda(
-      coordenada: const Coordenada(0, 0),
-      esInsertable: true,
-    );
+  testWidgets('permite insertar un numero mediante el selector', (
+    tester,
+  ) async {
+    final celda = Celda(coordenada: const Coordenada(0, 0), esInsertable: true);
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: CeldaWidget(
-            celda: celda,
-            region: null,
-          ),
-        ),
+        home: Scaffold(body: CeldaWidget(celda: celda, region: null)),
       ),
     );
 
@@ -74,6 +64,7 @@ void main() {
 
     expect(celda.numero, 5);
     expect(find.text('5'), findsOneWidget);
+    mostrar('Numero elegido en el menu radial: ${celda.numero}.');
   });
 
   testWidgets('no permite editar una celda que no es inicial', (tester) async {
@@ -99,6 +90,7 @@ void main() {
     expect(find.text('1'), findsNothing);
     expect(find.byTooltip('Borrar'), findsNothing);
     expect(celda.numero, isNull);
+    mostrar('Celda no insertable: toque=$fuePulsada, numero=${celda.numero}.');
   });
 
   test('el bloc rechaza insertar y borrar en una celda no insertable', () async {
@@ -110,5 +102,8 @@ void main() {
     await bloc.close();
 
     expect(celda.numero, 4);
+    mostrar(
+      'El bloc ignoro insertar 2 y borrar; la celda conserva ${celda.numero}.',
+    );
   });
 }

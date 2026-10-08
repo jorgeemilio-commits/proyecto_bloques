@@ -10,10 +10,9 @@ import 'menu_casilla_widget.dart';
 // Color de una casilla segun el tipo de su region: conserva el tono pero con
 // saturacion y luminosidad fijas, para que se vea desaturado sobre el fondo
 // oscuro y el texto blanco se lea bien en todos los colores.
-Color colorDeRegion(TipoRegion tipo) => HSLColor.fromColor(tipo.color)
-    .withSaturation(0.4)
-    .withLightness(0.4)
-    .toColor();
+Color colorDeRegion(TipoRegion tipo) => HSLColor.fromColor(
+  tipo.color,
+).withSaturation(0.4).withLightness(0.4).toColor();
 
 class CeldaWidget extends StatelessWidget {
   final Celda celda;
@@ -21,6 +20,10 @@ class CeldaWidget extends StatelessWidget {
   final bool esInicial;
   final VoidCallback? onTap;
   final VoidCallback? onNumeroCambiado;
+  // Indica si el dado que se esta arrastrando se puede soltar aqui.
+  final bool esDestinoValido;
+  // Se llama con el indice del dado (0 o 1) cuando se suelta sobre la celda.
+  final ValueChanged<int>? onDadoSoltado;
 
   const CeldaWidget({
     super.key,
@@ -29,6 +32,8 @@ class CeldaWidget extends StatelessWidget {
     this.esInicial = false,
     this.onTap,
     this.onNumeroCambiado,
+    this.esDestinoValido = false,
+    this.onDadoSoltado,
   });
 
   @override
@@ -36,70 +41,82 @@ class CeldaWidget extends StatelessWidget {
     return BlocProvider(
       create: (_) => NumeroCeldaBloc(celda, onCambio: onNumeroCambiado),
       child: BlocBuilder<NumeroCeldaBloc, NumeroCeldaEstado>(
-        builder: (context, estado) {
-          final colores = Theme.of(context).colorScheme;
-          final colorDeFondo = region == null
-              ? colores.surfaceContainerHighest
-              : colorDeRegion(region!.tipo);
-          const colorDeTexto = Colors.white;
+        builder: (context, _) => DragTarget<int>(
+          onWillAcceptWithDetails: (_) => esDestinoValido,
+          onAcceptWithDetails: (detalles) => onDadoSoltado?.call(detalles.data),
+          builder: (context, candidatos, _) =>
+              _construirCelda(context, dadoEncima: candidatos.isNotEmpty),
+        ),
+      ),
+    );
+  }
 
-          return MenuCasillaWidget(
-            esInsertable: celda.esInsertable,
-            bloc: context.read<NumeroCeldaBloc>(),
-            onTap: onTap,
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: colorDeFondo,
-                borderRadius: BorderRadius.circular(6),
-                border: esInicial
-                    ? Border.all(
-                        color: colores.onSurface.withValues(alpha: 0.25),
-                      )
-                    : null,
+  Widget _construirCelda(BuildContext context, {required bool dadoEncima}) {
+    final colores = Theme.of(context).colorScheme;
+    final colorBase = region == null
+        ? colores.surfaceContainerHighest
+        : colorDeRegion(region!.tipo);
+    // La casilla bajo el dado se aclara para indicar donde caera.
+    final colorDeFondo = dadoEncima
+        ? Color.lerp(colorBase, Colors.white, 0.3)!
+        : colorBase;
+    const colorDeTexto = Colors.white;
+
+    return MenuCasillaWidget(
+      esInsertable: celda.esInsertable,
+      bloc: context.read<NumeroCeldaBloc>(),
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: colorDeFondo,
+          borderRadius: BorderRadius.circular(6),
+          // Las casillas validas se marcan con borde blanco mientras se
+          // arrastra un dado.
+          border: esDestinoValido
+              ? Border.all(color: Colors.white, width: 2)
+              : esInicial
+              ? Border.all(color: colores.onSurface.withValues(alpha: 0.25))
+              : null,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final numero = FittedBox(
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Text(
+                  // Se lee de la celda porque el numero tambien puede
+                  // llegar desde un dado, no solo desde el menu.
+                  celda.numero?.toString() ?? '',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: colorDeTexto,
+                    fontWeight: esInicial ? FontWeight.w800 : FontWeight.w500,
+                  ),
+                ),
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final numero = FittedBox(
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: Text(
-                        estado.numero?.toString() ?? '',
-                        style:
-                            Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: colorDeTexto,
-                                  fontWeight: esInicial
-                                      ? FontWeight.w800
-                                      : FontWeight.w500,
-                                ),
-                      ),
-                    ),
-                  );
+            );
 
-                  if (!esInicial) {
-                    return Center(child: numero);
-                  }
+            if (!esInicial) {
+              return Center(child: numero);
+            }
 
-                  // Estrella en la esquina, como en el tablero del juego de mesa.
-                  return Stack(
-                    children: [
-                      Center(child: numero),
-                      Positioned(
-                        top: 2,
-                        left: 2,
-                        child: Icon(
-                          Icons.star_rounded,
-                          size: constraints.maxWidth * 0.28,
-                          color: colorDeTexto.withValues(alpha: 0.75),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          );
-        },
+            // Estrella en la esquina, como en el tablero del juego de mesa.
+            return Stack(
+              children: [
+                Center(child: numero),
+                Positioned(
+                  top: 2,
+                  left: 2,
+                  child: Icon(
+                    Icons.star_rounded,
+                    size: constraints.maxWidth * 0.28,
+                    color: colorDeTexto.withValues(alpha: 0.75),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

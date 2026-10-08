@@ -77,6 +77,51 @@ class Tablero {
     return null;
   }
 
+  // Devuelve las celdas de arriba, abajo, izquierda y derecha que existen.
+  List<Celda> vecinas(Celda celda) {
+    final x = celda.coordenada.x;
+    final y = celda.coordenada.y;
+
+    return [
+      for (final (dx, dy) in const [(0, -1), (0, 1), (-1, 0), (1, 0)])
+        if (x + dx >= 0 && x + dx < columnas && y + dy >= 0 && y + dy < filas)
+          celdas[y + dy][x + dx],
+    ];
+  }
+
+  // Numeros que ya estan colocados dentro de una region.
+  List<int> numerosEnRegion(Region region) => [
+        for (final coordenada in region.coordenadas)
+          ?obtenerCelda(coordenada).numero,
+      ];
+
+  // Indica si se puede colocar [numero] en [destino] usando [ancla]:
+  // el destino debe estar vacio, tener al lado una casilla con el numero del
+  // ancla y respetar la regla del color de su region.
+  bool puedeColocar(Celda destino, {required int numero, required int ancla}) {
+    if (destino.numero != null) {
+      return false;
+    }
+
+    final tieneAnclaAlLado = vecinas(destino).any(
+      (vecina) => vecina.numero == ancla,
+    );
+    if (!tieneAnclaAlLado) {
+      return false;
+    }
+
+    final region = obtenerRegion(destino.coordenada);
+    return region == null ||
+        region.tipo.esPosibleAgregar(numerosEnRegion(region), numero);
+  }
+
+  // Todas las celdas donde se puede colocar [numero] usando [ancla].
+  Set<Celda> destinosValidos({required int numero, required int ancla}) => {
+        for (final fila in celdas)
+          for (final celda in fila)
+            if (puedeColocar(celda, numero: numero, ancla: ancla)) celda,
+      };
+
   // Crea una matriz de celdas vacias con las dimensiones solicitadas.
   static List<List<Celda>> _crearCeldas(
     int filas,

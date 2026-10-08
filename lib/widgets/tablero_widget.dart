@@ -7,12 +7,18 @@ class TableroWidget extends StatelessWidget {
   final Tablero tablero;
   final ValueChanged<Celda>? onCeldaTap;
   final VoidCallback? onNumeroCambiado;
+  // Celdas donde se puede soltar el dado que se esta arrastrando.
+  final Set<Celda> destinosValidos;
+  // Se llama cuando se suelta el dado [indiceDado] sobre una celda.
+  final void Function(Celda celda, int indiceDado)? onDadoSoltado;
 
   const TableroWidget({
     super.key,
     required this.tablero,
     this.onCeldaTap,
     this.onNumeroCambiado,
+    this.destinosValidos = const {},
+    this.onDadoSoltado,
   });
 
   @override
@@ -39,6 +45,10 @@ class TableroWidget extends StatelessWidget {
             esInicial: tablero.celdasIniciales.contains(celda),
             onTap: onCeldaTap == null ? null : () => onCeldaTap!(celda),
             onNumeroCambiado: onNumeroCambiado,
+            esDestinoValido: destinosValidos.contains(celda),
+            onDadoSoltado: onDadoSoltado == null
+                ? null
+                : (indiceDado) => onDadoSoltado!(celda, indiceDado),
           );
         },
       ),

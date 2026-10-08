@@ -4,20 +4,17 @@ import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/menu_casilla_widget.dart';
+import 'consola.dart';
 
 Tablero crearTableroDePrueba() {
-  return Tablero.desdeRegiones(
-    filas: 7,
-    columnas: 7,
-    regiones: const [],
-  );
+  return Tablero.desdeRegiones(filas: 7, columnas: 7, regiones: const []);
 }
 
 void main() {
-  testWidgets('muestra las reglas y desactiva Listo al iniciar', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: VistaPreviaTablero()),
-    );
+  testWidgets('muestra las reglas y desactiva Listo al iniciar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
 
     expect(
       find.text(
@@ -26,54 +23,57 @@ void main() {
       findsOneWidget,
     );
     expect(
-      tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Listo'))
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Listo'))
           .onPressed,
       isNull,
     );
+    mostrar('Al iniciar, Listo esta desactivado y se muestra la instruccion.');
   });
 
-  testWidgets('habilita Listo con valores distintos y lo bloquea al repetirlos',
-      (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: VistaPreviaTablero()),
-    );
+  testWidgets(
+    'habilita Listo con valores distintos y lo bloquea al repetirlos',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
 
-    final celdasIniciales = find.byWidgetPredicate(
-      (widget) => widget is CeldaWidget && widget.esInicial,
-    );
-    const numerosUnicos = [1, 2, 3, 5, 6];
+      final celdasIniciales = find.byWidgetPredicate(
+        (widget) => widget is CeldaWidget && widget.esInicial,
+      );
+      const numerosUnicos = [1, 2, 3, 5, 6];
 
-    for (var indice = 0; indice < numerosUnicos.length; indice++) {
-      await tester.tap(celdasIniciales.at(indice + 1));
+      for (var indice = 0; indice < numerosUnicos.length; indice++) {
+        await tester.tap(celdasIniciales.at(indice + 1));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('${numerosUnicos[indice]}').last);
+        await tester.pumpAndSettle();
+      }
+
+      var botonListo = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Listo'),
+      );
+      expect(botonListo.onPressed, isNotNull);
+
+      await tester.tap(celdasIniciales.last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('${numerosUnicos[indice]}').last);
+      await tester.tap(find.text('4').last);
       await tester.pumpAndSettle();
-    }
 
-    var botonListo = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Listo'),
-    );
-    expect(botonListo.onPressed, isNotNull);
-
-    await tester.tap(celdasIniciales.last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('4').last);
-    await tester.pumpAndSettle();
-
-    botonListo = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Listo'),
-    );
-    expect(botonListo.onPressed, isNull);
-    expect(
-      find.text('Las casillas iniciales deben tener números distintos.'),
-      findsOneWidget,
-    );
-  });
+      botonListo = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Listo'),
+      );
+      expect(botonListo.onPressed, isNull);
+      expect(
+        find.text('Las casillas iniciales deben tener números distintos.'),
+        findsOneWidget,
+      );
+      mostrar(
+        'Con 4,1,2,3,5,6 Listo se habilita; al repetir el 4 se desactiva.',
+      );
+    },
+  );
 
   testWidgets('Listo bloquea las casillas iniciales', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: VistaPreviaTablero()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
 
     final celdasIniciales = find.byWidgetPredicate(
       (widget) => widget is CeldaWidget && widget.esInicial,
@@ -92,8 +92,8 @@ void main() {
 
     // Al iniciar la partida el boton Listo se cambia por los dados.
     expect(find.text('Listo'), findsNothing);
-    expect(find.text('Tirar dados'), findsOneWidget);
-    expect(find.text('Valores iniciales confirmados.'), findsOneWidget);
+    expect(find.text('Pasar'), findsOneWidget);
+    expect(find.text('Turno 1'), findsOneWidget);
 
     final menuDeCasillaInicial = find.descendant(
       of: celdasIniciales.first,
@@ -107,6 +107,7 @@ void main() {
     await tester.tap(celdasIniciales.first);
     await tester.pumpAndSettle();
     expect(find.byTooltip('Borrar'), findsNothing);
+    mostrar('Tras Listo: casillas iniciales bloqueadas y empieza el Turno 1.');
   });
 
   group('Validación de reglas por tipo de región', () {
@@ -115,6 +116,9 @@ void main() {
       expect(TipoRegion.rojo.esPosibleAgregar([1, 2, 3], 4), isTrue);
       expect(TipoRegion.rojo.esPosibleAgregar([1, 2, 3, 4], 4), isFalse);
       expect(TipoRegion.rojo.esPosibleAgregar([1, 2, 4, 4], 5), isFalse);
+      mostrar(
+        'Rojo: [1,2,3]+4 -> ${TipoRegion.rojo.esPosibleAgregar([1, 2, 3], 4)}, [1,2,3,4]+4 -> ${TipoRegion.rojo.esPosibleAgregar([1, 2, 3, 4], 4)}.',
+      );
     });
 
     test('Azul exige que todos los valores sean iguales', () {
@@ -122,6 +126,9 @@ void main() {
       expect(TipoRegion.azul.esPosibleAgregar([2, 2], 2), isTrue);
       expect(TipoRegion.azul.esPosibleAgregar([2, 2], 4), isFalse);
       expect(TipoRegion.azul.esPosibleAgregar([4, 4, 4, 4], 4), isTrue);
+      mostrar(
+        'Azul: [2,2]+2 -> ${TipoRegion.azul.esPosibleAgregar([2, 2], 2)}, [2,2]+4 -> ${TipoRegion.azul.esPosibleAgregar([2, 2], 4)}.',
+      );
     });
 
     test('Verde siempre acepta cualquier valor', () {
@@ -129,6 +136,9 @@ void main() {
       expect(TipoRegion.verde.esPosibleAgregar([1, 2, 3], 4), isTrue);
       expect(TipoRegion.verde.esPosibleAgregar([4, 4, 4, 4], 5), isTrue);
       expect(TipoRegion.verde.esPosibleAgregar([1, 1, 1, 1], 1), isTrue);
+      mostrar(
+        'Verde: [4,4,4,4]+5 -> ${TipoRegion.verde.esPosibleAgregar([4, 4, 4, 4], 5)}.',
+      );
     });
 
     test('Lila permite hasta dos números diferentes', () {
@@ -137,6 +147,9 @@ void main() {
       expect(TipoRegion.lila.esPosibleAgregar([1, 1, 2], 2), isTrue);
       expect(TipoRegion.lila.esPosibleAgregar([1, 2], 3), isFalse);
       expect(TipoRegion.lila.esPosibleAgregar([1, 2, 3], 1), isFalse);
+      mostrar(
+        'Lila: [1,1,2]+2 -> ${TipoRegion.lila.esPosibleAgregar([1, 1, 2], 2)}, [1,2]+3 -> ${TipoRegion.lila.esPosibleAgregar([1, 2], 3)}.',
+      );
     });
   });
 
@@ -147,6 +160,9 @@ void main() {
       expect(const RegionVerdeUno().tipo, TipoRegion.verde);
       expect(const RegionLilaUno().tipo, TipoRegion.lila);
       expect(const RegionAmarilla().tipo, TipoRegion.amarillo);
+      mostrar(
+        'Tipos: azul, rojo, verde, lila y amarillo asignados a sus regiones.',
+      );
     });
 
     test('Los colores de los tipos coinciden con los esperados', () {
@@ -155,6 +171,7 @@ void main() {
       expect(TipoRegion.rojo.color, const Color(0xFFFF0000));
       expect(TipoRegion.verde.color, const Color(0xFF00FF00));
       expect(TipoRegion.lila.color, const Color(0xFF800080));
+      mostrar('Colores base verificados para los 5 tipos de region.');
     });
   });
 
@@ -167,6 +184,7 @@ void main() {
       expect(regionAzul.coordenadas, contains(const Coordenada(2, 0)));
       expect(regionRoja.coordenadas, contains(const Coordenada(1, 2)));
       expect(regionAmarilla.coordenadas, contains(const Coordenada(3, 3)));
+      mostrar('(2,0) en azul, (1,2) en roja y (3,3) en amarilla.');
     });
 
     test('Tablero construye celdas y conserva las regiones por separado', () {
@@ -216,8 +234,10 @@ void main() {
       expect(tablero.celdas[2][1].coordenada.y, 2);
       expect(tablero.celdas[3][3].coordenada.x, 3);
       expect(tablero.celdas[3][3].coordenada.y, 3);
+      mostrar(
+        'Tablero ${tablero.filas}x${tablero.columnas}, ${tablero.celdasIniciales.length} iniciales, ${tablero.regiones.length} regiones.',
+      );
     });
-
   });
 
   group('Valores iniciales', () {
@@ -232,6 +252,9 @@ void main() {
       expect(
         bloc.estado.mensajeError,
         'Debes completar las seis celdas iniciales.',
+      );
+      mostrar(
+        'Valores ${bloc.estado.valores} -> "${bloc.estado.mensajeError}"',
       );
     });
 
@@ -251,6 +274,9 @@ void main() {
       expect(bloc.avanzar(), isTrue);
       expect(bloc.estado.confirmado, isTrue);
       expect(bloc.estado.puedeAvanzar, isFalse);
+      mostrar(
+        'Valores ${bloc.estado.valores} -> confirmado: ${bloc.estado.confirmado}.',
+      );
     });
 
     test('No permite avanzar con valores iniciales repetidos', () {
@@ -270,7 +296,9 @@ void main() {
         bloc.estado.mensajeError,
         'Los valores iniciales no pueden repetirse.',
       );
+      mostrar(
+        'Valores ${bloc.estado.valores} -> "${bloc.estado.mensajeError}"',
+      );
     });
-
   });
 }
