@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 
 import 'tablero.dart';
@@ -36,6 +38,24 @@ class ValoresInicialesBloc extends ChangeNotifier {
   void notificarCambio() {
     _mensajeError = null;
     notifyListeners();
+  }
+
+  // Llena las casillas iniciales con los numeros del 1 al 6 en orden
+  // aleatorio, sin repetidos. Se puede pasar un Random para las pruebas.
+  void llenarAleatorio([Random? azar]) {
+    if (_confirmado) {
+      return;
+    }
+
+    final numeros = [
+      for (var numero = 1; numero <= tablero.celdasIniciales.length; numero++)
+        numero,
+    ]..shuffle(azar);
+
+    for (var indice = 0; indice < numeros.length; indice++) {
+      tablero.celdasIniciales[indice].numero = numeros[indice];
+    }
+    notificarCambio();
   }
 
   // Crea una fotografia de los numeros actuales de las celdas iniciales.

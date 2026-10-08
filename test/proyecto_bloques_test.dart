@@ -32,7 +32,7 @@ void main() {
   });
 
   testWidgets(
-    'habilita Listo con valores distintos y lo bloquea al repetirlos',
+    'habilita Listo con valores distintos y la rueda oculta los ya usados',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
 
@@ -48,26 +48,26 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      var botonListo = tester.widget<FilledButton>(
+      final botonListo = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Listo'),
       );
       expect(botonListo.onPressed, isNotNull);
 
+      // La ultima casilla tiene el 6: su rueda solo ofrece el 6, porque los
+      // demas numeros ya estan en otras casillas iniciales.
       await tester.tap(celdasIniciales.last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('4').last);
-      await tester.pumpAndSettle();
 
-      botonListo = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Listo'),
-      );
-      expect(botonListo.onPressed, isNull);
-      expect(
-        find.text('Las casillas iniciales deben tener números distintos.'),
-        findsOneWidget,
-      );
+      final ofrecidos = [
+        for (var numero = 1; numero <= 6; numero++)
+          // Cada numero aparece una vez en el tablero; si aparece dos veces,
+          // la otra es su boton en la rueda.
+          if (find.text('$numero').evaluate().length == 2) numero,
+      ];
+      expect(ofrecidos, [6]);
       mostrar(
-        'Con 4,1,2,3,5,6 Listo se habilita; al repetir el 4 se desactiva.',
+        'Con 4,1,2,3,5,6 Listo se habilita; la rueda de la ultima casilla '
+        'solo ofrece $ofrecidos.',
       );
     },
   );

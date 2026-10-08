@@ -9,6 +9,9 @@ class MenuCasillaWidget extends StatefulWidget {
   final bool esInsertable;
   final NumeroCeldaBloc bloc;
   final VoidCallback? onTap;
+  // Numeros que no se ofrecen en la rueda (por ejemplo, los que ya estan en
+  // otras casillas iniciales).
+  final Set<int> numerosOcultos;
 
   const MenuCasillaWidget({
     super.key,
@@ -16,6 +19,7 @@ class MenuCasillaWidget extends StatefulWidget {
     required this.esInsertable,
     required this.bloc,
     this.onTap,
+    this.numerosOcultos = const {},
   });
 
   @override
@@ -116,8 +120,10 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
           return Stack(
             alignment: Alignment.center,
             children: [
+              // Cada numero conserva su lugar en la rueda aunque falten otros.
               for (var numero = 1; numero <= 6; numero++)
-                _botonRadial(dialogContext, numero, progreso),
+                if (!widget.numerosOcultos.contains(numero))
+                  _botonRadial(dialogContext, numero, progreso),
               Opacity(
                 opacity: animacion.value,
                 child: IconButton(

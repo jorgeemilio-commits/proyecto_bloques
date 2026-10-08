@@ -38,11 +38,20 @@ class TableroWidget extends StatelessWidget {
           final fila = indice ~/ tablero.columnas;
           final columna = indice % tablero.columnas;
           final celda = tablero.celdas[fila][columna];
+          final esInicial = tablero.celdasIniciales.contains(celda);
 
           return CeldaWidget(
             celda: celda,
             region: tablero.obtenerRegion(celda.coordenada),
-            esInicial: tablero.celdasIniciales.contains(celda),
+            esInicial: esInicial,
+            // En una casilla inicial no se ofrecen los numeros que ya estan
+            // en las otras casillas iniciales.
+            numerosOcultos: esInicial
+                ? {
+                    for (final otra in tablero.celdasIniciales)
+                      if (otra != celda) ?otra.numero,
+                  }
+                : const {},
             onTap: onCeldaTap == null ? null : () => onCeldaTap!(celda),
             onNumeroCambiado: onNumeroCambiado,
             esDestinoValido: destinosValidos.contains(celda),

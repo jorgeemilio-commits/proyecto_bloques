@@ -24,6 +24,8 @@ class CeldaWidget extends StatelessWidget {
   final bool esDestinoValido;
   // Se llama con el indice del dado (0 o 1) cuando se suelta sobre la celda.
   final ValueChanged<int>? onDadoSoltado;
+  // Numeros que no se ofrecen en la rueda de esta celda.
+  final Set<int> numerosOcultos;
 
   const CeldaWidget({
     super.key,
@@ -34,6 +36,7 @@ class CeldaWidget extends StatelessWidget {
     this.onNumeroCambiado,
     this.esDestinoValido = false,
     this.onDadoSoltado,
+    this.numerosOcultos = const {},
   });
 
   @override
@@ -66,6 +69,7 @@ class CeldaWidget extends StatelessWidget {
       esInsertable: celda.esInsertable,
       bloc: context.read<NumeroCeldaBloc>(),
       onTap: onTap,
+      numerosOcultos: numerosOcultos,
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(

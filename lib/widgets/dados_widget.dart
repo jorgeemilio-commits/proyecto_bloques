@@ -58,7 +58,14 @@ class DadosWidget extends StatelessWidget {
       onDragEnd: (_) => bloc.add(const DadoArrastrado(null)),
       feedback: Material(
         color: Colors.transparent,
-        child: DadoWidget(valor: valor, tirada: estado.turno, tamano: 60),
+        child: _DadoAgitandose(
+          child: DadoWidget(
+            valor: valor,
+            tirada: estado.turno,
+            tamano: 60,
+            levantado: true,
+          ),
+        ),
       ),
       childWhenDragging: Opacity(opacity: 0.3, child: dado),
       child: dado,
@@ -73,12 +80,16 @@ class DadoWidget extends StatelessWidget {
   // Numero de tirada; cambia en cada tirada para repetir la animacion.
   final int tirada;
   final double tamano;
+  // Si es true, el dado proyecta una sombra grande, como si estuviera
+  // levantado sobre el tablero (por ejemplo, mientras se arrastra).
+  final bool levantado;
 
   const DadoWidget({
     super.key,
     required this.valor,
     this.tirada = 0,
     this.tamano = 52,
+    this.levantado = false,
   });
 
   @override
@@ -99,6 +110,7 @@ class DadoWidget extends StatelessWidget {
         key: ValueKey(tirada),
         valor: valor,
         tamano: tamano,
+        levantado: levantado,
       ),
     );
   }
@@ -107,8 +119,14 @@ class DadoWidget extends StatelessWidget {
 class _CaraDado extends StatelessWidget {
   final int? valor;
   final double tamano;
+  final bool levantado;
 
-  const _CaraDado({super.key, required this.valor, required this.tamano});
+  const _CaraDado({
+    super.key,
+    required this.valor,
+    required this.tamano,
+    required this.levantado,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,9 +137,23 @@ class _CaraDado extends StatelessWidget {
       decoration: BoxDecoration(
         color: valor == null ? Colors.grey.shade700 : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(tamano * 0.2),
-        boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2)),
-        ],
+        boxShadow: levantado
+            ? const [
+                // Sombra amplia y desplazada hacia abajo: el dado "flota".
+                BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: Offset(0, 12),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Colors.black38,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
       ),
       child: valor == null
           ? Icon(
@@ -137,6 +169,46 @@ class _CaraDado extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
+    );
+  }
+}
+
+// Hace que su hijo tiemble girando un poco a un lado y a otro sin parar.
+class _DadoAgitandose extends StatefulWidget {
+  final Widget child;
+
+  const _DadoAgitandose({required this.child});
+
+  @override
+  State<_DadoAgitandose> createState() => _DadoAgitandoseState();
+}
+
+class _DadoAgitandoseState extends State<_DadoAgitandose>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _agitar = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 110),
+  )..repeat(reverse: true);
+
+  // Gira entre -0.08 y 0.08 radianes (unos 4.5 grados a cada lado).
+  late final Animation<double> _angulo = Tween(
+    begin: -0.08,
+    end: 0.08,
+  ).chain(CurveTween(curve: Curves.easeInOut)).animate(_agitar);
+
+  @override
+  void dispose() {
+    _agitar.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _angulo,
+      builder: (context, child) =>
+          Transform.rotate(angle: _angulo.value, child: child),
+      child: widget.child,
     );
   }
 }

@@ -157,8 +157,30 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   }
 
   Widget _botonListo(ValoresInicialesEstado estado) {
+    return Row(
+      children: [
+        Expanded(child: _botonConfirmar(estado)),
+        const SizedBox(width: 12),
+        // Llena las casillas iniciales al azar para empezar rapido.
+        SizedBox.square(
+          dimension: 52,
+          child: IconButton.filledTonal(
+            tooltip: 'Números aleatorios',
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: () => _valoresInicialesBloc.llenarAleatorio(),
+            icon: const Icon(Icons.shuffle_rounded),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _botonConfirmar(ValoresInicialesEstado estado) {
     return SizedBox(
-      width: double.infinity,
       height: 52,
       child: FilledButton(
         style: FilledButton.styleFrom(
