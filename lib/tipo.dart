@@ -4,6 +4,8 @@ abstract class TipoRegion {
   const TipoRegion();
 
   Color get color;
+  // Nombre del color como se dice de una region ("region roja").
+  String get nombre;
   String get descripcion;
   bool esPosibleAgregar(List<int> actuales, int posible);
   Map<int, int> get puntuaciones;
@@ -17,6 +19,9 @@ abstract class TipoRegion {
 
 class TipoAzul extends TipoRegion {
   const TipoAzul();
+
+  @override
+  String get nombre => 'azul';
 
   @override
   Color get color => const Color(0xFF0000FF);
@@ -37,6 +42,9 @@ class TipoRojo extends TipoRegion {
   const TipoRojo();
 
   @override
+  String get nombre => 'roja';
+
+  @override
   Color get color => const Color(0xFFFF0000);
 
   @override
@@ -53,6 +61,9 @@ class TipoRojo extends TipoRegion {
 
 class TipoAmarillo extends TipoRegion {
   const TipoAmarillo();
+
+  @override
+  String get nombre => 'amarilla';
 
   @override
   Color get color => const Color(0xFFFFFF00);
@@ -73,6 +84,9 @@ class TipoVerde extends TipoRegion {
   const TipoVerde();
 
   @override
+  String get nombre => 'verde';
+
+  @override
   Color get color => const Color(0xFF00FF00);
 
   @override
@@ -87,6 +101,9 @@ class TipoVerde extends TipoRegion {
 
 class TipoLila extends TipoRegion {
   const TipoLila();
+
+  @override
+  String get nombre => 'lila';
 
   @override
   Color get color => const Color(0xFF800080);

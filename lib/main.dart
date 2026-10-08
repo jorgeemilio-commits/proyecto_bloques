@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'reclamos.dart';
 import 'region.dart';
 import 'tablero.dart';
 import 'tipo.dart';
@@ -105,7 +106,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     child: Column(
                       children: [
-                        _EncabezadoFase(estado: estado, turno: turno.turno),
+                        _EncabezadoFase(estado: estado, turno: turno),
                         const SizedBox(height: 12),
                         Expanded(
                           child: Center(
@@ -182,10 +183,11 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
 }
 
 // Muestra la fase actual y el mensaje que le indica al jugador que hacer:
-// antes de la partida, cuantas casillas iniciales van llenas; despues, el turno.
+// antes de la partida, cuantas casillas iniciales van llenas; despues, el
+// turno, los puntos y si se acaba de completar una region.
 class _EncabezadoFase extends StatelessWidget {
   final ValoresInicialesEstado estado;
-  final int turno;
+  final TurnoEstado turno;
 
   const _EncabezadoFase({required this.estado, required this.turno});
 
@@ -195,8 +197,11 @@ class _EncabezadoFase extends StatelessWidget {
     final llenas = estado.valores.whereType<int>().length;
     final total = estado.valores.length;
     final hayError = estado.estanCompletos && !estado.noHayRepetidos;
+    final reclamo = estado.confirmado ? turno.ultimoReclamo : null;
 
-    final mensaje = estado.confirmado
+    final mensaje = reclamo != null
+        ? _mensajeDeReclamo(reclamo)
+        : estado.confirmado
         ? 'Arrastra un dado a una casilla vacía junto al número del otro dado.'
         : !estado.estanCompletos
         ? 'Completa las seis casillas iniciales con números distintos del 1 al 6.'
@@ -211,20 +216,21 @@ class _EncabezadoFase extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                estado.confirmado ? 'Turno $turno' : 'Valores iniciales',
+                estado.confirmado
+                    ? 'Turno ${turno.turno}'
+                    : 'Valores iniciales',
                 style: tema.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            if (!estado.confirmado)
-              Text(
-                '$llenas/$total',
-                style: tema.textTheme.titleMedium?.copyWith(
-                  color: tema.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+            Text(
+              estado.confirmado ? '${turno.puntos} pts' : '$llenas/$total',
+              style: tema.textTheme.titleMedium?.copyWith(
+                color: tema.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -243,11 +249,21 @@ class _EncabezadoFase extends StatelessWidget {
           style: tema.textTheme.bodyMedium?.copyWith(
             color: hayError
                 ? tema.colorScheme.error
+                : reclamo != null
+                ? Colors.amber.shade300
                 : tema.colorScheme.onSurfaceVariant,
+            fontWeight: reclamo != null ? FontWeight.w600 : null,
           ),
         ),
       ],
     );
+  }
+
+  String _mensajeDeReclamo(ReclamoDeRegion reclamo) {
+    final nombre = reclamo.region.tipo.nombre;
+    return reclamo.puntos > 0
+        ? '¡Completaste una región $nombre! +${reclamo.puntos} puntos.'
+        : 'Completaste una región $nombre, pero ya no da puntos.';
   }
 }
 

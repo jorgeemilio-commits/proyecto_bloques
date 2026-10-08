@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'reclamos.dart';
 import 'tablero.dart';
 
 sealed class TurnoEvento {
@@ -45,11 +46,20 @@ class TurnoEstado {
   // Dado que se esta arrastrando (0 o 1), o null si ninguno.
   final int? dadoArrastrado;
 
+  // Puntos acumulados por el jugador.
+  final int puntos;
+
+  // Region que se completo con la jugada anterior, o null si no se completo
+  // ninguna. Sirve para avisarle al jugador durante el turno siguiente.
+  final ReclamoDeRegion? ultimoReclamo;
+
   const TurnoEstado({
     this.primero,
     this.segundo,
     this.turno = 0,
     this.dadoArrastrado,
+    this.puntos = 0,
+    this.ultimoReclamo,
   });
 
   bool get dadosTirados => primero != null && segundo != null;
@@ -64,16 +74,21 @@ class TurnoEstado {
         segundo: segundo,
         turno: turno,
         dadoArrastrado: indice,
+        puntos: puntos,
+        ultimoReclamo: ultimoReclamo,
       );
 }
 
 class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
   final Tablero tablero;
+  final RegistroDeReclamos reclamos;
   final Random _azar;
 
-  // Se puede pasar un Random propio para que las pruebas sean predecibles.
-  TurnoBloc(this.tablero, {Random? azar})
+  // Se puede pasar un Random propio para que las pruebas sean predecibles, y
+  // un registro de reclamos para compartirlo con otros jugadores.
+  TurnoBloc(this.tablero, {Random? azar, RegistroDeReclamos? reclamos})
       : _azar = azar ?? Random(),
+        reclamos = reclamos ?? RegistroDeReclamos(),
         super(const TurnoEstado()) {
     on<TurnoIniciado>((_, emit) => _iniciarTurno(emit));
     on<DadoArrastrado>(
@@ -94,11 +109,17 @@ class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
     return tablero.destinosValidos(numero: numero, ancla: ancla);
   }
 
-  void _iniciarTurno(Emitter<TurnoEstado> emit) {
+  void _iniciarTurno(
+    Emitter<TurnoEstado> emit, {
+    int puntosGanados = 0,
+    ReclamoDeRegion? reclamo,
+  }) {
     emit(TurnoEstado(
       primero: _caraAleatoria(),
       segundo: _caraAleatoria(),
       turno: state.turno + 1,
+      puntos: state.puntos + puntosGanados,
+      ultimoReclamo: reclamo,
     ));
   }
 
@@ -114,6 +135,15 @@ class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
     }
 
     evento.destino.numero = numero;
+
+    // Si con este numero se lleno la region, el jugador la reclama.
+    final region = tablero.obtenerRegion(evento.destino.coordenada);
+    if (region != null && tablero.regionCompleta(region)) {
+      final reclamo = ReclamoDeRegion(region, reclamos.reclamar(region));
+      _iniciarTurno(emit, puntosGanados: reclamo.puntos, reclamo: reclamo);
+      return;
+    }
+
     _iniciarTurno(emit);
   }
 

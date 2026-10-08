@@ -6,40 +6,8 @@ import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/dados_widget.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
-
-// Random que devuelve las caras indicadas en orden, para saber que saldra.
-class AzarFijo implements Random {
-  final List<int> caras;
-  int _siguiente = 0;
-
-  AzarFijo(this.caras);
-
-  @override
-  int nextInt(int max) => caras[_siguiente++ % caras.length] - 1;
-
-  @override
-  double nextDouble() => 0;
-
-  @override
-  bool nextBool() => false;
-}
-
-// Tablero real con las casillas iniciales (diagonal) llenas del 1 al 6.
-Tablero crearTableroConIniciales() {
-  final tablero = Tablero.desdeRegiones(
-    filas: 7,
-    columnas: 7,
-    regiones: regionesMapa,
-  );
-  for (var indice = 0; indice < tablero.celdasIniciales.length; indice++) {
-    tablero.celdasIniciales[indice].numero = indice + 1;
-  }
-  return tablero;
-}
-
-Celda celdaEn(Tablero tablero, int x, int y) =>
-    tablero.obtenerCelda(Coordenada(x, y));
 
 void main() {
   group('Reglas de colocacion', () {
@@ -85,6 +53,83 @@ void main() {
       expect(distinto, isFalse);
       expect(igual, isTrue);
       mostrar('Azul con un 4: poner 5 -> $distinto, poner 4 -> $igual.');
+    });
+
+    test('rojo no acepta un numero que ya esta en la region', () {
+      final tablero = crearTableroConIniciales();
+      // (1,2) es roja y su region ya tiene el 3 de (2,2); al lado esta el 2.
+      final destino = celdaEn(tablero, 1, 2);
+
+      final repetido = tablero.puedeColocar(destino, numero: 3, ancla: 2);
+      final nuevo = tablero.puedeColocar(destino, numero: 4, ancla: 2);
+
+      expect(repetido, isFalse);
+      expect(nuevo, isTrue);
+      mostrar('Rojo con un 3: poner 3 -> $repetido, poner 4 -> $nuevo.');
+    });
+
+    test('amarillo no acepta un numero que ya esta en la region', () {
+      final tablero = crearTableroConIniciales();
+      // La region amarilla ya tiene el 1 de (0,0) y el 4 de (3,3).
+      celdaEn(tablero, 6, 5).numero = 2;
+      final destino = celdaEn(tablero, 6, 6);
+
+      final repetido = tablero.puedeColocar(destino, numero: 1, ancla: 2);
+      final nuevo = tablero.puedeColocar(destino, numero: 2, ancla: 2);
+
+      expect(repetido, isFalse);
+      expect(nuevo, isTrue);
+      mostrar('Amarillo con 1 y 4: poner 1 -> $repetido, poner 2 -> $nuevo.');
+    });
+
+    test('lila no acepta un tercer numero distinto', () {
+      final tablero = crearTableroConIniciales();
+      celdaEn(tablero, 2, 4).numero = 1;
+      celdaEn(tablero, 3, 4).numero = 2;
+      // (2,3) es lila y tiene al lado el 3 de (2,2).
+      final destino = celdaEn(tablero, 2, 3);
+
+      final tercero = tablero.puedeColocar(destino, numero: 5, ancla: 3);
+      final repetido = tablero.puedeColocar(destino, numero: 1, ancla: 3);
+
+      expect(tercero, isFalse);
+      expect(repetido, isTrue);
+      mostrar('Lila con 1 y 2: poner 5 -> $tercero, poner 1 -> $repetido.');
+    });
+
+    test('verde acepta cualquier numero', () {
+      final tablero = crearTableroConIniciales();
+      celdaEn(tablero, 0, 1).numero = 2;
+      // (1,0) es verde, su region ya tiene dos 2 y al lado esta el 1.
+      final destino = celdaEn(tablero, 1, 0);
+
+      final repetido = tablero.puedeColocar(destino, numero: 2, ancla: 1);
+      final otro = tablero.puedeColocar(destino, numero: 6, ancla: 1);
+
+      expect(repetido, isTrue);
+      expect(otro, isTrue);
+      mostrar('Verde con dos 2: poner 2 -> $repetido, poner 6 -> $otro.');
+    });
+
+    test('los destinos resaltados excluyen las casillas que rompen la regla',
+        () {
+      final tablero = crearTableroConIniciales();
+
+      // Junto al 3 de (2,2) hay 4 casillas vacias, pero (1,2) es roja y su
+      // region ya tiene un 3.
+      final destinos = tablero.destinosValidos(numero: 3, ancla: 3);
+
+      expect(destinos, {
+        celdaEn(tablero, 2, 1),
+        celdaEn(tablero, 3, 2),
+        celdaEn(tablero, 2, 3),
+      });
+      expect(destinos, isNot(contains(celdaEn(tablero, 1, 2))));
+      mostrar(
+        'Destinos para 3 con ancla 3: '
+        '${destinos.map((c) => '(${c.coordenada.x},${c.coordenada.y})').join(' ')}; '
+        '(1,2) roja queda fuera.',
+      );
     });
 
     test('destinosValidos lista todas las casillas posibles', () {

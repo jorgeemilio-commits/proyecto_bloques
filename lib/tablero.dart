@@ -95,6 +95,11 @@ class Tablero {
           ?obtenerCelda(coordenada).numero,
       ];
 
+  // Indica si todas las casillas de la region ya tienen un numero.
+  bool regionCompleta(Region region) => region.coordenadas.every(
+        (coordenada) => obtenerCelda(coordenada).numero != null,
+      );
+
   // Indica si se puede colocar [numero] en [destino] usando [ancla]:
   // el destino debe estar vacio, tener al lado una casilla con el numero del
   // ancla y respetar la regla del color de su region.
