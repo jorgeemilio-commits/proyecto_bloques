@@ -7,12 +7,26 @@ import '../tablero.dart';
 import '../tipo.dart';
 import 'menu_casilla_widget.dart';
 
+// Brillo de una region segun cuantas veces se ha reclamado: cada reclamo la
+// apaga un poco mas, hasta el tercero (cuando ya no da puntos).
+const List<double> _brilloPorReclamos = [1.0, 0.7, 0.45, 0.25];
+
 // Color de una casilla segun el tipo de su region: conserva el tono pero con
 // saturacion y luminosidad fijas, para que se vea desaturado sobre el fondo
-// oscuro y el texto blanco se lea bien en todos los colores.
-Color colorDeRegion(TipoRegion tipo) => HSLColor.fromColor(
-  tipo.color,
-).withSaturation(0.4).withLightness(0.4).toColor();
+// oscuro y el texto blanco se lea bien en todos los colores. Mientras mas
+// veces se ha reclamado la region, mas apagado se ve.
+Color colorDeRegion(TipoRegion tipo, {int vecesReclamada = 0}) {
+  final brillo =
+      _brilloPorReclamos[vecesReclamada.clamp(
+        0,
+        _brilloPorReclamos.length - 1,
+      )];
+
+  return HSLColor.fromColor(tipo.color)
+      .withSaturation(0.4 * brillo)
+      .withLightness(0.4 * (0.6 + 0.4 * brillo))
+      .toColor();
+}
 
 class CeldaWidget extends StatelessWidget {
   final Celda celda;
@@ -26,6 +40,8 @@ class CeldaWidget extends StatelessWidget {
   final ValueChanged<int>? onDadoSoltado;
   // Numeros que no se ofrecen en la rueda de esta celda.
   final Set<int> numerosOcultos;
+  // Cuantas veces se ha reclamado la region de esta celda; apaga su color.
+  final int vecesReclamada;
 
   const CeldaWidget({
     super.key,
@@ -37,6 +53,7 @@ class CeldaWidget extends StatelessWidget {
     this.esDestinoValido = false,
     this.onDadoSoltado,
     this.numerosOcultos = const {},
+    this.vecesReclamada = 0,
   });
 
   @override
@@ -58,7 +75,7 @@ class CeldaWidget extends StatelessWidget {
     final colores = Theme.of(context).colorScheme;
     final colorBase = region == null
         ? colores.surfaceContainerHighest
-        : colorDeRegion(region!.tipo);
+        : colorDeRegion(region!.tipo, vecesReclamada: vecesReclamada);
     // La casilla bajo el dado se aclara para indicar donde caera.
     final colorDeFondo = dadoEncima
         ? Color.lerp(colorBase, Colors.white, 0.3)!

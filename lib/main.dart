@@ -124,6 +124,10 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                                   onNumeroCambiado:
                                       _valoresInicialesBloc.notificarCambio,
                                   destinosValidos: destinos,
+                                  // Las regiones reclamadas se ven mas
+                                  // apagadas.
+                                  vecesReclamada:
+                                      _turnoBloc.reclamos.vecesReclamada,
                                   onDadoSoltado: (celda, indiceDado) =>
                                       _turnoBloc.add(
                                         DadoColocado(indiceDado, celda),

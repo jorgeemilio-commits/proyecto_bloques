@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../region.dart';
 import '../tablero.dart';
 import 'celda_widget.dart';
 
@@ -11,6 +12,8 @@ class TableroWidget extends StatelessWidget {
   final Set<Celda> destinosValidos;
   // Se llama cuando se suelta el dado [indiceDado] sobre una celda.
   final void Function(Celda celda, int indiceDado)? onDadoSoltado;
+  // Cuantas veces se ha reclamado cada region; si es null, ninguna se apaga.
+  final int Function(Region region)? vecesReclamada;
 
   const TableroWidget({
     super.key,
@@ -19,6 +22,7 @@ class TableroWidget extends StatelessWidget {
     this.onNumeroCambiado,
     this.destinosValidos = const {},
     this.onDadoSoltado,
+    this.vecesReclamada,
   });
 
   @override
@@ -39,10 +43,14 @@ class TableroWidget extends StatelessWidget {
           final columna = indice % tablero.columnas;
           final celda = tablero.celdas[fila][columna];
           final esInicial = tablero.celdasIniciales.contains(celda);
+          final region = tablero.obtenerRegion(celda.coordenada);
 
           return CeldaWidget(
             celda: celda,
-            region: tablero.obtenerRegion(celda.coordenada),
+            region: region,
+            vecesReclamada: region == null || vecesReclamada == null
+                ? 0
+                : vecesReclamada!(region),
             esInicial: esInicial,
             // En una casilla inicial no se ofrecen los numeros que ya estan
             // en las otras casillas iniciales.
