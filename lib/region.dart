@@ -2,8 +2,11 @@ import 'tipo.dart';
 abstract class Region {
   final TipoRegion tipo;
   final List<Coordenada> coordenadas;
+  // Si es true, la region se dibuja con rayas para distinguirla de la otra
+  // region del mismo color sin cambiar el color.
+  final bool conRayas;
 
-	const Region(this.tipo, this.coordenadas);
+	const Region(this.tipo, this.coordenadas, {this.conRayas = false});
 }
 
 class Coordenada {
@@ -42,7 +45,7 @@ class RegionAzulDos extends Region {
 					Coordenada(5, 5),
 					Coordenada(6, 5),
 					Coordenada(5, 6),
-				]);
+				], conRayas: true);
 }
 
 class RegionRojaUno extends Region {
@@ -66,7 +69,7 @@ class RegionRojaDos extends Region {
 					Coordenada(4, 5),
 					Coordenada(3, 6),
 					Coordenada(4, 6),
-				]);
+				], conRayas: true);
 }
 
 class RegionVerdeUno extends Region {
@@ -90,7 +93,7 @@ class RegionVerdeDos extends Region {
 					Coordenada(4, 3),
 					Coordenada(5, 3),
 					Coordenada(6, 3),
-				]);
+				], conRayas: true);
 }
 
 class RegionLilaUno extends Region {
@@ -114,7 +117,7 @@ class RegionLilaDos extends Region {
 					Coordenada(2, 5),
 					Coordenada(1, 6),
 					Coordenada(2, 6),
-				]);
+				], conRayas: true);
 }
 
 class RegionAmarilla extends Region {

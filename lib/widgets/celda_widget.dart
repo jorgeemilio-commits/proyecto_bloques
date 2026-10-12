@@ -89,6 +89,8 @@ class CeldaWidget extends StatelessWidget {
       numerosOcultos: numerosOcultos,
       child: Container(
         alignment: Alignment.center,
+        // Recorta las rayas a las esquinas redondeadas.
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: colorDeFondo,
           borderRadius: BorderRadius.circular(6),
@@ -100,45 +102,78 @@ class CeldaWidget extends StatelessWidget {
               ? Border.all(color: colores.onSurface.withValues(alpha: 0.25))
               : null,
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final numero = FittedBox(
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Text(
-                  // Se lee de la celda porque el numero tambien puede
-                  // llegar desde un dado, no solo desde el menu.
-                  celda.numero?.toString() ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: colorDeTexto,
-                    fontWeight: esInicial ? FontWeight.w800 : FontWeight.w500,
+        child: CustomPaint(
+          key: region?.conRayas == true ? const ValueKey('rayas') : null,
+          // Rayas diagonales para distinguir una de las dos regiones del
+          // mismo color; quedan detras del numero y de la estrella.
+          painter: region?.conRayas == true ? const _PintorDeRayas() : null,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final numero = FittedBox(
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Text(
+                    // Se lee de la celda porque el numero tambien puede
+                    // llegar desde un dado, no solo desde el menu.
+                    celda.numero?.toString() ?? '',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: colorDeTexto,
+                      fontWeight: esInicial ? FontWeight.w800 : FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
 
-            if (!esInicial) {
-              return Center(child: numero);
-            }
+              if (!esInicial) {
+                return Center(child: numero);
+              }
 
-            // Estrella en la esquina, como en el tablero del juego de mesa.
-            return Stack(
-              children: [
-                Center(child: numero),
-                Positioned(
-                  top: 2,
-                  left: 2,
-                  child: Icon(
-                    Icons.star_rounded,
-                    size: constraints.maxWidth * 0.28,
-                    color: colorDeTexto.withValues(alpha: 0.75),
+              // Estrella en la esquina, como en el tablero del juego de mesa.
+              return Stack(
+                children: [
+                  Center(child: numero),
+                  Positioned(
+                    top: 2,
+                    left: 2,
+                    child: Icon(
+                      Icons.star_rounded,
+                      size: constraints.maxWidth * 0.28,
+                      color: colorDeTexto.withValues(alpha: 0.75),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
+}
+
+// Dibuja rayas diagonales blancas y casi transparentes sobre la casilla, para
+// que la region se distinga sin cambiar su color.
+class _PintorDeRayas extends CustomPainter {
+  const _PintorDeRayas();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pincel = Paint()
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..strokeWidth = size.width * 0.09;
+    // Cuatro rayas por casilla, sin importar su tamaño.
+    final separacion = size.width / 4;
+
+    // Cada raya va de abajo a la izquierda hacia arriba a la derecha.
+    for (var x = -size.height; x < size.width; x += separacion) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        pincel,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PintorDeRayas oldDelegate) => false;
 }
