@@ -1,5 +1,3 @@
-
-
 export 'reclamos.dart';
 export 'region.dart';
 export 'tablero.dart';

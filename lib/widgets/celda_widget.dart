@@ -113,6 +113,7 @@ class CeldaWidget extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: Text(
+                    key: const ValueKey('numero-celda'),
                     // Se lee de la celda porque el numero tambien puede
                     // llegar desde un dado, no solo desde el menu.
                     celda.numero?.toString() ?? '',
@@ -136,6 +137,7 @@ class CeldaWidget extends StatelessWidget {
                     top: 2,
                     left: 2,
                     child: Icon(
+                      key: const ValueKey('estrella'),
                       Icons.star_rounded,
                       size: constraints.maxWidth * 0.28,
                       color: colorDeTexto.withValues(alpha: 0.75),

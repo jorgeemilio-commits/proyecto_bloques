@@ -28,7 +28,7 @@ class NumeroCeldaBloc extends Bloc<NumeroCeldaEvento, NumeroCeldaEstado> {
   final VoidCallback? onCambio;
 
   NumeroCeldaBloc(this.celda, {this.onCambio})
-      : super(NumeroCeldaEstado(numero: celda.numero)) {
+    : super(NumeroCeldaEstado(numero: celda.numero)) {
     on<NumeroCeldaSeleccionado>(_seleccionarNumero);
     on<NumeroCeldaBorrado>(_borrarNumero);
   }

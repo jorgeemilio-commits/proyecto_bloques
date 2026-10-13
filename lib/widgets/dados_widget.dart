@@ -25,6 +25,7 @@ class DadosWidget extends StatelessWidget {
               child: SizedBox(
                 height: 52,
                 child: FilledButton.tonalIcon(
+                  key: const ValueKey('boton-pasar'),
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -51,6 +52,7 @@ class DadosWidget extends StatelessWidget {
     final dado = DadoWidget(valor: valor, tirada: estado.turno);
 
     return Draggable<int>(
+      key: ValueKey('dado-$indice'),
       data: indice,
       // No se puede arrastrar un dado que aun no se ha tirado.
       maxSimultaneousDrags: valor == null ? 0 : 1,

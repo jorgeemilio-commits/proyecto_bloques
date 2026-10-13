@@ -46,6 +46,7 @@ class TableroWidget extends StatelessWidget {
           final region = tablero.obtenerRegion(celda.coordenada);
 
           return CeldaWidget(
+            key: ValueKey('celda-${celda.coordenada.x}-${celda.coordenada.y}'),
             celda: celda,
             region: region,
             vecesReclamada: region == null || vecesReclamada == null

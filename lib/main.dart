@@ -81,6 +81,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
     final colores = Theme.of(context).colorScheme;
 
     return Scaffold(
+      key: const ValueKey('pantalla-principal'),
       backgroundColor: colores.surfaceContainerLow,
       appBar: AppBar(
         title: const Text('Bloques'),
@@ -111,6 +112,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                         Expanded(
                           child: Center(
                             child: Card(
+                              key: const ValueKey('tarjeta-tablero'),
                               elevation: 0,
                               color: colores.surface,
                               margin: EdgeInsets.zero,
@@ -120,6 +122,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: TableroWidget(
+                                  key: const ValueKey('tablero'),
                                   tablero: _tablero,
                                   onNumeroCambiado:
                                       _valoresInicialesBloc.notificarCambio,
@@ -143,7 +146,10 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                         // Al confirmar los valores iniciales inicia la partida
                         // y el boton Listo se cambia por los dados.
                         estado.confirmado
-                            ? DadosWidget(bloc: _turnoBloc)
+                            ? DadosWidget(
+                                key: const ValueKey('dados'),
+                                bloc: _turnoBloc,
+                              )
                             : _botonListo(estado),
                         // Espacio extra abajo para que los controles no queden
                         // pegados al borde de la pantalla.
@@ -169,6 +175,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
         SizedBox.square(
           dimension: 52,
           child: IconButton.filledTonal(
+            key: const ValueKey('boton-aleatorio'),
             tooltip: 'Números aleatorios',
             style: IconButton.styleFrom(
               shape: RoundedRectangleBorder(
@@ -187,6 +194,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
     return SizedBox(
       height: 52,
       child: FilledButton(
+        key: const ValueKey('boton-listo'),
         style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -236,12 +244,14 @@ class _EncabezadoFase extends StatelessWidget {
         : 'Casillas iniciales completas. Puedes continuar.';
 
     return Column(
+      key: const ValueKey('encabezado'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Expanded(
               child: Text(
+                key: const ValueKey('titulo-fase'),
                 estado.confirmado
                     ? 'Turno ${turno.turno}'
                     : 'Valores iniciales',
@@ -251,6 +261,7 @@ class _EncabezadoFase extends StatelessWidget {
               ),
             ),
             Text(
+              key: const ValueKey('marcador'),
               estado.confirmado ? '${turno.puntos} pts' : '$llenas/$total',
               style: tema.textTheme.titleMedium?.copyWith(
                 color: tema.colorScheme.primary,
@@ -264,6 +275,7 @@ class _EncabezadoFase extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
+              key: const ValueKey('barra-progreso'),
               value: total == 0 ? 0 : llenas / total,
               minHeight: 6,
             ),
@@ -271,6 +283,7 @@ class _EncabezadoFase extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         Text(
+          key: const ValueKey('mensaje'),
           mensaje,
           style: tema.textTheme.bodyMedium?.copyWith(
             color: hayError
@@ -310,12 +323,14 @@ class _LeyendaRegiones extends StatelessWidget {
     final estiloTexto = Theme.of(context).textTheme.labelMedium;
 
     return Wrap(
+      key: const ValueKey('leyenda'),
       alignment: WrapAlignment.center,
       spacing: 14,
       runSpacing: 6,
       children: [
         for (final (tipo, regla) in _entradas)
           Row(
+            key: ValueKey('leyenda-${tipo.nombre}'),
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(

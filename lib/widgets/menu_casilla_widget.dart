@@ -110,6 +110,7 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
     );
 
     return SizedBox(
+      key: const ValueKey('rueda'),
       width: 190,
       height: 190,
       child: AnimatedBuilder(
@@ -127,6 +128,7 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
               Opacity(
                 opacity: animacion.value,
                 child: IconButton(
+                  key: const ValueKey('rueda-borrar'),
                   tooltip: 'Borrar',
                   onPressed: () {
                     widget.bloc.add(const NumeroCeldaBorrado());
@@ -232,6 +234,7 @@ class _BotonNumeroState extends State<_BotonNumero>
         width: 56,
         height: 56,
         child: TextButton(
+          key: ValueKey('rueda-numero-${widget.numero}'),
           onPressed: _seleccionar,
           style: TextButton.styleFrom(
             backgroundColor: const Color.fromRGBO(40, 40, 40, 0.92),

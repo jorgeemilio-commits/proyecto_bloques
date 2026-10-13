@@ -52,7 +52,8 @@ class TipoRojo extends TipoRegion {
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
-    return actuales.toSet().length == actuales.length && !actuales.contains(posible);
+    return actuales.toSet().length == actuales.length &&
+        !actuales.contains(posible);
   }
 
   @override
@@ -73,7 +74,8 @@ class TipoAmarillo extends TipoRegion {
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
-    return actuales.toSet().length == actuales.length && !actuales.contains(posible);
+    return actuales.toSet().length == actuales.length &&
+        !actuales.contains(posible);
   }
 
   @override
