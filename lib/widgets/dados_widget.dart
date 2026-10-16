@@ -35,7 +35,10 @@ class DadosWidget extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed: () => bloc.add(const TurnoPasado()),
+                  // Desactivado mientras se espera la siguiente tirada.
+                  onPressed: estado.dadosTirados
+                      ? () => bloc.add(const TurnoPasado())
+                      : null,
                   icon: const Icon(Icons.skip_next_rounded),
                   label: const Text('Pasar'),
                 ),

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(dart format lib/turno_bloc.dart lib/main.dart lib/widgets/dados_widget.dart test/dados_test.dart test/flutter_test_config.dart)"
+    ]
+  }
+}

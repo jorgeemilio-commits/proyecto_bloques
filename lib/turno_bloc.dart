@@ -70,32 +70,42 @@ class TurnoEstado {
   int? anclaPara(int indice) => valorDado(1 - indice);
 
   TurnoEstado conDadoArrastrado(int? indice) => TurnoEstado(
-        primero: primero,
-        segundo: segundo,
-        turno: turno,
-        dadoArrastrado: indice,
-        puntos: puntos,
-        ultimoReclamo: ultimoReclamo,
-      );
+    primero: primero,
+    segundo: segundo,
+    turno: turno,
+    dadoArrastrado: indice,
+    puntos: puntos,
+    ultimoReclamo: ultimoReclamo,
+  );
 }
 
 class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
+  // Espera entre terminar un turno y tirar los dados del siguiente. Las
+  // pruebas la ponen en cero (test/flutter_test_config.dart).
+  static Duration esperaPorDefecto = const Duration(seconds: 1);
+
   final Tablero tablero;
   final RegistroDeReclamos reclamos;
+  final Duration espera;
   final Random _azar;
 
   // Se puede pasar un Random propio para que las pruebas sean predecibles, y
   // un registro de reclamos para compartirlo con otros jugadores.
-  TurnoBloc(this.tablero, {Random? azar, RegistroDeReclamos? reclamos})
-      : _azar = azar ?? Random(),
-        reclamos = reclamos ?? RegistroDeReclamos(),
-        super(const TurnoEstado()) {
+  TurnoBloc(
+    this.tablero, {
+    Random? azar,
+    RegistroDeReclamos? reclamos,
+    Duration? espera,
+  }) : _azar = azar ?? Random(),
+       reclamos = reclamos ?? RegistroDeReclamos(),
+       espera = espera ?? esperaPorDefecto,
+       super(const TurnoEstado()) {
     on<TurnoIniciado>((_, emit) => _iniciarTurno(emit));
     on<DadoArrastrado>(
       (evento, emit) => emit(state.conDadoArrastrado(evento.indice)),
     );
     on<DadoColocado>(_colocar);
-    on<TurnoPasado>((_, emit) => _iniciarTurno(emit));
+    on<TurnoPasado>(_pasar);
   }
 
   // Casillas donde se puede soltar el dado [indice] con la tirada actual.
@@ -114,16 +124,52 @@ class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
     int puntosGanados = 0,
     ReclamoDeRegion? reclamo,
   }) {
-    emit(TurnoEstado(
-      primero: _caraAleatoria(),
-      segundo: _caraAleatoria(),
-      turno: state.turno + 1,
-      puntos: state.puntos + puntosGanados,
-      ultimoReclamo: reclamo,
-    ));
+    emit(
+      TurnoEstado(
+        primero: _caraAleatoria(),
+        segundo: _caraAleatoria(),
+        turno: state.turno + 1,
+        puntos: state.puntos + puntosGanados,
+        ultimoReclamo: reclamo,
+      ),
+    );
   }
 
-  void _colocar(DadoColocado evento, Emitter<TurnoEstado> emit) {
+  // Termina el turno: primero muestra la jugada (con los puntos ya sumados) y
+  // los dados apagados; despues de la espera tira los dados del siguiente.
+  Future<void> _terminarTurno(
+    Emitter<TurnoEstado> emit, {
+    int puntosGanados = 0,
+    ReclamoDeRegion? reclamo,
+  }) async {
+    if (espera == Duration.zero) {
+      _iniciarTurno(emit, puntosGanados: puntosGanados, reclamo: reclamo);
+      return;
+    }
+
+    emit(
+      TurnoEstado(
+        turno: state.turno,
+        puntos: state.puntos + puntosGanados,
+        ultimoReclamo: reclamo,
+      ),
+    );
+    await Future<void>.delayed(espera);
+    if (isClosed) {
+      return;
+    }
+    _iniciarTurno(emit, reclamo: reclamo);
+  }
+
+  Future<void> _pasar(TurnoPasado evento, Emitter<TurnoEstado> emit) async {
+    // Mientras se espera la siguiente tirada no se puede volver a pasar.
+    if (!state.dadosTirados) {
+      return;
+    }
+    await _terminarTurno(emit);
+  }
+
+  Future<void> _colocar(DadoColocado evento, Emitter<TurnoEstado> emit) async {
     final numero = state.valorDado(evento.indice);
     final ancla = state.anclaPara(evento.indice);
 
@@ -140,11 +186,15 @@ class TurnoBloc extends Bloc<TurnoEvento, TurnoEstado> {
     final region = tablero.obtenerRegion(evento.destino.coordenada);
     if (region != null && tablero.regionCompleta(region)) {
       final reclamo = ReclamoDeRegion(region, reclamos.reclamar(region));
-      _iniciarTurno(emit, puntosGanados: reclamo.puntos, reclamo: reclamo);
+      await _terminarTurno(
+        emit,
+        puntosGanados: reclamo.puntos,
+        reclamo: reclamo,
+      );
       return;
     }
 
-    _iniciarTurno(emit);
+    await _terminarTurno(emit);
   }
 
   int _caraAleatoria() => _azar.nextInt(6) + 1;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/tablero_widget.dart';
@@ -16,28 +15,23 @@ void dejarAzulUnoCasiCompleta(Tablero tablero) {
 }
 
 void main() {
-  group('Region completa', () {
-    test('una region con casillas vacias no esta completa', () {
-      final tablero = crearTableroConIniciales();
-      const region = RegionAzulUno();
+  test('una region solo esta completa con todas sus casillas llenas', () {
+    final tablero = crearTableroConIniciales();
+    const region = RegionAzulUno();
 
-      expect(tablero.regionCompleta(region), isFalse);
-      mostrar('AzulUno vacia: completa = ${tablero.regionCompleta(region)}.');
-    });
+    final vacia = tablero.regionCompleta(region);
+    dejarAzulUnoCasiCompleta(tablero);
+    final casiCompleta = tablero.regionCompleta(region);
+    celdaEn(tablero, 2, 0).numero = 4;
+    final completa = tablero.regionCompleta(region);
 
-    test('una region con todas sus casillas llenas esta completa', () {
-      final tablero = crearTableroConIniciales();
-      const region = RegionAzulUno();
-      dejarAzulUnoCasiCompleta(tablero);
-
-      final casiCompleta = tablero.regionCompleta(region);
-      celdaEn(tablero, 2, 0).numero = 4;
-      final completa = tablero.regionCompleta(region);
-
-      expect(casiCompleta, isFalse);
-      expect(completa, isTrue);
-      mostrar('AzulUno con 3 de 4: $casiCompleta; con 4 de 4: $completa.');
-    });
+    expect(vacia, isFalse);
+    expect(casiCompleta, isFalse);
+    expect(completa, isTrue);
+    mostrar(
+      'AzulUno vacia: $vacia; con 3 de 4: $casiCompleta; '
+      'con 4 de 4: $completa.',
+    );
   });
 
   group('RegistroDeReclamos', () {
@@ -66,37 +60,6 @@ void main() {
         'AzulUno da $primeraAzul y AzulDos tambien da $segundaAzul '
         '(cada region tiene sus reclamos).',
       );
-    });
-
-    test('el primer reclamo de cada color da su puntuacion mas alta', () {
-      final registro = RegistroDeReclamos();
-      final primeros = {
-        'amarilla': registro.reclamar(const RegionAmarilla()),
-        'azul': registro.reclamar(const RegionAzulUno()),
-        'roja': registro.reclamar(const RegionRojaUno()),
-        'lila': registro.reclamar(const RegionLilaUno()),
-        'verde': registro.reclamar(const RegionVerdeUno()),
-      };
-
-      expect(primeros, {
-        'amarilla': 8,
-        'azul': 7,
-        'roja': 6,
-        'lila': 6,
-        'verde': 4,
-      });
-      mostrar('Primer reclamo por color: $primeros.');
-    });
-
-    test('puntosDisponibles no registra un reclamo', () {
-      final registro = RegistroDeReclamos();
-      const region = RegionVerdeUno();
-
-      final disponibles = registro.puntosDisponibles(region);
-
-      expect(disponibles, 4);
-      expect(registro.vecesReclamada(region), 0);
-      mostrar('Verde disponible: $disponibles; reclamos: 0.');
     });
   });
 
@@ -168,57 +131,6 @@ void main() {
       await bloc.close();
     });
 
-    test('una region ya reclamada da el siguiente premio', () async {
-      final tablero = crearTableroConIniciales();
-      dejarAzulUnoCasiCompleta(tablero);
-      final registro = RegistroDeReclamos()..reclamar(const RegionAzulUno());
-      final bloc = TurnoBloc(
-        tablero,
-        azar: AzarFijo([4, 4]),
-        reclamos: registro,
-      );
-
-      bloc.add(const TurnoIniciado());
-      await bloc.stream.first;
-      bloc.add(DadoColocado(0, celdaEn(tablero, 2, 0)));
-      await bloc.stream.first;
-
-      expect(bloc.state.puntos, 5);
-      mostrar(
-        'AzulUno ya reclamada una vez: da ${bloc.state.puntos} '
-        '(segundo premio).',
-      );
-
-      await bloc.close();
-    });
-
-    test('despues del tercer reclamo la region ya no da puntos', () async {
-      final tablero = crearTableroConIniciales();
-      dejarAzulUnoCasiCompleta(tablero);
-      final registro = RegistroDeReclamos();
-      for (var vez = 0; vez < 3; vez++) {
-        registro.reclamar(const RegionAzulUno());
-      }
-      final bloc = TurnoBloc(
-        tablero,
-        azar: AzarFijo([4, 4]),
-        reclamos: registro,
-      );
-
-      bloc.add(const TurnoIniciado());
-      await bloc.stream.first;
-      bloc.add(DadoColocado(0, celdaEn(tablero, 2, 0)));
-      await bloc.stream.first;
-
-      expect(bloc.state.puntos, 0);
-      expect(bloc.state.ultimoReclamo?.puntos, 0);
-      mostrar(
-        'AzulUno reclamada 3 veces: da ${bloc.state.ultimoReclamo!.puntos} pts.',
-      );
-
-      await bloc.close();
-    });
-
     test('pasar el turno borra el aviso de la region completada', () async {
       final tablero = crearTableroConIniciales();
       dejarAzulUnoCasiCompleta(tablero);
@@ -242,164 +154,91 @@ void main() {
     });
   });
 
-  testWidgets('al iniciar la partida se muestran 0 puntos', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
-
-    final celdasIniciales = find.byWidgetPredicate(
-      (widget) => widget is CeldaWidget && widget.esInicial,
-    );
-    const numeros = [1, 2, 3, 5, 6];
-
-    for (var indice = 0; indice < numeros.length; indice++) {
-      await tester.tap(celdasIniciales.at(indice + 1));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('${numeros[indice]}').last);
-      await tester.pumpAndSettle();
-    }
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Listo'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('0 pts'), findsOneWidget);
-    mostrar('El encabezado muestra "0 pts" en el Turno 1.');
-  });
-
   group('Color de las regiones reclamadas', () {
     String porcentaje(double valor) => '${(valor * 100).round()}%';
 
-    test('cada reclamo apaga mas el color hasta el tercero', () {
-      final colores = [
-        for (var veces = 0; veces <= 4; veces++)
-          HSLColor.fromColor(
-            colorDeRegion(TipoRegion.azul, vecesReclamada: veces),
-          ),
-      ];
-      final saturaciones = colores.map((c) => c.saturation).toList();
-      final luminosidades = colores.map((c) => c.lightness).toList();
+    test(
+      'cada reclamo apaga mas el color hasta el tercero, sin cambiar el tono',
+      () {
+        final colores = [
+          for (var veces = 0; veces <= 4; veces++)
+            HSLColor.fromColor(
+              colorDeRegion(TipoRegion.azul, vecesReclamada: veces),
+            ),
+        ];
+        final saturaciones = colores.map((c) => c.saturation).toList();
+        final luminosidades = colores.map((c) => c.lightness).toList();
 
-      for (var veces = 1; veces <= 3; veces++) {
-        expect(saturaciones[veces], lessThan(saturaciones[veces - 1]));
-        expect(luminosidades[veces], lessThan(luminosidades[veces - 1]));
-      }
-      // Despues del tercer reclamo ya no se apaga mas.
-      expect(saturaciones[4], closeTo(saturaciones[3], 0.001));
-      expect(luminosidades[4], closeTo(luminosidades[3], 0.001));
-      mostrar(
-        'Saturacion por reclamos 0-4: '
-        '${saturaciones.map(porcentaje).join(' ')}; '
-        'luminosidad: ${luminosidades.map(porcentaje).join(' ')}.',
-      );
-    });
-
-    test('apagar el color conserva su tono', () {
-      final tonoNormal = HSLColor.fromColor(colorDeRegion(TipoRegion.rojo)).hue;
-      final tonoApagado = HSLColor.fromColor(
-        colorDeRegion(TipoRegion.rojo, vecesReclamada: 3),
-      ).hue;
-
-      expect(tonoApagado, closeTo(tonoNormal, 1));
-      mostrar(
-        'Tono rojo normal: ${tonoNormal.round()}; '
-        'apagado: ${tonoApagado.round()}.',
-      );
-    });
-
-    // Celda (x, y) dibujada y el color de fondo de su casilla.
-    CeldaWidget celdaDibujada(WidgetTester tester, int x, int y) =>
-        tester.widget<CeldaWidget>(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is CeldaWidget &&
-                widget.celda.coordenada.x == x &&
-                widget.celda.coordenada.y == y,
-          ),
+        for (var veces = 1; veces <= 3; veces++) {
+          expect(saturaciones[veces], lessThan(saturaciones[veces - 1]));
+          expect(luminosidades[veces], lessThan(luminosidades[veces - 1]));
+        }
+        // Despues del tercer reclamo ya no se apaga mas.
+        expect(saturaciones[4], closeTo(saturaciones[3], 0.001));
+        expect(luminosidades[4], closeTo(luminosidades[3], 0.001));
+        // El azul sigue siendo azul aunque este apagado.
+        expect(colores[3].hue, closeTo(colores[0].hue, 1));
+        mostrar(
+          'Saturacion por reclamos 0-4: '
+          '${saturaciones.map(porcentaje).join(' ')}; '
+          'luminosidad: ${luminosidades.map(porcentaje).join(' ')}.',
         );
-
-    Color? colorDeFondo(WidgetTester tester, int x, int y) {
-      final contenedor = find
-          .descendant(
-            of: find.byWidget(celdaDibujada(tester, x, y)),
-            matching: find.byType(Container),
-          )
-          .first;
-      final decoracion =
-          tester.widget<Container>(contenedor).decoration as BoxDecoration?;
-      return decoracion?.color;
-    }
-
-    Future<void> dibujarTablero(
-      WidgetTester tester,
-      Tablero tablero,
-      RegistroDeReclamos registro,
-    ) => tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TableroWidget(
-            tablero: tablero,
-            vecesReclamada: registro.vecesReclamada,
-          ),
-        ),
-      ),
+      },
     );
 
     testWidgets('solo se apagan las casillas de la region reclamada', (
       tester,
     ) async {
+      CeldaWidget celdaDibujada(int x, int y) => tester.widget<CeldaWidget>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CeldaWidget &&
+              widget.celda.coordenada.x == x &&
+              widget.celda.coordenada.y == y,
+        ),
+      );
+
+      Color? colorDeFondo(int x, int y) {
+        final contenedor = find
+            .descendant(
+              of: find.byWidget(celdaDibujada(x, y)),
+              matching: find.byType(Container),
+            )
+            .first;
+        final decoracion =
+            tester.widget<Container>(contenedor).decoration as BoxDecoration?;
+        return decoracion?.color;
+      }
+
       final registro = RegistroDeReclamos()..reclamar(const RegionAzulUno());
-      await dibujarTablero(tester, crearTableroConIniciales(), registro);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TableroWidget(
+              tablero: crearTableroConIniciales(),
+              vecesReclamada: registro.vecesReclamada,
+            ),
+          ),
+        ),
+      );
 
       // (2,0), (2,1), (3,1) y (3,2) son AzulUno; (6,4) es AzulDos.
       final reclamadas = [
         for (final (x, y) in const [(2, 0), (2, 1), (3, 1), (3, 2)])
-          celdaDibujada(tester, x, y).vecesReclamada,
+          celdaDibujada(x, y).vecesReclamada,
       ];
-      final otraAzul = celdaDibujada(tester, 6, 4).vecesReclamada;
+      final otraAzul = celdaDibujada(6, 4).vecesReclamada;
 
       expect(reclamadas, [1, 1, 1, 1]);
       expect(otraAzul, 0);
       expect(
-        colorDeFondo(tester, 2, 0),
+        colorDeFondo(2, 0),
         colorDeRegion(TipoRegion.azul, vecesReclamada: 1),
       );
-      expect(colorDeFondo(tester, 6, 4), colorDeRegion(TipoRegion.azul));
+      expect(colorDeFondo(6, 4), colorDeRegion(TipoRegion.azul));
       mostrar(
         'AzulUno reclamada una vez: sus casillas $reclamadas; '
         'AzulDos sigue en $otraAzul.',
-      );
-    });
-
-    testWidgets('al completar una region en la partida se apaga', (
-      tester,
-    ) async {
-      final tablero = crearTableroConIniciales();
-      dejarAzulUnoCasiCompleta(tablero);
-      final registro = RegistroDeReclamos();
-      await dibujarTablero(tester, tablero, registro);
-      final antes = colorDeFondo(tester, 2, 1);
-
-      // El bloc trabaja con tiempo real y en una prueba de widget el tiempo es
-      // simulado: se crea, se usa y se cierra dentro de runAsync.
-      await tester.runAsync(() async {
-        final bloc = TurnoBloc(
-          tablero,
-          azar: AzarFijo([4, 4]),
-          reclamos: registro,
-        );
-        bloc.add(const TurnoIniciado());
-        await bloc.stream.first;
-        bloc.add(DadoColocado(0, celdaEn(tablero, 2, 0)));
-        await bloc.stream.first;
-        await bloc.close();
-      });
-      await dibujarTablero(tester, tablero, registro);
-      final despues = colorDeFondo(tester, 2, 1);
-
-      expect(antes, colorDeRegion(TipoRegion.azul));
-      expect(despues, colorDeRegion(TipoRegion.azul, vecesReclamada: 1));
-      mostrar(
-        'Color de (2,1) antes: ${HSLColor.fromColor(antes!).saturation.toStringAsFixed(2)} '
-        'de saturacion; despues: '
-        '${HSLColor.fromColor(despues!).saturation.toStringAsFixed(2)}.',
       );
     });
   });

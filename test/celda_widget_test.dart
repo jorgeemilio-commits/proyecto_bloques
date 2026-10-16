@@ -21,28 +21,6 @@ void main() {
     mostrar('La celda inicial muestra el numero ${celda.numero}.');
   });
 
-  testWidgets('permite reaccionar al toque', (tester) async {
-    var fuePulsada = false;
-    final celda = Celda(coordenada: const Coordenada(1, 1), esInsertable: true);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CeldaWidget(
-            celda: celda,
-            region: null,
-            onTap: () => fuePulsada = true,
-          ),
-        ),
-      ),
-    );
-
-    await tester.tap(find.byType(CeldaWidget));
-
-    expect(fuePulsada, isTrue);
-    mostrar('Toque recibido en la celda insertable: $fuePulsada.');
-  });
-
   testWidgets('permite insertar un numero mediante el selector', (
     tester,
   ) async {

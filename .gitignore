@@ -1,3 +1,23 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
+
+
+
+
+
+
+# Archivos que genera Flutter al compilar
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Archivos del editor
+.idea/
+*.iml
+
+# Archivos generados por Android y Windows
+android/.gradle/
+android/local.properties
+windows/flutter/ephemeral/

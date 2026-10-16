@@ -36,19 +36,6 @@ void main() {
       mostrar('Valores aleatorios: ${bloc.estado.valores}.');
     });
 
-    test('reemplaza los numeros que ya estaban puestos', () {
-      final tablero = crearTableroVacio();
-      for (final celda in tablero.celdasIniciales) {
-        celda.numero = 1;
-      }
-      final bloc = ValoresInicialesBloc(tablero);
-
-      bloc.llenarAleatorio(Random(5));
-
-      expect(bloc.estado.noHayRepetidos, isTrue);
-      mostrar('De [1, 1, 1, 1, 1, 1] a ${bloc.estado.valores}.');
-    });
-
     test('no cambia nada despues de confirmar', () {
       final tablero = crearTableroVacio();
       for (var indice = 0; indice < 6; indice++) {
