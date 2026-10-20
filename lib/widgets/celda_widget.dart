@@ -106,7 +106,7 @@ class CeldaWidget extends StatelessWidget {
           key: region?.conRayas == true ? const ValueKey('rayas') : null,
           // Rayas diagonales para distinguir una de las dos regiones del
           // mismo color; quedan detras del numero y de la estrella.
-          painter: region?.conRayas == true ? const _PintorDeRayas() : null,
+          painter: region?.conRayas == true ? const PintorDeRayas() : null,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final numero = FittedBox(
@@ -155,8 +155,8 @@ class CeldaWidget extends StatelessWidget {
 
 // Dibuja rayas diagonales blancas y casi transparentes sobre la casilla, para
 // que la region se distinga sin cambiar su color.
-class _PintorDeRayas extends CustomPainter {
-  const _PintorDeRayas();
+class PintorDeRayas extends CustomPainter {
+  const PintorDeRayas();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -177,5 +177,5 @@ class _PintorDeRayas extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PintorDeRayas oldDelegate) => false;
+  bool shouldRepaint(PintorDeRayas oldDelegate) => false;
 }
