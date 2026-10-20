@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(dart format lib/turno_bloc.dart lib/main.dart lib/widgets/dados_widget.dart test/dados_test.dart test/flutter_test_config.dart)"
+      "PowerShell(dart format lib/turno_bloc.dart lib/main.dart lib/widgets/dados_widget.dart test/dados_test.dart test/flutter_test_config.dart)",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\\(Resolve-Path \"assets\\\\imagenes\\\\brilliant_logo_3x.png\"\\)\\); \"{0} x {1} px\" -f $img.Width, $img.Height; $img.Dispose\\(\\))"
     ]
   }
 }

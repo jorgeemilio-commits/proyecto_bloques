@@ -29,11 +29,12 @@ class MenuPrincipal extends StatelessWidget {
                     color: tema.colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Bloques',
-                    style: tema.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  // Logo del juego en lugar del titulo en texto.
+                  Image.asset(
+                    'assets/imagenes/brilliant_logo_3x.png',
+                    key: const ValueKey('logo'),
+                    width: 300,
+                    semanticLabel: 'Brilliant',
                   ),
                   const SizedBox(height: 8),
                   Text(
