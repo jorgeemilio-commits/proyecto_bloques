@@ -10,7 +10,7 @@ import 'consola.dart';
 void main() {
   group('Reglas de colocacion', () {
     test('solo se coloca junto a una casilla con el numero del ancla', () {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final destino = celdaEn(tablero, 1, 0);
 
       final conAncla1 = tablero.puedeColocar(destino, numero: 5, ancla: 1);
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('no se puede colocar en una casilla ocupada', () {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final ocupada = celdaEn(tablero, 1, 1);
 
       expect(tablero.puedeColocar(ocupada, numero: 3, ancla: 1), isFalse);
@@ -30,7 +30,7 @@ void main() {
     });
 
     test('respeta la regla del color de la region', () {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       // (2,1) y (2,0) son de la region azul: todos los numeros iguales.
       final primeraAzul = celdaEn(tablero, 2, 1);
       final segundaAzul = celdaEn(tablero, 2, 0);
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('los destinos resaltados excluyen las casillas que rompen la regla', () {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
 
       // Junto al 3 de (2,2) hay 4 casillas vacias, pero (1,2) es roja y su
       // region ya tiene un 3.
@@ -68,7 +68,7 @@ void main() {
 
   group('TurnoBloc', () {
     test('cada tirada da dos valores del 1 al 6', () async {
-      final bloc = TurnoBloc(crearTableroConIniciales(), azar: Random(7));
+      final bloc = TurnoBloc(crearTableroConDiagonal(), azar: Random(7));
 
       for (var tirada = 1; tirada <= 50; tirada++) {
         // La primera tirada empieza la partida; las demas pasan el turno
@@ -91,7 +91,7 @@ void main() {
     test(
       'colocar un dado valido pone el numero y empieza otro turno',
       () async {
-        final tablero = crearTableroConIniciales();
+        final tablero = crearTableroConDiagonal();
         final bloc = TurnoBloc(tablero, azar: AzarFijo([1, 5, 3, 3]));
         final destino = celdaEn(tablero, 1, 0);
 
@@ -115,7 +115,7 @@ void main() {
     );
 
     test('colocar en una casilla invalida no cambia nada', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final bloc = TurnoBloc(tablero, azar: AzarFijo([1, 5]));
       // (6,6) no tiene ninguna casilla con 1 al lado.
       final destino = celdaEn(tablero, 6, 6);
@@ -135,7 +135,7 @@ void main() {
     });
 
     test('pasar empieza otro turno sin colocar nada', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final bloc = TurnoBloc(tablero, azar: AzarFijo([1, 5, 2, 6]));
       final antes = tablero.celdas.expand((fila) => fila).map((c) => c.numero);
       final numerosAntes = antes.toList();
@@ -163,7 +163,7 @@ void main() {
     const espera = Duration(milliseconds: 50);
 
     test('al colocar, los dados se apagan y se tiran despues', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final bloc = TurnoBloc(
         tablero,
         azar: AzarFijo([1, 5, 3, 3]),
@@ -200,7 +200,7 @@ void main() {
 
     test('pasar otra vez durante la espera no tira dos veces', () async {
       final bloc = TurnoBloc(
-        crearTableroConIniciales(),
+        crearTableroConDiagonal(),
         azar: AzarFijo([1, 5]),
         espera: espera,
       );
@@ -220,7 +220,7 @@ void main() {
     });
 
     test('los puntos se suman antes de tirar los dados', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       // AzulUno: falta (2,0), que tiene al lado el 4 de (2,1).
       for (final (x, y) in const [(2, 1), (3, 1), (3, 2)]) {
         celdaEn(tablero, x, y).numero = 4;

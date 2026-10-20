@@ -99,13 +99,13 @@ void main() {
     );
     mostrar('1. App abierta: "Valores iniciales", 1/6, Listo desactivado.');
 
-    // 2. Llena las casillas iniciales con la rueda. La (0,0) ya tiene el 4.
+    // 2. Llena las casillas iniciales con la rueda. La (2,0) ya tiene el 4.
     const iniciales = [
-      ((1, 1), 1),
-      ((2, 2), 2),
-      ((3, 3), 3),
-      ((4, 4), 5),
-      ((5, 5), 6),
+      ((5, 1), 1),
+      ((1, 3), 2),
+      ((4, 3), 3),
+      ((2, 5), 5),
+      ((4, 6), 6),
     ];
     for (final ((x, y), numero) in iniciales) {
       await tester.tap(celdaEn(x, y));

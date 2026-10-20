@@ -20,15 +20,17 @@ class AzarFijo implements Random {
   bool nextBool() => false;
 }
 
-// Tablero real con las casillas iniciales (diagonal) llenas del 1 al 6.
-Tablero crearTableroConIniciales() {
+// Tablero real con los numeros 1 a 6 en la diagonal: (0,0)=1, (1,1)=2 ...
+// (5,5)=6. Es una posicion fija para probar las reglas, sin depender de donde
+// esten las casillas iniciales.
+Tablero crearTableroConDiagonal() {
   final tablero = Tablero.desdeRegiones(
     filas: 7,
     columnas: 7,
     regiones: regionesMapa,
   );
-  for (var indice = 0; indice < tablero.celdasIniciales.length; indice++) {
-    tablero.celdasIniciales[indice].numero = indice + 1;
+  for (var indice = 0; indice < 6; indice++) {
+    celdaEn(tablero, indice, indice).numero = indice + 1;
   }
   return tablero;
 }

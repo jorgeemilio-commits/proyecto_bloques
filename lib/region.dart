@@ -16,14 +16,15 @@ class Coordenada {
   const Coordenada(this.x, this.y);
 }
 
-// Coordenadas fijas de las seis celdas que se llenan al iniciar el juego.
+// Coordenadas fijas de las seis celdas que se llenan al iniciar el juego,
+// en orden de lectura (las marcadas con estrella en el tablero del juego).
 const List<Coordenada> coordenadasIniciales = [
-	Coordenada(0, 0),
-	Coordenada(1, 1),
-	Coordenada(2, 2),
-	Coordenada(3, 3),
-	Coordenada(4, 4),
-	Coordenada(5, 5),
+	Coordenada(2, 0),
+	Coordenada(5, 1),
+	Coordenada(1, 3),
+	Coordenada(4, 3),
+	Coordenada(2, 5),
+	Coordenada(4, 6),
 ];
 
 // Regiones y coordenadas

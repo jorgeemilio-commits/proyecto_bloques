@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "PowerShell(dart format lib/turno_bloc.dart lib/main.dart lib/widgets/dados_widget.dart test/dados_test.dart test/flutter_test_config.dart)",
-      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\\(Resolve-Path \"assets\\\\imagenes\\\\brilliant_logo_3x.png\"\\)\\); \"{0} x {1} px\" -f $img.Width, $img.Height; $img.Dispose\\(\\))"
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\\(Resolve-Path \"assets\\\\imagenes\\\\brilliant_logo_3x.png\"\\)\\); \"{0} x {1} px\" -f $img.Width, $img.Height; $img.Dispose\\(\\))",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $src = [System.Drawing.Image]::FromFile\\(\"C:\\\\Users\\\\AeroT\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--TallerDeApps-proyecto-bloques\\\\3e0f9e47-be4a-499c-bca5-07a59898b353\\\\images\\\\1.png\"\\); \"{0} x {1}\" -f $src.Width, $src.Height; $rect = New-Object System.Drawing.Rectangle 75, 60, 345, 345; $dst = New-Object System.Drawing.Bitmap 1380, 1380; $g = [System.Drawing.Graphics]::FromImage\\($dst\\); $g.InterpolationMode = 'HighQualityBicubic'; $g.DrawImage\\($src, \\(New-Object System.Drawing.Rectangle 0, 0, 1380, 1380\\), $rect, 'Pixel'\\); $out = \"C:\\\\Users\\\\AeroT\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--TallerDeApps-proyecto-bloques\\\\3e0f9e47-be4a-499c-bca5-07a59898b353\\\\scratchpad\\\\tablero_zoom.png\"; New-Item -ItemType Directory -Force \\(Split-Path $out\\) | Out-Null; $dst.Save\\($out\\); $g.Dispose\\(\\); $dst.Dispose\\(\\); $src.Dispose\\(\\); $out)"
     ]
   }
 }

@@ -16,7 +16,7 @@ void dejarAzulUnoCasiCompleta(Tablero tablero) {
 
 void main() {
   test('una region solo esta completa con todas sus casillas llenas', () {
-    final tablero = crearTableroConIniciales();
+    final tablero = crearTableroConDiagonal();
     const region = RegionAzulUno();
 
     final vacia = tablero.regionCompleta(region);
@@ -65,7 +65,7 @@ void main() {
 
   group('Puntos al completar una region con un dado', () {
     test('completar una region suma su puntuacion', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       dejarAzulUnoCasiCompleta(tablero);
       final bloc = TurnoBloc(tablero, azar: AzarFijo([4, 4]));
 
@@ -87,7 +87,7 @@ void main() {
     });
 
     test('colocar sin completar una region no da puntos', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       final bloc = TurnoBloc(tablero, azar: AzarFijo([1, 5]));
 
       bloc.add(const TurnoIniciado());
@@ -106,7 +106,7 @@ void main() {
     });
 
     test('los puntos de varias regiones se acumulan', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       dejarAzulUnoCasiCompleta(tablero);
       // RegionAzulDos: (5,5) ya tiene el 6 inicial; falta (6,4).
       celdaEn(tablero, 6, 5).numero = 6;
@@ -132,7 +132,7 @@ void main() {
     });
 
     test('pasar el turno borra el aviso de la region completada', () async {
-      final tablero = crearTableroConIniciales();
+      final tablero = crearTableroConDiagonal();
       dejarAzulUnoCasiCompleta(tablero);
       final bloc = TurnoBloc(tablero, azar: AzarFijo([4, 4]));
 
@@ -215,7 +215,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: TableroWidget(
-              tablero: crearTableroConIniciales(),
+              tablero: crearTableroConDiagonal(),
               vecesReclamada: registro.vecesReclamada,
             ),
           ),
