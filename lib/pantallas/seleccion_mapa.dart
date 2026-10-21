@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../constantes.dart';
+import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../widgets/tablero_widget.dart';
 import 'partida.dart';
 
 // Pantalla para elegir el mapa de la partida. Por ahora solo existe el mapa
-// clasico; al tocarlo empieza la partida.
-class SeleccionMapa extends StatelessWidget {
+// clasico, que se lee de assets/mapas/; al tocarlo empieza la partida.
+class SeleccionMapa extends StatefulWidget {
   const SeleccionMapa({super.key});
+
+  @override
+  State<SeleccionMapa> createState() => _SeleccionMapaState();
+}
+
+class _SeleccionMapaState extends State<SeleccionMapa> {
+  // Se carga una sola vez al abrir la pantalla.
+  late final Future<Mapa> _mapaClasico = cargarMapa(rutaMapaClasico);
 
   @override
   Widget build(BuildContext context) {
@@ -26,20 +35,42 @@ class SeleccionMapa extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: anchoMaximoTelefono),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _TarjetaMapa(
-                  key: const ValueKey('mapa-clasico'),
-                  mapa: mapaClasico,
-                  onElegir: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          const VistaPreviaTablero(mapa: mapaClasico),
+            child: FutureBuilder<Mapa>(
+              future: _mapaClasico,
+              builder: (context, carga) {
+                if (carga.hasError) {
+                  // Por ejemplo, un error de formato en el archivo del mapa.
+                  final error = carga.error;
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No se pudo leer el mapa: '
+                      '${error is FormatException ? error.message : error}',
+                      key: const ValueKey('error-mapa'),
+                      style: TextStyle(color: colores.error),
                     ),
-                  ),
-                ),
-              ],
+                  );
+                }
+                final mapa = carga.data;
+                if (mapa == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _TarjetaMapa(
+                      key: const ValueKey('mapa-clasico'),
+                      mapa: mapa,
+                      onElegir: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => VistaPreviaTablero(mapa: mapa),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

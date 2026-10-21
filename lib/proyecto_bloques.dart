@@ -1,3 +1,4 @@
+export 'lector_mapas.dart';
 export 'mapa.dart';
 export 'reclamos.dart';
 export 'region.dart';

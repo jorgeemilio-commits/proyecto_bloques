@@ -1,6 +1,8 @@
 import 'tipo.dart';
 
-abstract class Region {
+// Una region de colores del tablero. Se puede crear directamente (por
+// ejemplo, al leer un mapa de texto) o con las clases de abajo.
+class Region {
   // Identificador de la region dentro de su mapa: letra del color y numero
   // de region de ese color (por ejemplo 'Z1' o 'L2').
   final String id;

@@ -24,3 +24,4 @@ flutter:
   assets:
     - assets/sonidos/
     - assets/imagenes/
+    - assets/mapas/
