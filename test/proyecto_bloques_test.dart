@@ -3,7 +3,12 @@ import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'consola.dart';
 
 Tablero crearTableroDePrueba() {
-  return Tablero.desdeRegiones(filas: 7, columnas: 7, regiones: const []);
+  return Tablero.desdeRegiones(
+    filas: 7,
+    columnas: 7,
+    regiones: const [],
+    coordenadasIniciales: mapaClasico.coordenadasIniciales,
+  );
 }
 
 void main() {
@@ -68,6 +73,7 @@ void main() {
         const RegionRojaUno(),
         const RegionAmarilla(),
       ],
+      coordenadasIniciales: mapaClasico.coordenadasIniciales,
     );
 
     expect(tablero.filas, 7);

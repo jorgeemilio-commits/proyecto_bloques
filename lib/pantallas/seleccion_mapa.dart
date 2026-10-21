@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart' show anchoMaximoTelefono, VistaPreviaTablero;
-import '../region.dart';
-import '../tablero.dart';
+import '../mapa.dart';
 import '../widgets/tablero_widget.dart';
 
 // Pantalla para elegir el mapa de la partida. Por ahora solo existe el mapa
@@ -31,12 +30,11 @@ class SeleccionMapa extends StatelessWidget {
               children: [
                 _TarjetaMapa(
                   key: const ValueKey('mapa-clasico'),
-                  nombre: 'Clásico',
-                  descripcion: '7×7 · ${regionesMapa.length} regiones',
-                  regiones: regionesMapa,
+                  mapa: mapaClasico,
                   onElegir: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const VistaPreviaTablero(),
+                      builder: (_) =>
+                          const VistaPreviaTablero(mapa: mapaClasico),
                     ),
                   ),
                 ),
@@ -49,20 +47,12 @@ class SeleccionMapa extends StatelessWidget {
   }
 }
 
-// Tarjeta de un mapa con su vista previa, nombre y descripcion.
+// Tarjeta de un mapa con su vista previa, nombre y tamaño.
 class _TarjetaMapa extends StatelessWidget {
-  final String nombre;
-  final String descripcion;
-  final List<Region> regiones;
+  final Mapa mapa;
   final VoidCallback onElegir;
 
-  const _TarjetaMapa({
-    super.key,
-    required this.nombre,
-    required this.descripcion,
-    required this.regiones,
-    required this.onElegir,
-  });
+  const _TarjetaMapa({super.key, required this.mapa, required this.onElegir});
 
   @override
   Widget build(BuildContext context) {
@@ -83,13 +73,7 @@ class _TarjetaMapa extends StatelessWidget {
               SizedBox(
                 width: 112,
                 child: IgnorePointer(
-                  child: TableroWidget(
-                    tablero: Tablero.desdeRegiones(
-                      filas: 7,
-                      columnas: 7,
-                      regiones: regiones,
-                    ),
-                  ),
+                  child: TableroWidget(tablero: mapa.crearTablero()),
                 ),
               ),
               const SizedBox(width: 16),
@@ -98,14 +82,15 @@ class _TarjetaMapa extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      nombre,
+                      mapa.nombre,
                       style: tema.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      descripcion,
+                      '${mapa.columnas}×${mapa.filas} · '
+                      '${mapa.regiones.length} regiones',
                       style: tema.textTheme.bodyMedium?.copyWith(
                         color: tema.colorScheme.onSurfaceVariant,
                       ),

@@ -31,14 +31,16 @@ class Tablero {
   // Matriz de celdas organizada como celdas[fila][columna], o sea [y][x].
   final List<List<Celda>> celdas;
 
-  // Construye un tablero con sus dimensiones, regiones y celdas vacias.
+  // Construye un tablero con sus dimensiones, regiones y celdas vacias. Las
+  // casillas iniciales las indica el mapa.
   Tablero.desdeRegiones({
     required this.filas,
     required this.columnas,
     required List<Region> regiones,
+    required List<Coordenada> coordenadasIniciales,
   })  : regiones = List.unmodifiable(regiones),
         celdas = _crearCeldas(filas, columnas) {
-    // Relaciona las coordenadas fijas con las celdas reales del tablero.
+    // Relaciona las coordenadas del mapa con las celdas reales del tablero.
     celdasIniciales = List.unmodifiable(
       coordenadasIniciales.map(obtenerCelda),
     );

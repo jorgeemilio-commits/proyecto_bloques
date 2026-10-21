@@ -24,11 +24,7 @@ class AzarFijo implements Random {
 // (5,5)=6. Es una posicion fija para probar las reglas, sin depender de donde
 // esten las casillas iniciales.
 Tablero crearTableroConDiagonal() {
-  final tablero = Tablero.desdeRegiones(
-    filas: 7,
-    columnas: 7,
-    regiones: regionesMapa,
-  );
+  final tablero = mapaClasico.crearTablero();
   for (var indice = 0; indice < 6; indice++) {
     celdaEn(tablero, indice, indice).numero = indice + 1;
   }

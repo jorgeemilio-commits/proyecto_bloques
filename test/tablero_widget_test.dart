@@ -7,11 +7,7 @@ import 'consola.dart';
 
 void main() {
   testWidgets('muestra todas las celdas y marca las iniciales', (tester) async {
-    final tablero = Tablero.desdeRegiones(
-      filas: 7,
-      columnas: 7,
-      regiones: regionesMapa,
-    );
+    final tablero = mapaClasico.crearTablero();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -32,11 +28,7 @@ void main() {
   testWidgets('solo las casillas de las regiones rayadas tienen rayas', (
     tester,
   ) async {
-    final tablero = Tablero.desdeRegiones(
-      filas: 7,
-      columnas: 7,
-      regiones: regionesMapa,
-    );
+    final tablero = mapaClasico.crearTablero();
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(body: TableroWidget(tablero: tablero)),

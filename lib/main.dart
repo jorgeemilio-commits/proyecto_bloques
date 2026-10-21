@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'mapa.dart';
 import 'reclamos.dart';
-import 'region.dart';
 import 'sonidos.dart';
 import 'tablero.dart';
 import 'tipo.dart';
@@ -50,7 +50,10 @@ class ProyectoBloquesApp extends StatelessWidget {
 }
 
 class VistaPreviaTablero extends StatefulWidget {
-  const VistaPreviaTablero({super.key});
+  // Mapa con el que se juega la partida.
+  final Mapa mapa;
+
+  const VistaPreviaTablero({super.key, this.mapa = mapaClasico});
 
   @override
   State<VistaPreviaTablero> createState() => _VistaPreviaTableroState();
@@ -65,11 +68,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   @override
   void initState() {
     super.initState();
-    _tablero = Tablero.desdeRegiones(
-      filas: 7,
-      columnas: 7,
-      regiones: regionesMapa,
-    );
+    _tablero = widget.mapa.crearTablero();
     _tablero.celdasIniciales.first.numero = 4;
     _valoresInicialesBloc = ValoresInicialesBloc(_tablero);
     _turnoBloc = TurnoBloc(_tablero);

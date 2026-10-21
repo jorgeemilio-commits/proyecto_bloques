@@ -7,8 +7,7 @@ import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'consola.dart';
 
-Tablero crearTableroVacio() =>
-    Tablero.desdeRegiones(filas: 7, columnas: 7, regiones: regionesMapa);
+Tablero crearTableroVacio() => mapaClasico.crearTablero();
 
 // Numeros de la rueda que esta abierta: cada numero del tablero aparece una
 // vez, asi que los que aparecen una vez mas son botones de la rueda.
