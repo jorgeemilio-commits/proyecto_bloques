@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyecto_bloques/main.dart' show VistaPreviaTablero;
+import 'package:proyecto_bloques/pantallas/partida.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/menu_regiones_widget.dart';

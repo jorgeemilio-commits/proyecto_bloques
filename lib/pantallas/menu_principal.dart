@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart' show anchoMaximoTelefono;
+import '../constantes.dart';
 import 'seleccion_mapa.dart';
 
 // Primera pantalla de la app: titulo del juego y boton para jugar.

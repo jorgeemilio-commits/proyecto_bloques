@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart' show anchoMaximoTelefono, VistaPreviaTablero;
+import '../constantes.dart';
 import '../mapa.dart';
 import '../widgets/tablero_widget.dart';
+import 'partida.dart';
 
 // Pantalla para elegir el mapa de la partida. Por ahora solo existe el mapa
 // clasico; al tocarlo empieza la partida.
