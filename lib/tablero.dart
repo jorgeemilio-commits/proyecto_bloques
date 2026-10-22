@@ -97,6 +97,27 @@ class Tablero {
           ?obtenerCelda(coordenada).numero,
       ];
 
+  // Numeros del 1 al 6 que acepta una casilla inicial segun la regla de su
+  // region, tomando en cuenta los numeros de las otras casillas iniciales de
+  // esa misma region (en la fase inicial solo ellas tienen numero).
+  Set<int> numerosPermitidosEnInicial(Celda celda) {
+    final region = obtenerRegion(celda.coordenada);
+    final todos = {for (var numero = 1; numero <= 6; numero++) numero};
+    if (region == null) {
+      return todos;
+    }
+
+    final otrosEnLaRegion = [
+      for (final otra in celdasIniciales)
+        if (otra != celda && obtenerRegion(otra.coordenada) == region)
+          ?otra.numero,
+    ];
+    return {
+      for (final numero in todos)
+        if (region.tipo.esPosibleAgregar(otrosEnLaRegion, numero)) numero,
+    };
+  }
+
   // Indica si todas las casillas de la region ya tienen un numero.
   bool regionCompleta(Region region) => region.coordenadas.every(
         (coordenada) => obtenerCelda(coordenada).numero != null,

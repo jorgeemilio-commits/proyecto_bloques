@@ -54,11 +54,17 @@ class TableroWidget extends StatelessWidget {
                 : vecesReclamada!(region),
             esInicial: esInicial,
             // En una casilla inicial no se ofrecen los numeros que ya estan
-            // en las otras casillas iniciales.
+            // en las otras casillas iniciales ni los que no permite la regla
+            // de su region (por ejemplo, un 2 en una naranja de 4 a 6).
             numerosOcultos: esInicial
                 ? {
                     for (final otra in tablero.celdasIniciales)
                       if (otra != celda) ?otra.numero,
+                    for (var numero = 1; numero <= 6; numero++)
+                      if (!tablero
+                          .numerosPermitidosEnInicial(celda)
+                          .contains(numero))
+                        numero,
                   }
                 : const {},
             onTap: onCeldaTap == null ? null : () => onCeldaTap!(celda),

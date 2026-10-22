@@ -8,6 +8,12 @@ import 'package:proyecto_bloques/proyecto_bloques.dart';
 // directo del disco para poder usarlo en cualquier prueba sin esperar.
 final Mapa mapaClasico = leerMapa(File(rutaMapaClasico).readAsStringSync());
 
+// El mapa Bases, que tiene casillas iniciales dentro de sus dos regiones
+// naranjas: (4,0) en la de arriba (4 a 6) y (1,6) en la de abajo (1 a 3).
+final Mapa mapaBases = leerMapa(
+  File('${carpetaMapas}bases.txt').readAsStringSync(),
+);
+
 // Region del mapa clasico por su identificador, por ejemplo 'Z1' (la azul de
 // arriba) o 'Z2' (la azul rayada de abajo).
 Region region(String id) =>

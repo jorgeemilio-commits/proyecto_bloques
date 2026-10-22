@@ -8,11 +8,15 @@ class ValoresInicialesEstado {
   final List<int?> valores;
   final String? mensajeError;
   final bool confirmado;
+  // Indica si cada numero inicial cumple la regla de su region (por ejemplo,
+  // un 2 no cabe en una region naranja de 4 a 6).
+  final bool cumplenRegiones;
 
   const ValoresInicialesEstado({
     required this.valores,
     this.mensajeError,
     this.confirmado = false,
+    this.cumplenRegiones = true,
   });
 
   // Indica si todas las celdas iniciales ya tienen un numero.
@@ -25,7 +29,7 @@ class ValoresInicialesEstado {
   }
 
   bool get puedeAvanzar =>
-      !confirmado && estanCompletos && noHayRepetidos;
+      !confirmado && estanCompletos && noHayRepetidos && cumplenRegiones;
 }
 
 class ValoresInicialesBloc extends ChangeNotifier {
@@ -41,20 +45,42 @@ class ValoresInicialesBloc extends ChangeNotifier {
   }
 
   // Llena las casillas iniciales con los numeros del 1 al 6 en orden
-  // aleatorio, sin repetidos. Se puede pasar un Random para las pruebas.
+  // aleatorio, sin repetidos y respetando la regla de cada region. Se puede
+  // pasar un Random para las pruebas.
   void llenarAleatorio([Random? azar]) {
     if (_confirmado) {
       return;
     }
 
-    final numeros = [
-      for (var numero = 1; numero <= tablero.celdasIniciales.length; numero++)
-        numero,
-    ]..shuffle(azar);
-
-    for (var indice = 0; indice < numeros.length; indice++) {
-      tablero.celdasIniciales[indice].numero = numeros[indice];
+    final celdas = tablero.celdasIniciales;
+    final aleatorio = azar ?? Random();
+    for (final celda in celdas) {
+      celda.numero = null;
     }
+
+    // Prueba numeros al azar casilla por casilla; si una casilla se queda sin
+    // opciones, regresa y cambia el numero de la anterior.
+    bool asignarDesde(int indice, Set<int> usados) {
+      if (indice == celdas.length) {
+        return true;
+      }
+      final celda = celdas[indice];
+      final opciones = tablero
+          .numerosPermitidosEnInicial(celda)
+          .difference(usados)
+          .toList()
+        ..shuffle(aleatorio);
+      for (final numero in opciones) {
+        celda.numero = numero;
+        if (asignarDesde(indice + 1, {...usados, numero})) {
+          return true;
+        }
+      }
+      celda.numero = null;
+      return false;
+    }
+
+    asignarDesde(0, {});
     notificarCambio();
   }
 
@@ -65,6 +91,11 @@ class ValoresInicialesBloc extends ChangeNotifier {
         ),
         mensajeError: _mensajeError,
         confirmado: _confirmado,
+        cumplenRegiones: tablero.celdasIniciales.every(
+          (celda) =>
+              celda.numero == null ||
+              tablero.numerosPermitidosEnInicial(celda).contains(celda.numero),
+        ),
       );
 
   // Lee el estado actual y decide si el juego puede continuar.
@@ -87,9 +118,11 @@ class ValoresInicialesBloc extends ChangeNotifier {
       return true;
     }
 
-    _mensajeError = estadoActual.estanCompletos
-        ? 'Los valores iniciales no pueden repetirse.'
-        : 'Debes completar las seis celdas iniciales.';
+    _mensajeError = !estadoActual.estanCompletos
+        ? 'Debes completar las seis celdas iniciales.'
+        : !estadoActual.noHayRepetidos
+            ? 'Los valores iniciales no pueden repetirse.'
+            : 'Hay un numero que no cumple la regla de su region.';
     notifyListeners();
     return false;
   }

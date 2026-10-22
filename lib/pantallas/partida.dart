@@ -37,7 +37,14 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   void initState() {
     super.initState();
     _tablero = widget.mapa.crearTablero();
-    _tablero.celdasIniciales.first.numero = 4;
+    // Pone un 4 de entrada en la primera casilla inicial cuya region lo
+    // acepte (en una naranja de 1 a 3, por ejemplo, no cabe).
+    for (final celda in _tablero.celdasIniciales) {
+      if (_tablero.numerosPermitidosEnInicial(celda).contains(4)) {
+        celda.numero = 4;
+        break;
+      }
+    }
     _valoresInicialesBloc = ValoresInicialesBloc(_tablero);
     _turnoBloc = TurnoBloc(_tablero);
   }
@@ -250,7 +257,9 @@ class _EncabezadoFase extends StatelessWidget {
     final tema = Theme.of(context);
     final llenas = estado.valores.whereType<int>().length;
     final total = estado.valores.length;
-    final hayError = estado.estanCompletos && !estado.noHayRepetidos;
+    final hayError =
+        estado.estanCompletos &&
+        (!estado.noHayRepetidos || !estado.cumplenRegiones);
     final reclamo = estado.confirmado ? turno.ultimoReclamo : null;
 
     final mensaje = reclamo != null
@@ -261,6 +270,8 @@ class _EncabezadoFase extends StatelessWidget {
         ? 'Completa las seis casillas iniciales con números distintos del 1 al 6.'
         : !estado.noHayRepetidos
         ? 'Las casillas iniciales deben tener números distintos.'
+        : !estado.cumplenRegiones
+        ? 'Hay un número que no cumple la regla de su región.'
         : 'Casillas iniciales completas. Puedes continuar.';
 
     return Column(
