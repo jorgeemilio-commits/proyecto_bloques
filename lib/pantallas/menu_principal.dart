@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constantes.dart';
+import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../region.dart';
 import '../widgets/celda_widget.dart';
@@ -103,16 +104,39 @@ class MenuPrincipal extends StatelessWidget {
 }
 
 // Tablero pequeño con el mapa clasico, inclinado como el logo. Solo adorna.
-class _TableroDeAdorno extends StatelessWidget {
+class _TableroDeAdorno extends StatefulWidget {
   const _TableroDeAdorno();
 
+  @override
+  State<_TableroDeAdorno> createState() => _TableroDeAdornoState();
+}
+
+class _TableroDeAdornoState extends State<_TableroDeAdorno> {
   static const double _casilla = 24;
   static const double _espacio = 3;
+  // Tamaño del tablero de 7x7 con su marco, para reservar el espacio mientras
+  // se lee el mapa y que el logo no salte.
+  static const double _tamanoReservado = 7 * _casilla + 6 * _espacio + 16;
+
+  // El mapa se lee del archivo una sola vez.
+  late final Future<Mapa> _mapa = cargarMapa(rutaMapaClasico);
 
   @override
   Widget build(BuildContext context) {
-    final tablero = mapaClasico.crearTablero();
-    final iniciales = mapaClasico.coordenadasIniciales;
+    return FutureBuilder<Mapa>(
+      future: _mapa,
+      builder: (context, carga) {
+        final mapa = carga.data;
+        return mapa == null
+            ? const SizedBox.square(dimension: _tamanoReservado)
+            : _dibujar(context, mapa);
+      },
+    );
+  }
+
+  Widget _dibujar(BuildContext context, Mapa mapa) {
+    final tablero = mapa.crearTablero();
+    final iniciales = mapa.coordenadasIniciales;
 
     return Transform.rotate(
       angle: -0.12,

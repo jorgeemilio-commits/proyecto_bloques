@@ -21,7 +21,7 @@ class VistaPreviaTablero extends StatefulWidget {
   // Mapa con el que se juega la partida.
   final Mapa mapa;
 
-  const VistaPreviaTablero({super.key, this.mapa = mapaClasico});
+  const VistaPreviaTablero({super.key, required this.mapa});
 
   @override
   State<VistaPreviaTablero> createState() => _VistaPreviaTableroState();

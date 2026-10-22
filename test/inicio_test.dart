@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/pantallas/partida.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 Tablero crearTableroVacio() => mapaClasico.crearTablero();
@@ -51,7 +52,9 @@ void main() {
     testWidgets('el boton aleatorio llena las casillas y habilita Listo', (
       tester,
     ) async {
-      await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
+      await tester.pumpWidget(
+        MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+      );
 
       await tester.tap(find.byTooltip('Números aleatorios'));
       await tester.pumpAndSettle();
@@ -78,7 +81,9 @@ void main() {
     testWidgets('no ofrece los numeros de otras casillas iniciales', (
       tester,
     ) async {
-      await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
+      await tester.pumpWidget(
+        MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+      );
       final celdasIniciales = find.byWidgetPredicate(
         (widget) => widget is CeldaWidget && widget.esInicial,
       );
@@ -99,7 +104,9 @@ void main() {
     });
 
     testWidgets('al borrar un numero vuelve a ofrecerse', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
+      await tester.pumpWidget(
+        MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+      );
       final celdasIniciales = find.byWidgetPredicate(
         (widget) => widget is CeldaWidget && widget.esInicial,
       );

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 Tablero crearTableroDePrueba() {
@@ -68,11 +69,7 @@ void main() {
     final tablero = Tablero.desdeRegiones(
       filas: 7,
       columnas: 7,
-      regiones: [
-        const RegionAzulUno(),
-        const RegionRojaUno(),
-        const RegionAmarilla(),
-      ],
+      regiones: [region('Z1'), region('R1'), region('A1')],
       coordenadasIniciales: mapaClasico.coordenadasIniciales,
     );
 
@@ -93,12 +90,9 @@ void main() {
       isTrue,
     );
     expect(tablero.regiones, hasLength(3));
-    expect(tablero.obtenerRegion(const Coordenada(2, 0)), isA<RegionAzulUno>());
-    expect(tablero.obtenerRegion(const Coordenada(1, 2)), isA<RegionRojaUno>());
-    expect(
-      tablero.obtenerRegion(const Coordenada(3, 3)),
-      isA<RegionAmarilla>(),
-    );
+    expect(tablero.obtenerRegion(const Coordenada(2, 0))?.id, 'Z1');
+    expect(tablero.obtenerRegion(const Coordenada(1, 2))?.id, 'R1');
+    expect(tablero.obtenerRegion(const Coordenada(3, 3))?.id, 'A1');
     expect(tablero.celdas[0][2].numero, isNull);
     expect(tablero.celdas[0][2].coordenada.x, 2);
     expect(tablero.celdas[0][2].coordenada.y, 0);

@@ -1,7 +1,17 @@
 // Ayudantes compartidos por las pruebas.
+import 'dart:io';
 import 'dart:math';
 
 import 'package:proyecto_bloques/proyecto_bloques.dart';
+
+// El mapa clasico leido de su archivo real (assets/mapas/clasico.txt). Se lee
+// directo del disco para poder usarlo en cualquier prueba sin esperar.
+final Mapa mapaClasico = leerMapa(File(rutaMapaClasico).readAsStringSync());
+
+// Region del mapa clasico por su identificador, por ejemplo 'Z1' (la azul de
+// arriba) o 'Z2' (la azul rayada de abajo).
+Region region(String id) =>
+    mapaClasico.regiones.firstWhere((region) => region.id == id);
 
 // Random que devuelve las caras indicadas en orden, para saber que saldra.
 class AzarFijo implements Random {

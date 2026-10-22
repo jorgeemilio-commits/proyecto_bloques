@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/tablero_widget.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 void main() {

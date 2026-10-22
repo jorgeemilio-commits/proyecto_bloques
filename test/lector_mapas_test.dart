@@ -8,30 +8,54 @@ void main() {
   // Necesario para leer archivos de assets con rootBundle.
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('el archivo del mapa clasico da el mismo mapa que el codigo', () async {
+  test('el archivo del mapa clasico tiene el tablero del juego', () async {
     final leido = await cargarMapa(rutaMapaClasico);
+    final casillasPorRegion = {
+      for (final region in leido.regiones) region.id: region.coordenadas.length,
+    };
 
-    expect(leido.nombre, mapaClasico.nombre);
+    expect(leido.nombre, 'Clásico');
     expect((leido.filas, leido.columnas), (7, 7));
-    expect(
-      leido.coordenadasIniciales.map(comoTexto),
-      mapaClasico.coordenadasIniciales.map(comoTexto),
-    );
-    // Mismas regiones, en el mismo orden, con el mismo color, rayas y casillas.
-    expect(
-      leido.regiones.map((r) => r.id),
-      mapaClasico.regiones.map((r) => r.id),
-    );
-    for (final esperada in mapaClasico.regiones) {
-      final region = leido.regiones.firstWhere((r) => r.id == esperada.id);
-      expect(region.tipo, esperada.tipo, reason: esperada.id);
-      expect(region.conRayas, esperada.conRayas, reason: esperada.id);
-      expect(
-        region.coordenadas.map(comoTexto).toSet(),
-        esperada.coordenadas.map(comoTexto).toSet(),
-        reason: esperada.id,
-      );
-    }
+    expect(leido.coordenadasIniciales.map(comoTexto), [
+      '(2,0)',
+      '(5,1)',
+      '(1,3)',
+      '(4,3)',
+      '(2,5)',
+      '(4,6)',
+    ]);
+    // Regiones en el orden del panel, cuantas casillas tiene cada una y
+    // cuales llevan rayas.
+    expect(casillasPorRegion.keys, [
+      'Z1',
+      'Z2',
+      'R1',
+      'R2',
+      'V1',
+      'V2',
+      'L1',
+      'L2',
+      'A1',
+    ]);
+    expect(casillasPorRegion, {
+      'Z1': 4,
+      'Z2': 4,
+      'R1': 6,
+      'R2': 6,
+      'V1': 6,
+      'V2': 6,
+      'L1': 6,
+      'L2': 6,
+      'A1': 5,
+    });
+    expect(leido.regiones.where((r) => r.conRayas).map((r) => r.id), [
+      'Z2',
+      'R2',
+      'V2',
+      'L2',
+    ]);
+    // Las 9 regiones cubren las 49 casillas.
+    expect(casillasPorRegion.values.reduce((a, b) => a + b), 49);
     mostrar(
       '"${leido.nombre}" ${leido.columnas}x${leido.filas}: regiones '
       '${leido.regiones.map((r) => r.id).join(' ')}; iniciales '

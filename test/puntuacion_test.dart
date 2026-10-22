@@ -6,7 +6,7 @@ import 'package:proyecto_bloques/widgets/tablero_widget.dart';
 import 'ayudantes.dart';
 import 'consola.dart';
 
-// Llena tres de las cuatro casillas de la region RegionAzulUno con 4, para
+// Llena tres de las cuatro casillas de la region azul Z1 con 4, para
 // que colocar un 4 en (2,0) la complete. (2,0) tiene al lado el 4 de (2,1).
 void dejarAzulUnoCasiCompleta(Tablero tablero) {
   celdaEn(tablero, 2, 1).numero = 4;
@@ -17,13 +17,13 @@ void dejarAzulUnoCasiCompleta(Tablero tablero) {
 void main() {
   test('una region solo esta completa con todas sus casillas llenas', () {
     final tablero = crearTableroConDiagonal();
-    const region = RegionAzulUno();
+    final azulUno = region('Z1');
 
-    final vacia = tablero.regionCompleta(region);
+    final vacia = tablero.regionCompleta(azulUno);
     dejarAzulUnoCasiCompleta(tablero);
-    final casiCompleta = tablero.regionCompleta(region);
+    final casiCompleta = tablero.regionCompleta(azulUno);
     celdaEn(tablero, 2, 0).numero = 4;
-    final completa = tablero.regionCompleta(region);
+    final completa = tablero.regionCompleta(azulUno);
 
     expect(vacia, isFalse);
     expect(casiCompleta, isFalse);
@@ -37,22 +37,22 @@ void main() {
   group('RegistroDeReclamos', () {
     test('cada reclamo da el siguiente premio y despues del tercero 0', () {
       final registro = RegistroDeReclamos();
-      const region = RegionAzulUno();
+      final azulUno = region('Z1');
 
       final premios = [
-        for (var vez = 0; vez < 5; vez++) registro.reclamar(region),
+        for (var vez = 0; vez < 5; vez++) registro.reclamar(azulUno),
       ];
 
       expect(premios, [7, 5, 3, 0, 0]);
-      expect(registro.vecesReclamada(region), 5);
+      expect(registro.vecesReclamada(azulUno), 5);
       mostrar('Reclamos sucesivos de una region azul: $premios.');
     });
 
     test('los reclamos son por region, no por color', () {
       final registro = RegistroDeReclamos();
 
-      final primeraAzul = registro.reclamar(const RegionAzulUno());
-      final segundaAzul = registro.reclamar(const RegionAzulDos());
+      final primeraAzul = registro.reclamar(region('Z1'));
+      final segundaAzul = registro.reclamar(region('Z2'));
 
       expect(primeraAzul, 7);
       expect(segundaAzul, 7);
@@ -75,7 +75,7 @@ void main() {
       await bloc.stream.first;
 
       expect(bloc.state.puntos, 7);
-      expect(bloc.state.ultimoReclamo?.region, const RegionAzulUno());
+      expect(bloc.state.ultimoReclamo?.region, region('Z1'));
       expect(bloc.state.ultimoReclamo?.puntos, 7);
       expect(bloc.state.turno, 2);
       mostrar(
@@ -108,7 +108,7 @@ void main() {
     test('los puntos de varias regiones se acumulan', () async {
       final tablero = crearTableroConDiagonal();
       dejarAzulUnoCasiCompleta(tablero);
-      // RegionAzulDos: (5,5) ya tiene el 6 inicial; falta (6,4).
+      // Region azul Z2: (5,5) ya tiene el 6 de la diagonal; falta (6,4).
       celdaEn(tablero, 6, 5).numero = 6;
       celdaEn(tablero, 5, 6).numero = 6;
       final bloc = TurnoBloc(tablero, azar: AzarFijo([4, 4, 6, 6]));
@@ -210,7 +210,7 @@ void main() {
         return decoracion?.color;
       }
 
-      final registro = RegistroDeReclamos()..reclamar(const RegionAzulUno());
+      final registro = RegistroDeReclamos()..reclamar(region('Z1'));
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

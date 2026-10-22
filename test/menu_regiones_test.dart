@@ -4,11 +4,14 @@ import 'package:proyecto_bloques/pantallas/partida.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/menu_regiones_widget.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 void main() {
   testWidgets('la pestaña abre y cierra el panel de regiones', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
+    await tester.pumpWidget(
+      MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+    );
     // El juego vive en una columna con ancho de telefono; el panel cerrado
     // queda justo a la derecha de esa columna.
     final bordeDerecho = tester
@@ -41,7 +44,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: MenuRegionesWidget(
-            regiones: regionesMapa,
+            regiones: mapaClasico.regiones,
             vecesReclamada: registro.vecesReclamada,
           ),
         ),
@@ -77,14 +80,14 @@ void main() {
       );
     }
 
-    // regionesMapa[0] es AzulUno y regionesMapa[1] es AzulDos.
+    // La fila 0 es la region Z1 y la fila 1 la Z2.
     final vistos = <String?>[];
     for (var reclamo = 0; reclamo <= 3; reclamo++) {
       await dibujar();
       final (premio, color) = actual(0);
       vistos.add(premio);
       expect(color, colorDeRegion(TipoRegion.azul, vecesReclamada: reclamo));
-      registro.reclamar(const RegionAzulUno());
+      registro.reclamar(region('Z1'));
     }
 
     expect(vistos, ['7', '5', '3', null]);

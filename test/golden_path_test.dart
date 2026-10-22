@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/pantallas/partida.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/dados_widget.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 // Golden path: el recorrido feliz de un jugador de principio a fin
@@ -86,7 +87,9 @@ void main() {
   testWidgets('golden path: de abrir la app a completar una region', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: VistaPreviaTablero()));
+    await tester.pumpWidget(
+      MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+    );
 
     // 1. Al abrir: fase de valores iniciales y Listo desactivado.
     expect(textoDe(tester, 'titulo-fase'), 'Valores iniciales');

@@ -2,7 +2,8 @@ import 'region.dart';
 import 'tablero.dart';
 
 // Un mapa del juego: su nombre, su tamaño, sus regiones de colores y las
-// casillas iniciales que el jugador llena antes de empezar.
+// casillas iniciales que el jugador llena antes de empezar. Los mapas se leen
+// de assets/mapas/ con cargarMapa (lector_mapas.dart).
 class Mapa {
   final String nombre;
   final int filas;
@@ -26,12 +27,3 @@ class Mapa {
     coordenadasIniciales: coordenadasIniciales,
   );
 }
-
-// Mapa con el que se juega por ahora.
-const Mapa mapaClasico = Mapa(
-  nombre: 'Clásico',
-  filas: 7,
-  columnas: 7,
-  regiones: regionesMapa,
-  coordenadasIniciales: coordenadasIniciales,
-);
