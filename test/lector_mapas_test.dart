@@ -98,17 +98,33 @@ Z1I Z1 Z2I Z2
 v1I v1 v2I v2
 R1I R1 R3I R3
 B1 B1 B2 B2
+N1 N1 N2 N2
 ''');
 
     final porId = {for (final r in mapa.regiones) r.id: r};
-    expect(porId.keys, ['Z1', 'Z2', 'R1', 'R3', 'V1', 'V2', 'B1', 'B2']);
+    expect(porId.keys, [
+      'Z1',
+      'Z2',
+      'R1',
+      'R3',
+      'V1',
+      'V2',
+      'N1',
+      'N2',
+      'B1',
+      'B2',
+    ]);
     expect(porId['Z2']!.conRayas, isTrue);
     expect(porId['Z1']!.conRayas, isFalse);
     expect(porId['R3']!.conRayas, isFalse);
     expect(porId['V1']!.tipo, TipoRegion.verde);
     expect(porId['B1']!.tipo, TipoRegion.blanco);
     expect(porId['B2']!.conRayas, isTrue);
-    expect((mapa.filas, mapa.columnas), (4, 4));
+    // N1 es la naranja de 1 a 3 y N2 la de 4 a 6 (con rayas).
+    expect(porId['N1']!.tipo, TipoRegion.naranjaBaja);
+    expect(porId['N2']!.tipo, TipoRegion.naranjaAlta);
+    expect(porId['N2']!.conRayas, isTrue);
+    expect((mapa.filas, mapa.columnas), (5, 4));
     mostrar(
       'Regiones: ${porId.keys.join(' ')}; con rayas: '
       '${mapa.regiones.where((r) => r.conRayas).map((r) => r.id).join(' ')}.',
@@ -130,6 +146,11 @@ B1 B1 B2 B2
       'dos iniciales en una blanca': (
         '# X\nB1I B1I R1I\nR1I R1I R1I',
         'region blanca B1',
+      ),
+      'naranja que no es N1 ni N2': ('# X\nN3', 'solo puede ser N1'),
+      'cuatro iniciales en una naranja': (
+        '# X\nN1I N1I N1I N1I\nR1I R1I R1 R1',
+        'region naranja N1 tiene 4',
       ),
     };
 

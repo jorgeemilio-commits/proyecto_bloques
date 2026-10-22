@@ -53,6 +53,28 @@ void main() {
       );
     });
 
+    test('Naranja solo acepta numeros de su rango', () {
+      const baja = TipoRegion.naranjaBaja;
+      const alta = TipoRegion.naranjaAlta;
+      final bajaAcepta = [
+        for (var n = 1; n <= 6; n++)
+          if (baja.esPosibleAgregar([], n)) n,
+      ];
+      final altaAcepta = [
+        for (var n = 1; n <= 6; n++)
+          if (alta.esPosibleAgregar([], n)) n,
+      ];
+
+      expect(bajaAcepta, [1, 2, 3]);
+      expect(altaAcepta, [4, 5, 6]);
+      expect(baja.esPosibleAgregar([1, 3], 3), isTrue);
+      expect(baja.puntuaciones, {1: 6, 2: 4, 3: 3});
+      expect(alta.puntuaciones, {1: 6, 2: 4, 3: 3});
+      mostrar(
+        'Naranja baja acepta $bajaAcepta; alta acepta $altaAcepta; puntos 6, 4, 3.',
+      );
+    });
+
     test('Verde siempre acepta cualquier valor', () {
       expect(TipoRegion.verde.esPosibleAgregar([], 5), isTrue);
       expect(TipoRegion.verde.esPosibleAgregar([1, 2, 3], 4), isTrue);

@@ -10,7 +10,9 @@
       "Bash(flutter analyze *)",
       "Bash(dart format *)",
       "PowerShell(git diff -w --ignore-blank-lines --stat 2>$null)",
-      "PowerShell(git checkout -- lib/valores_iniciales_bloc.dart lib/widgets/menu_casilla_widget.dart lib/tablero.dart)"
+      "PowerShell(git checkout -- lib/valores_iniciales_bloc.dart lib/widgets/menu_casilla_widget.dart lib/tablero.dart)",
+      "WebFetch(domain:en.doc.boardgamearena.com)",
+      "WebFetch(domain:rulespal.com)"
     ]
   }
 }

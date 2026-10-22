@@ -15,13 +15,18 @@ import 'tipo.dart';
 // - Cada linea siguiente es una fila; las casillas van separadas por espacios.
 // - Cada casilla es la letra del color, el numero de region de ese color y,
 //   si es casilla inicial, una 'I'. Ejemplo: 'Z1I'.
-// - Letras: A amarillo, V verde, Z azul, L lila, R rojo, B blanco.
+// - Letras: A amarillo, V verde, Z azul, L lila, R rojo, B blanco y
+//   N naranja. La naranja solo puede ser N1 (numeros del 1 al 3) o N2
+//   (numeros del 4 al 6).
 // - La region con numero 2 se dibuja con rayas.
 //
 // Si el texto tiene un error, lanza un FormatException que dice donde esta.
 
 // Cantidad de casillas iniciales que debe tener todo mapa.
 const int casillasInicialesPorMapa = 6;
+
+// Letras de color en el orden en que se muestran las regiones.
+const List<String> _letrasDeColor = ['Z', 'R', 'V', 'L', 'A', 'N', 'B'];
 
 const Map<String, TipoRegion> _tipoPorLetra = {
   'Z': TipoRegion.azul,
@@ -31,6 +36,19 @@ const Map<String, TipoRegion> _tipoPorLetra = {
   'A': TipoRegion.amarillo,
   'B': TipoRegion.blanco,
 };
+
+// Tipo de una region por su letra y numero. La naranja depende del numero:
+// N1 es la de 1 a 3 y N2 la de 4 a 6; cualquier otra devuelve null.
+TipoRegion? _tipoDeRegion(String letra, int numero) {
+  if (letra == 'N') {
+    return switch (numero) {
+      1 => TipoRegion.naranjaBaja,
+      2 => TipoRegion.naranjaAlta,
+      _ => null,
+    };
+  }
+  return _tipoPorLetra[letra];
+}
 
 // Letra del color, numero de region y la I opcional de casilla inicial.
 final RegExp _formatoCasilla = RegExp(r'^([A-Z])(\d+)(I?)$');
@@ -103,11 +121,18 @@ Mapa leerMapa(String texto) {
 
     for (final (x, casilla) in casillas.indexed) {
       final partes = _formatoCasilla.firstMatch(casilla.toUpperCase());
-      if (partes == null || !_tipoPorLetra.containsKey(partes[1])) {
+      if (partes == null || !_letrasDeColor.contains(partes[1])) {
         throw FormatException(
           'Linea ${fila.numero}, casilla ${x + 1}: "$casilla" no es valida. '
-          'Use letra de color (A, V, Z, L, R, B), numero de region y una I '
+          'Use letra de color (A, V, Z, L, R, B, N), numero de region y una I '
           'opcional, por ejemplo Z1 o Z1I.',
+        );
+      }
+      if (_tipoDeRegion(partes[1]!, int.parse(partes[2]!)) == null) {
+        throw FormatException(
+          'Linea ${fila.numero}, casilla ${x + 1}: "$casilla" no es valida. '
+          'La naranja solo puede ser N1 (numeros del 1 al 3) o N2 (del 4 '
+          'al 6).',
         );
       }
 
@@ -125,7 +150,7 @@ Mapa leerMapa(String texto) {
         in coordenadasPorRegion.entries)
       Region(
         id,
-        _tipoPorLetra[id[0]]!,
+        _tipoDeRegion(id[0], int.parse(id.substring(1)))!,
         List.unmodifiable(coordenadas),
         conRayas: int.parse(id.substring(1)) == 2,
       ),
@@ -142,11 +167,11 @@ Mapa leerMapa(String texto) {
   );
 }
 
-// Ordena las regiones por color (azul, rojo, verde, lila, amarillo, blanco) y
-// luego por numero, como se muestran en el panel de regiones.
+// Ordena las regiones por color (azul, rojo, verde, lila, amarillo, naranja,
+// blanco) y luego por numero, como se muestran en el panel de regiones.
 int _compararRegiones(Region a, Region b) {
-  final letras = _tipoPorLetra.keys.toList();
-  final porColor = letras.indexOf(a.id[0]) - letras.indexOf(b.id[0]);
+  final porColor =
+      _letrasDeColor.indexOf(a.id[0]) - _letrasDeColor.indexOf(b.id[0]);
   if (porColor != 0) {
     return porColor;
   }
@@ -161,23 +186,36 @@ void _validarIniciales(List<Coordenada> iniciales, List<Region> regiones) {
     );
   }
 
-  // En las regiones donde todos los numeros deben ser iguales (azul, blanca)
-  // no puede haber dos casillas iniciales, porque estas llevan numeros
-  // distintos.
-  final soloIguales = regiones.where(
-    (region) => !region.tipo.esPosibleAgregar([1], 2),
-  );
-  for (final region in soloIguales) {
-    final enLaRegion = iniciales.where(
-      (inicial) =>
-          region.coordenadas.any((c) => c.x == inicial.x && c.y == inicial.y),
-    );
-    if (enLaRegion.length > 1) {
+  // Las casillas iniciales llevan numeros distintos, asi que las de una misma
+  // region deben poder tener numeros distintos que cumplan su regla. Por
+  // ejemplo: una region azul o blanca solo admite una; una naranja, tres.
+  for (final region in regiones) {
+    final enLaRegion = iniciales
+        .where(
+          (inicial) => region.coordenadas.any(
+            (c) => c.x == inicial.x && c.y == inicial.y,
+          ),
+        )
+        .length;
+    final posibles = _maximoDeNumerosDistintos(region.tipo);
+    if (enLaRegion > posibles) {
       throw FormatException(
-        'La region ${region.tipo.nombre} ${region.id} tiene '
-        '${enLaRegion.length} casillas iniciales; solo puede tener una porque '
-        'sus numeros deben ser iguales.',
+        'La region ${region.tipo.nombre} ${region.id} tiene $enLaRegion '
+        'casillas iniciales, pero su regla solo permite $posibles numeros '
+        'distintos.',
       );
     }
   }
+}
+
+// Cuantos numeros distintos del 1 al 6 caben juntos en una region de este
+// tipo: se van agregando mientras la regla lo permita.
+int _maximoDeNumerosDistintos(TipoRegion tipo) {
+  final numeros = <int>[];
+  for (var numero = 1; numero <= 6; numero++) {
+    if (tipo.esPosibleAgregar(numeros, numero)) {
+      numeros.add(numero);
+    }
+  }
+  return numeros.length;
 }
