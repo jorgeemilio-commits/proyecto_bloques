@@ -63,21 +63,43 @@ void main() {
     );
   });
 
+  test('el archivo del mapa borde se lee con su region blanca', () async {
+    final borde = await cargarMapa('assets/mapas/borde.txt');
+    final casillasPorRegion = {
+      for (final region in borde.regiones) region.id: region.coordenadas.length,
+    };
+
+    expect(borde.nombre, 'Borde');
+    expect((borde.filas, borde.columnas), (7, 7));
+    expect(borde.coordenadasIniciales, hasLength(6));
+    expect(casillasPorRegion['B1'], 2);
+    // Las 4 esquinas interiores y el centro forman una sola region amarilla.
+    expect(casillasPorRegion['A1'], 5);
+    expect(casillasPorRegion.values.reduce((a, b) => a + b), 49);
+    mostrar(
+      '"${borde.nombre}": ${borde.regiones.length} regiones '
+      '(${casillasPorRegion.entries.map((e) => '${e.key}:${e.value}').join(' ')}).',
+    );
+  });
+
   test('el numero separa regiones del mismo color y el 2 lleva rayas', () {
     final mapa = leerMapa('''
 # Prueba
 Z1I Z1 Z2I Z2
 v1I v1 v2I v2
 R1I R1 R3I R3
+B1 B1 B2 B2
 ''');
 
     final porId = {for (final r in mapa.regiones) r.id: r};
-    expect(porId.keys, ['Z1', 'Z2', 'R1', 'R3', 'V1', 'V2']);
+    expect(porId.keys, ['Z1', 'Z2', 'R1', 'R3', 'V1', 'V2', 'B1', 'B2']);
     expect(porId['Z2']!.conRayas, isTrue);
     expect(porId['Z1']!.conRayas, isFalse);
     expect(porId['R3']!.conRayas, isFalse);
     expect(porId['V1']!.tipo, TipoRegion.verde);
-    expect((mapa.filas, mapa.columnas), (3, 4));
+    expect(porId['B1']!.tipo, TipoRegion.blanco);
+    expect(porId['B2']!.conRayas, isTrue);
+    expect((mapa.filas, mapa.columnas), (4, 4));
     mostrar(
       'Regiones: ${porId.keys.join(' ')}; con rayas: '
       '${mapa.regiones.where((r) => r.conRayas).map((r) => r.id).join(' ')}.',
@@ -95,6 +117,10 @@ R1I R1 R3I R3
       'dos iniciales en una azul': (
         '# X\nZ1I Z1I R1I\nR1I R1I R1I',
         'region azul Z1',
+      ),
+      'dos iniciales en una blanca': (
+        '# X\nB1I B1I R1I\nR1I R1I R1I',
+        'region blanca B1',
       ),
     };
 

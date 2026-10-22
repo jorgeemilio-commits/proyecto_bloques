@@ -15,7 +15,7 @@ import 'tipo.dart';
 // - Cada linea siguiente es una fila; las casillas van separadas por espacios.
 // - Cada casilla es la letra del color, el numero de region de ese color y,
 //   si es casilla inicial, una 'I'. Ejemplo: 'Z1I'.
-// - Letras: A amarillo, V verde, Z azul, L lila, R rojo.
+// - Letras: A amarillo, V verde, Z azul, L lila, R rojo, B blanco.
 // - La region con numero 2 se dibuja con rayas.
 //
 // Si el texto tiene un error, lanza un FormatException que dice donde esta.
@@ -29,6 +29,7 @@ const Map<String, TipoRegion> _tipoPorLetra = {
   'V': TipoRegion.verde,
   'L': TipoRegion.lila,
   'A': TipoRegion.amarillo,
+  'B': TipoRegion.blanco,
 };
 
 // Letra del color, numero de region y la I opcional de casilla inicial.
@@ -84,7 +85,7 @@ Mapa leerMapa(String texto) {
       if (partes == null || !_tipoPorLetra.containsKey(partes[1])) {
         throw FormatException(
           'Linea ${fila.numero}, casilla ${x + 1}: "$casilla" no es valida. '
-          'Use letra de color (A, V, Z, L, R), numero de region y una I '
+          'Use letra de color (A, V, Z, L, R, B), numero de region y una I '
           'opcional, por ejemplo Z1 o Z1I.',
         );
       }
@@ -120,8 +121,8 @@ Mapa leerMapa(String texto) {
   );
 }
 
-// Ordena las regiones por color (azul, rojo, verde, lila, amarillo) y luego
-// por numero, como se muestran en el panel de regiones.
+// Ordena las regiones por color (azul, rojo, verde, lila, amarillo, blanco) y
+// luego por numero, como se muestran en el panel de regiones.
 int _compararRegiones(Region a, Region b) {
   final letras = _tipoPorLetra.keys.toList();
   final porColor = letras.indexOf(a.id[0]) - letras.indexOf(b.id[0]);
@@ -139,17 +140,22 @@ void _validarIniciales(List<Coordenada> iniciales, List<Region> regiones) {
     );
   }
 
-  // En una region azul todos los numeros son iguales, pero las casillas
-  // iniciales llevan numeros distintos: no puede haber dos en la misma.
-  for (final region in regiones.where((r) => r.tipo == TipoRegion.azul)) {
+  // En las regiones donde todos los numeros deben ser iguales (azul, blanca)
+  // no puede haber dos casillas iniciales, porque estas llevan numeros
+  // distintos.
+  final soloIguales = regiones.where(
+    (region) => !region.tipo.esPosibleAgregar([1], 2),
+  );
+  for (final region in soloIguales) {
     final enLaRegion = iniciales.where(
       (inicial) =>
           region.coordenadas.any((c) => c.x == inicial.x && c.y == inicial.y),
     );
     if (enLaRegion.length > 1) {
       throw FormatException(
-        'La region azul ${region.id} tiene ${enLaRegion.length} casillas '
-        'iniciales; solo puede tener una.',
+        'La region ${region.tipo.nombre} ${region.id} tiene '
+        '${enLaRegion.length} casillas iniciales; solo puede tener una porque '
+        'sus numeros deben ser iguales.',
       );
     }
   }

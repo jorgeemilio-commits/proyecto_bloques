@@ -87,9 +87,9 @@ class _FilaRegion extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
           ),
           child: region.conRayas
-              ? const CustomPaint(
-                  painter: PintorDeRayas(),
-                  child: SizedBox.expand(),
+              ? CustomPaint(
+                  painter: PintorDeRayas(color: colorDeTextoPara(tipo)),
+                  child: const SizedBox.expand(),
                 )
               : null,
         ),

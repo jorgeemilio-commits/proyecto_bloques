@@ -43,6 +43,16 @@ void main() {
       );
     });
 
+    test('Blanco exige que todos los valores sean iguales', () {
+      expect(TipoRegion.blanco.esPosibleAgregar([], 5), isTrue);
+      expect(TipoRegion.blanco.esPosibleAgregar([3, 3], 3), isTrue);
+      expect(TipoRegion.blanco.esPosibleAgregar([3, 3], 1), isFalse);
+      expect(TipoRegion.blanco.puntuaciones, {1: 3, 2: 2, 3: 1});
+      mostrar(
+        'Blanco: [3,3]+3 -> ${TipoRegion.blanco.esPosibleAgregar([3, 3], 3)}, [3,3]+1 -> ${TipoRegion.blanco.esPosibleAgregar([3, 3], 1)}; puntos ${TipoRegion.blanco.puntuaciones.values.join(', ')}.',
+      );
+    });
+
     test('Verde siempre acepta cualquier valor', () {
       expect(TipoRegion.verde.esPosibleAgregar([], 5), isTrue);
       expect(TipoRegion.verde.esPosibleAgregar([1, 2, 3], 4), isTrue);

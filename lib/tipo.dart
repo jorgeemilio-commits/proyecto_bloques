@@ -15,6 +15,28 @@ abstract class TipoRegion {
   static const TipoRegion azul = TipoAzul();
   static const TipoRegion verde = TipoVerde();
   static const TipoRegion lila = TipoLila();
+  static const TipoRegion blanco = TipoBlanco();
+}
+
+class TipoBlanco extends TipoRegion {
+  const TipoBlanco();
+
+  @override
+  String get nombre => 'blanca';
+
+  @override
+  Color get color => const Color(0xFFFFFFFF);
+
+  @override
+  String get descripcion => 'Todos los números deben ser iguales.';
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    return actuales.isEmpty || actuales.every((element) => element == posible);
+  }
+
+  @override
+  Map<int, int> get puntuaciones => {1: 3, 2: 2, 3: 1};
 }
 
 class TipoAzul extends TipoRegion {

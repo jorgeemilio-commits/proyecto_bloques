@@ -186,6 +186,23 @@ void main() {
       },
     );
 
+    test('el blanco se ve gris claro con texto oscuro', () {
+      final blanco = HSLColor.fromColor(colorDeRegion(TipoRegion.blanco));
+      final apagado = HSLColor.fromColor(
+        colorDeRegion(TipoRegion.blanco, vecesReclamada: 3),
+      );
+
+      expect(blanco.saturation, 0);
+      expect(blanco.lightness, greaterThan(0.7));
+      expect(apagado.lightness, lessThan(blanco.lightness));
+      expect(colorDeTextoPara(TipoRegion.blanco), Colors.black87);
+      expect(colorDeTextoPara(TipoRegion.amarillo), Colors.white);
+      mostrar(
+        'Blanco: luminosidad ${porcentaje(blanco.lightness)}, apagado '
+        '${porcentaje(apagado.lightness)}; texto oscuro.',
+      );
+    });
+
     testWidgets('solo se apagan las casillas de la region reclamada', (
       tester,
     ) async {

@@ -336,6 +336,7 @@ class _LeyendaRegiones extends StatelessWidget {
     (TipoRegion.amarillo, 'Distintos'),
     (TipoRegion.lila, 'Máx. 2 valores'),
     (TipoRegion.verde, 'Libre'),
+    (TipoRegion.blanco, 'Iguales'),
   ];
 
   @override

@@ -180,6 +180,10 @@ class _TableroDeAdornoState extends State<_TableroDeAdorno> {
   }
 
   Widget _casillaDeAdorno(Region? region, {required bool esInicial}) {
+    final colorDeTexto = region == null
+        ? Colors.white
+        : colorDeTextoPara(region.tipo);
+
     return Container(
       width: _casilla,
       height: _casilla,
@@ -193,13 +197,17 @@ class _TableroDeAdornoState extends State<_TableroDeAdorno> {
       child: Stack(
         children: [
           if (region?.conRayas ?? false)
-            const CustomPaint(
-              painter: PintorDeRayas(),
-              child: SizedBox.expand(),
+            CustomPaint(
+              painter: PintorDeRayas(color: colorDeTexto),
+              child: const SizedBox.expand(),
             ),
           if (esInicial)
-            const Center(
-              child: Icon(Icons.star_rounded, size: 14, color: Colors.white70),
+            Center(
+              child: Icon(
+                Icons.star_rounded,
+                size: 14,
+                color: colorDeTexto.withValues(alpha: 0.7),
+              ),
             ),
         ],
       ),

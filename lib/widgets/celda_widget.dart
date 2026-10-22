@@ -22,11 +22,26 @@ Color colorDeRegion(TipoRegion tipo, {int vecesReclamada = 0}) {
         _brilloPorReclamos.length - 1,
       )];
 
-  return HSLColor.fromColor(tipo.color)
+  final base = HSLColor.fromColor(tipo.color);
+
+  // El blanco no tiene tono: se dibuja gris claro y se apaga hacia gris.
+  if (base.saturation == 0) {
+    return base.withLightness(0.82 * (0.75 + 0.25 * brillo)).toColor();
+  }
+
+  return base
       .withSaturation(0.4 * brillo)
       .withLightness(0.4 * (0.6 + 0.4 * brillo))
       .toColor();
 }
+
+// Color del numero, la estrella y las rayas sobre una region: oscuro en las
+// regiones claras (blanca) y blanco en las demas. Se decide con el color sin
+// reclamos para que no cambie al apagarse la region.
+Color colorDeTextoPara(TipoRegion tipo) =>
+    colorDeRegion(tipo).computeLuminance() > 0.4
+    ? Colors.black87
+    : Colors.white;
 
 class CeldaWidget extends StatelessWidget {
   final Celda celda;
@@ -80,7 +95,9 @@ class CeldaWidget extends StatelessWidget {
     final colorDeFondo = dadoEncima
         ? Color.lerp(colorBase, Colors.white, 0.3)!
         : colorBase;
-    const colorDeTexto = Colors.white;
+    final colorDeTexto = region == null
+        ? Colors.white
+        : colorDeTextoPara(region!.tipo);
 
     return MenuCasillaWidget(
       esInsertable: celda.esInsertable,
@@ -106,7 +123,9 @@ class CeldaWidget extends StatelessWidget {
           key: region?.conRayas == true ? const ValueKey('rayas') : null,
           // Rayas diagonales para distinguir una de las dos regiones del
           // mismo color; quedan detras del numero y de la estrella.
-          painter: region?.conRayas == true ? const PintorDeRayas() : null,
+          painter: region?.conRayas == true
+              ? PintorDeRayas(color: colorDeTexto)
+              : null,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final numero = FittedBox(
@@ -153,15 +172,18 @@ class CeldaWidget extends StatelessWidget {
   }
 }
 
-// Dibuja rayas diagonales blancas y casi transparentes sobre la casilla, para
-// que la region se distinga sin cambiar su color.
+// Dibuja rayas diagonales casi transparentes sobre la casilla, para que la
+// region se distinga sin cambiar su color. Son del color del texto de la
+// region: blancas en las regiones oscuras y oscuras en la blanca.
 class PintorDeRayas extends CustomPainter {
-  const PintorDeRayas();
+  final Color color;
+
+  const PintorDeRayas({this.color = Colors.white});
 
   @override
   void paint(Canvas canvas, Size size) {
     final pincel = Paint()
-      ..color = Colors.white.withValues(alpha: 0.12)
+      ..color = color.withValues(alpha: 0.12)
       ..strokeWidth = size.width * 0.09;
     // Cuatro rayas por casilla, sin importar su tamaño.
     final separacion = size.width / 4;
@@ -177,5 +199,5 @@ class PintorDeRayas extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(PintorDeRayas oldDelegate) => false;
+  bool shouldRepaint(PintorDeRayas oldDelegate) => oldDelegate.color != color;
 }
