@@ -16,6 +16,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('seleccion-mapa')), findsOneWidget);
     expect(find.byKey(const ValueKey('mapa-clasico')), findsOneWidget);
+    // Cada archivo de assets/mapas/ tiene su tarjeta; el clasico va primero.
+    expect(find.byKey(const ValueKey('mapa-borde')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('mapa-clasico'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const ValueKey('mapa-borde'))).dy),
+    );
 
     await tester.tap(find.byKey(const ValueKey('mapa-clasico')));
     await tester.pumpAndSettle();
@@ -28,6 +34,9 @@ void main() {
     expect(find.byKey(const ValueKey('seleccion-mapa')), findsOneWidget);
     expect(find.byKey(const ValueKey('pantalla-principal')), findsNothing);
 
-    mostrar('Menu -> Jugar -> Clasico -> partida, y atras a elegir mapa.');
+    mostrar(
+      'Menu -> Jugar -> (Clasico, Borde) -> Clasico -> partida, y atras a '
+      'elegir mapa.',
+    );
   });
 }

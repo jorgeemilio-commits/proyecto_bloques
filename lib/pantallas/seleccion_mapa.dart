@@ -6,8 +6,8 @@ import '../mapa.dart';
 import '../widgets/tablero_widget.dart';
 import 'partida.dart';
 
-// Pantalla para elegir el mapa de la partida. Por ahora solo existe el mapa
-// clasico, que se lee de assets/mapas/; al tocarlo empieza la partida.
+// Pantalla para elegir el mapa de la partida. Muestra una tarjeta por cada
+// archivo de assets/mapas/; al tocar una empieza la partida con ese mapa.
 class SeleccionMapa extends StatefulWidget {
   const SeleccionMapa({super.key});
 
@@ -16,8 +16,8 @@ class SeleccionMapa extends StatefulWidget {
 }
 
 class _SeleccionMapaState extends State<SeleccionMapa> {
-  // Se carga una sola vez al abrir la pantalla.
-  late final Future<Mapa> _mapaClasico = cargarMapa(rutaMapaClasico);
+  // La lista de archivos se pide una sola vez al abrir la pantalla.
+  late final Future<List<String>> _rutas = rutasDeMapas();
 
   @override
   Widget build(BuildContext context) {
@@ -35,39 +35,25 @@ class _SeleccionMapaState extends State<SeleccionMapa> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: anchoMaximoTelefono),
-            child: FutureBuilder<Mapa>(
-              future: _mapaClasico,
+            child: FutureBuilder<List<String>>(
+              future: _rutas,
               builder: (context, carga) {
-                if (carga.hasError) {
-                  // Por ejemplo, un error de formato en el archivo del mapa.
-                  final error = carga.error;
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'No se pudo leer el mapa: '
-                      '${error is FormatException ? error.message : error}',
-                      key: const ValueKey('error-mapa'),
-                      style: TextStyle(color: colores.error),
-                    ),
-                  );
-                }
-                final mapa = carga.data;
-                if (mapa == null) {
+                final rutas = carga.data;
+                if (rutas == null) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    _TarjetaMapa(
-                      key: const ValueKey('mapa-clasico'),
-                      mapa: mapa,
-                      onElegir: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => VistaPreviaTablero(mapa: mapa),
+                    for (final ruta in rutas)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _ArchivoDeMapa(
+                          key: ValueKey('mapa-${_nombreDeArchivo(ruta)}'),
+                          ruta: ruta,
                         ),
                       ),
-                    ),
                   ],
                 );
               },
@@ -79,12 +65,77 @@ class _SeleccionMapaState extends State<SeleccionMapa> {
   }
 }
 
+// Nombre del archivo sin carpeta ni extension: 'assets/mapas/borde.txt' ->
+// 'borde'.
+String _nombreDeArchivo(String ruta) =>
+    ruta.substring(ruta.lastIndexOf('/') + 1).replaceAll('.txt', '');
+
+// Carga un archivo de mapa y muestra su tarjeta. Si el archivo tiene un error,
+// muestra el error en su lugar sin afectar a los demas mapas.
+class _ArchivoDeMapa extends StatefulWidget {
+  final String ruta;
+
+  const _ArchivoDeMapa({super.key, required this.ruta});
+
+  @override
+  State<_ArchivoDeMapa> createState() => _ArchivoDeMapaState();
+}
+
+class _ArchivoDeMapaState extends State<_ArchivoDeMapa> {
+  // El mapa se lee una sola vez.
+  late final Future<Mapa> _mapa = cargarMapa(widget.ruta);
+
+  @override
+  Widget build(BuildContext context) {
+    final colores = Theme.of(context).colorScheme;
+
+    return FutureBuilder<Mapa>(
+      future: _mapa,
+      builder: (context, carga) {
+        if (carga.hasError) {
+          // Por ejemplo, un error de formato dentro del archivo.
+          final error = carga.error;
+          return Card(
+            elevation: 0,
+            color: colores.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'No se pudo leer ${_nombreDeArchivo(widget.ruta)}.txt: '
+                '${error is FormatException ? error.message : error}',
+                key: const ValueKey('error-mapa'),
+                style: TextStyle(color: colores.onErrorContainer),
+              ),
+            ),
+          );
+        }
+        final mapa = carga.data;
+        if (mapa == null) {
+          return const SizedBox(
+            height: 136,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return _TarjetaMapa(
+          mapa: mapa,
+          onElegir: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => VistaPreviaTablero(mapa: mapa),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 // Tarjeta de un mapa con su vista previa, nombre y tamaño.
 class _TarjetaMapa extends StatelessWidget {
   final Mapa mapa;
   final VoidCallback onElegir;
 
-  const _TarjetaMapa({super.key, required this.mapa, required this.onElegir});
+  const _TarjetaMapa({required this.mapa, required this.onElegir});
 
   @override
   Widget build(BuildContext context) {

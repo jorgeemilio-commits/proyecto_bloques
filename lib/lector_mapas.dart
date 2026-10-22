@@ -35,8 +35,29 @@ const Map<String, TipoRegion> _tipoPorLetra = {
 // Letra del color, numero de region y la I opcional de casilla inicial.
 final RegExp _formatoCasilla = RegExp(r'^([A-Z])(\d+)(I?)$');
 
-// Archivo del mapa clasico dentro de los assets.
-const String rutaMapaClasico = 'assets/mapas/clasico.txt';
+// Carpeta de los mapas dentro de los assets y archivo del mapa clasico.
+const String carpetaMapas = 'assets/mapas/';
+const String rutaMapaClasico = '${carpetaMapas}clasico.txt';
+
+// Rutas de todos los mapas (.txt) de la carpeta: el clasico primero y los
+// demas en orden alfabetico. Para agregar un mapa basta con poner su archivo
+// en assets/mapas/.
+Future<List<String>> rutasDeMapas() async {
+  final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
+  final rutas =
+      manifiesto
+          .listAssets()
+          .where(
+            (ruta) => ruta.startsWith(carpetaMapas) && ruta.endsWith('.txt'),
+          )
+          .toList()
+        ..sort();
+
+  if (rutas.remove(rutaMapaClasico)) {
+    rutas.insert(0, rutaMapaClasico);
+  }
+  return rutas;
+}
 
 // Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa.
 Future<Mapa> cargarMapa(String ruta) async =>

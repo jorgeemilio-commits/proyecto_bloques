@@ -63,6 +63,15 @@ void main() {
     );
   });
 
+  test('los mapas de la carpeta se listan con el clasico primero', () async {
+    final rutas = await rutasDeMapas();
+
+    expect(rutas.first, rutaMapaClasico);
+    expect(rutas, contains('assets/mapas/borde.txt'));
+    expect(rutas.every((ruta) => ruta.endsWith('.txt')), isTrue);
+    mostrar('Mapas en la carpeta: ${rutas.join(', ')}.');
+  });
+
   test('el archivo del mapa borde se lee con su region blanca', () async {
     final borde = await cargarMapa('assets/mapas/borde.txt');
     final casillasPorRegion = {

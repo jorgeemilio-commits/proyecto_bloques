@@ -26,7 +26,7 @@ Color colorDeRegion(TipoRegion tipo, {int vecesReclamada = 0}) {
 
   // El blanco no tiene tono: se dibuja gris claro y se apaga hacia gris.
   if (base.saturation == 0) {
-    return base.withLightness(0.82 * (0.75 + 0.25 * brillo)).toColor();
+    return base.withLightness(0.72 * (0.75 + 0.25 * brillo)).toColor();
   }
 
   return base
