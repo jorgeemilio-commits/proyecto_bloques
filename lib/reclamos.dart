@@ -10,7 +10,7 @@ class RegistroDeReclamos {
 
   // Puntos que daria reclamar la region ahora (0 si ya se agotaron).
   int puntosDisponibles(Region region) =>
-      region.tipo.puntuaciones[vecesReclamada(region) + 1] ?? 0;
+      region.puntuaciones[vecesReclamada(region) + 1] ?? 0;
 
   // Registra un reclamo de la region y devuelve los puntos que da.
   int reclamar(Region region) {

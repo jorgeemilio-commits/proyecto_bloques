@@ -69,9 +69,11 @@ class _FilaRegion extends StatelessWidget {
     final nombre =
         '${tipo.nombre[0].toUpperCase()}${tipo.nombre.substring(1)}'
         '${region.conRayas ? ' rayada' : ''}';
+    // Los puntos de la region en este mapa (o los de su color si el mapa no
+    // los cambia).
     final premios = [
-      for (var nivel = 1; nivel <= tipo.puntuaciones.length; nivel++)
-        tipo.puntuaciones[nivel]!,
+      for (var nivel = 1; nivel <= region.puntuaciones.length; nivel++)
+        region.puntuaciones[nivel]!,
     ];
     final agotada = vecesReclamada >= premios.length;
 

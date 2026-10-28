@@ -11,8 +11,21 @@ class Region {
   // Si es true, la region se dibuja con rayas para distinguirla de la otra
   // region del mismo color sin cambiar el color.
   final bool conRayas;
+  // Puntos propios de esta region en su mapa (primer, segundo y tercer
+  // reclamo). Si es null se usan los del color.
+  final Map<int, int>? puntuacionesPropias;
 
-  const Region(this.id, this.tipo, this.coordenadas, {this.conRayas = false});
+  const Region(
+    this.id,
+    this.tipo,
+    this.coordenadas, {
+    this.conRayas = false,
+    this.puntuacionesPropias,
+  });
+
+  // Puntos que da completar la region: los propios del mapa o, si no tiene,
+  // los de su color.
+  Map<int, int> get puntuaciones => puntuacionesPropias ?? tipo.puntuaciones;
 }
 
 class Coordenada {

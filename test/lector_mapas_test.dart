@@ -91,6 +91,48 @@ void main() {
     );
   });
 
+  test('una region puede tener sus propios puntos en el mapa', () {
+    final mapa = leerMapa('''
+# Prueba
+Z1I Z1 Z2I Z2
+V1I V1 R1I R1
+L1I L1 A1I A1
+
+Z1: 9 8 7
+''');
+    final porId = {for (final r in mapa.regiones) r.id: r};
+    final registro = RegistroDeReclamos();
+    final premiosZ1 = [
+      for (var vez = 0; vez < 4; vez++) registro.reclamar(porId['Z1']!),
+    ];
+
+    // Z1 usa sus puntos; Z2, del mismo color, usa los del azul.
+    expect(porId['Z1']!.puntuaciones, {1: 9, 2: 8, 3: 7});
+    expect(porId['Z2']!.puntuaciones, TipoRegion.azul.puntuaciones);
+    expect(premiosZ1, [9, 8, 7, 0]);
+    mostrar('Z1 con puntos propios da $premiosZ1; Z2 usa los del azul.');
+  });
+
+  test('el archivo del mapa alas trae los puntos de su hoja', () async {
+    final alas = await cargarMapa('assets/mapas/alas.txt');
+    final puntos = {
+      for (final region in alas.regiones)
+        region.id: region.puntuaciones.values.join(' '),
+    };
+
+    expect(puntos, {
+      'Z1': '7 5 3',
+      'R1': '6 4 2',
+      'R2': '6 4 2',
+      'V1': '6 5 4',
+      'L1': '7 5 3',
+      'L2': '7 5 3',
+      'A1': '7 5 3',
+      'B1': '8 6 4',
+    });
+    mostrar('Alas: $puntos.');
+  });
+
   test('el numero separa regiones del mismo color y el 2 lleva rayas', () {
     final mapa = leerMapa('''
 # Prueba
@@ -148,6 +190,15 @@ N1 N1 N2 N2
         'region blanca B1',
       ),
       'naranja que no es N1 ni N2': ('# X\nN3', 'solo puede ser N1'),
+      'puntos de una region que no existe': (
+        '# X\nA1 A1\nZ9: 1 2 3',
+        'no tiene una region Z9',
+      ),
+      'puntos mal escritos': ('# X\nA1 A1\nA1: 7 5', 'se escriben asi'),
+      'puntos repetidos': (
+        '# X\nA1 A1\nA1: 7 5 3\nA1: 6 4 2',
+        'ya estaban en la linea 3',
+      ),
       'cuatro iniciales en una naranja': (
         '# X\nN1I N1I N1I N1I\nR1I R1I R1 R1',
         'region naranja N1 tiene 4',

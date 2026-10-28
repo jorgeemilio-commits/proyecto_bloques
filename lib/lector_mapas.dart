@@ -19,6 +19,9 @@ import 'tipo.dart';
 //   N naranja. La naranja solo puede ser N1 (numeros del 1 al 3) o N2
 //   (numeros del 4 al 6).
 // - La region con numero 2 se dibuja con rayas.
+// - Opcional, al final: los puntos propios de una region en este mapa, con su
+//   identificador, dos puntos y sus tres premios. Ejemplo: 'L1: 7 5 3'. Las
+//   regiones sin esa linea usan los puntos de su color.
 //
 // Si el texto tiene un error, lanza un FormatException que dice donde esta.
 
@@ -52,6 +55,11 @@ TipoRegion? _tipoDeRegion(String letra, int numero) {
 
 // Letra del color, numero de region y la I opcional de casilla inicial.
 final RegExp _formatoCasilla = RegExp(r'^([A-Z])(\d+)(I?)$');
+
+// Puntos propios de una region: 'L1: 7 5 3'.
+final RegExp _formatoPuntos = RegExp(
+  r'^([A-Z]\d+)\s*:\s*(\d+)\s+(\d+)\s+(\d+)$',
+);
 
 // Carpeta de los mapas dentro de los assets y archivo del mapa clasico.
 const String carpetaMapas = 'assets/mapas/';
@@ -100,7 +108,15 @@ Mapa leerMapa(String texto) {
     );
   }
 
-  final filas = lineas.skip(1).toList();
+  // Las lineas con ':' son puntos propios de regiones; las demas son filas.
+  final filas = [
+    for (final linea in lineas.skip(1))
+      if (!linea.texto.contains(':')) linea,
+  ];
+  final puntosPropios = _leerPuntosPropios([
+    for (final linea in lineas.skip(1))
+      if (linea.texto.contains(':')) linea,
+  ]);
   if (filas.isEmpty) {
     throw const FormatException('El mapa no tiene filas.');
   }
@@ -145,6 +161,14 @@ Mapa leerMapa(String texto) {
     }
   }
 
+  for (final MapEntry(key: id, value: linea) in puntosPropios.entries) {
+    if (!coordenadasPorRegion.containsKey(id)) {
+      throw FormatException(
+        'Linea ${linea.numero}: el mapa no tiene una region $id.',
+      );
+    }
+  }
+
   final regiones = [
     for (final MapEntry(key: id, value: coordenadas)
         in coordenadasPorRegion.entries)
@@ -153,6 +177,7 @@ Mapa leerMapa(String texto) {
         _tipoDeRegion(id[0], int.parse(id.substring(1)))!,
         List.unmodifiable(coordenadas),
         conRayas: int.parse(id.substring(1)) == 2,
+        puntuacionesPropias: puntosPropios[id]?.puntos,
       ),
   ]..sort(_compararRegiones);
 
@@ -165,6 +190,39 @@ Mapa leerMapa(String texto) {
     regiones: List.unmodifiable(regiones),
     coordenadasIniciales: List.unmodifiable(iniciales),
   );
+}
+
+// Lee las lineas de puntos propios ('L1: 7 5 3') y devuelve, por region, sus
+// premios y la linea donde estaban (para los mensajes de error).
+Map<String, ({Map<int, int> puntos, int numero})> _leerPuntosPropios(
+  List<({int numero, String texto})> lineas,
+) {
+  final porRegion = <String, ({Map<int, int> puntos, int numero})>{};
+  for (final linea in lineas) {
+    final partes = _formatoPuntos.firstMatch(linea.texto.toUpperCase());
+    if (partes == null) {
+      throw FormatException(
+        'Linea ${linea.numero}: "${linea.texto}" no es valida. Los puntos de '
+        'una region se escriben asi: L1: 7 5 3',
+      );
+    }
+    final id = '${partes[1]![0]}${int.parse(partes[1]!.substring(1))}';
+    if (porRegion.containsKey(id)) {
+      throw FormatException(
+        'Linea ${linea.numero}: los puntos de la region $id ya estaban en la '
+        'linea ${porRegion[id]!.numero}.',
+      );
+    }
+    porRegion[id] = (
+      puntos: {
+        1: int.parse(partes[2]!),
+        2: int.parse(partes[3]!),
+        3: int.parse(partes[4]!),
+      },
+      numero: linea.numero,
+    );
+  }
+  return porRegion;
 }
 
 // Ordena las regiones por color (azul, rojo, verde, lila, amarillo, naranja,
