@@ -1,0 +1,16 @@
+name: servidor
+description: Servidor de cuentas de Proyecto Bloques (registro, inicio de sesion y borrar cuenta).
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.9.2
+dependencies:
+  bcrypt: ^1.2.0
+  dart_jsonwebtoken: ^3.4.1
+  shelf: ^1.4.3
+  shelf_router: ^1.1.5
+  sqlite3: ^2.9.4
+dev_dependencies:
+  test: ^1.31.0
+  lints: ^6.1.0

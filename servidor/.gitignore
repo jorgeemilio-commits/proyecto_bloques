@@ -1,0 +1,6 @@
+# Base de datos real y archivos del servidor: se quedan solo en la computadora
+# donde corre el servidor. En git solo esta el script que crea una de prueba.
+datos/
+
+# Archivos que genera Dart.
+.dart_tool/
