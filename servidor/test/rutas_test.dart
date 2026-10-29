@@ -155,6 +155,36 @@ void main() {
     expect((despues, entrar), (401, 401));
   });
 
+  test('los nombres aceptan acentos y ñ, sin distinguir mayusculas', () async {
+    final (inaki, datos) = await pedir(
+      'POST',
+      '/registro',
+      cuerpo: {'usuario': 'Iñaki', 'contrasena': 'contraseña1'},
+    );
+    final (jose, _) = await pedir(
+      'POST',
+      '/registro',
+      cuerpo: {'usuario': 'José', 'contrasena': 'secreta123'},
+    );
+    // "JOSÉ" es el mismo usuario que "José".
+    final (repetido, _) = await pedir(
+      'POST',
+      '/registro',
+      cuerpo: {'usuario': 'JOSÉ', 'contrasena': 'secreta123'},
+    );
+    final (entrar, sesion) = await pedir(
+      'POST',
+      '/login',
+      cuerpo: {'usuario': 'IÑAKI', 'contrasena': 'contraseña1'},
+    );
+
+    expect((inaki, jose, repetido), (201, 201, 409));
+    expect(datos!['usuario'], 'Iñaki');
+    expect(entrar, 200);
+    // Se muestra como se escribio al crear la cuenta.
+    expect(sesion!['usuario'], 'Iñaki');
+  });
+
   test('una ruta que no existe responde 404', () async {
     final (estado, _) = await pedir('GET', '/otra');
 

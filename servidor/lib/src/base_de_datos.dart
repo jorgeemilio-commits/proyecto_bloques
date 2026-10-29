@@ -31,20 +31,36 @@ class BaseDeDatos {
   }
 
   void _crearTablas() {
-    // COLLATE NOCASE: "Ana" y "ana" son el mismo usuario.
+    // nombre: como lo escribio el usuario ("José"), para mostrarlo.
+    // nombre_clave: en minusculas ("josé"), y es el que no se puede repetir;
+    // asi "JOSÉ" y "josé" son el mismo usuario. Se calcula con Dart porque
+    // SQLite solo pasa a minusculas las letras sin acento.
     _db.execute('''
       CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        nombre TEXT NOT NULL,
+        nombre_clave TEXT NOT NULL,
         hash_contrasena TEXT NOT NULL,
         creado TEXT NOT NULL
       );
     ''');
+
+    // Bases de datos creadas antes de nombre_clave: se agrega la columna con
+    // los nombres en minusculas (eran solo letras sin acento).
+    final columnas = _db.select('PRAGMA table_info(usuarios)');
+    if (!columnas.any((columna) => columna['name'] == 'nombre_clave')) {
+      _db.execute('ALTER TABLE usuarios ADD COLUMN nombre_clave TEXT');
+      _db.execute('UPDATE usuarios SET nombre_clave = lower(nombre)');
+    }
+    _db.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS usuarios_nombre_clave '
+      'ON usuarios (nombre_clave)',
+    );
   }
 
   Usuario? usuarioPorNombre(String nombre) => _unUsuario(
-    'SELECT * FROM usuarios WHERE nombre = ? COLLATE NOCASE',
-    [nombre],
+    'SELECT * FROM usuarios WHERE nombre_clave = ?',
+    [nombre.toLowerCase()],
   );
 
   Usuario? usuarioPorId(int id) =>
@@ -54,9 +70,14 @@ class BaseDeDatos {
   Usuario? crearUsuario(String nombre, String hashContrasena, DateTime ahora) {
     try {
       _db.execute(
-        'INSERT INTO usuarios (nombre, hash_contrasena, creado) '
-        'VALUES (?, ?, ?)',
-        [nombre, hashContrasena, ahora.toUtc().toIso8601String()],
+        'INSERT INTO usuarios (nombre, nombre_clave, hash_contrasena, creado) '
+        'VALUES (?, ?, ?, ?)',
+        [
+          nombre,
+          nombre.toLowerCase(),
+          hashContrasena,
+          ahora.toUtc().toIso8601String(),
+        ],
       );
     } on SqliteException catch (error) {
       if (error.extendedResultCode == 2067) {

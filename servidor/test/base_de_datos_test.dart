@@ -3,9 +3,42 @@ import 'dart:io';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:servidor/src/base_de_datos.dart';
 import 'package:servidor/src/preparar_base_de_datos.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('una base de datos con la tabla anterior se actualiza sola', () {
+    final carpeta = Directory.systemTemp.createTempSync('servidor_vieja_');
+    final ruta = '${carpeta.path}${Platform.pathSeparator}cuentas.db';
+    // Tabla como era antes de aceptar acentos (sin nombre_clave).
+    final vieja = sqlite3.open(ruta)
+      ..execute('''
+        CREATE TABLE usuarios (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL UNIQUE COLLATE NOCASE,
+          hash_contrasena TEXT NOT NULL,
+          creado TEXT NOT NULL
+        );
+      ''')
+      ..execute(
+        "INSERT INTO usuarios (nombre, hash_contrasena, creado) "
+        "VALUES ('Prueba', 'hash', '2026-10-28T00:00:00Z')",
+      );
+    vieja.dispose();
+
+    final baseDeDatos = BaseDeDatos.abrir(ruta);
+    final existente = baseDeDatos.usuarioPorNombre('PRUEBA');
+    final repetido = baseDeDatos.crearUsuario('prueba', 'h', DateTime.now());
+    final nuevo = baseDeDatos.crearUsuario('Iñaki', 'h', DateTime.now());
+    baseDeDatos.cerrar();
+    carpeta.deleteSync(recursive: true);
+
+    // El usuario de antes sigue ahi y se encuentra sin importar mayusculas.
+    expect(existente?.nombre, 'Prueba');
+    expect(repetido, isNull);
+    expect(nuevo?.nombre, 'Iñaki');
+  });
+
   late Directory carpeta;
   late String ruta;
 

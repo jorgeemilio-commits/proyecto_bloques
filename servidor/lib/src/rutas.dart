@@ -6,8 +6,13 @@ import 'package:shelf_router/shelf_router.dart';
 import 'base_de_datos.dart';
 import 'seguridad.dart';
 
-// Nombre de usuario: de 3 a 20 letras, numeros o guion bajo.
-final RegExp _formatoUsuario = RegExp(r'^[A-Za-z0-9_]{3,20}$');
+// Nombre de usuario: de 3 a 20 letras (incluidas las acentuadas y la ñ),
+// numeros o guion bajo. \p{L} son letras de cualquier idioma, \p{M} los
+// acentos escritos aparte y \p{N} los numeros.
+final RegExp _formatoUsuario = RegExp(
+  r'^[\p{L}\p{M}\p{N}_]{3,20}$',
+  unicode: true,
+);
 const int _minimoContrasena = 8;
 
 // Crea el manejador con las rutas del servidor:
@@ -31,7 +36,7 @@ Handler crearManejador({
     if (usuario is! String || !_formatoUsuario.hasMatch(usuario)) {
       return _error(
         400,
-        'El usuario debe tener de 3 a 20 letras, numeros o guion bajo.',
+        'El usuario debe tener de 3 a 20 letras, números o guion bajo.',
       );
     }
     if (contrasena is! String || contrasena.length < _minimoContrasena) {
