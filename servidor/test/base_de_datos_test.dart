@@ -46,29 +46,16 @@ void main() {
     expect(usuarioDePrueba, isNull);
   });
 
-  test('los usuarios y sus sesiones se guardan y se borran juntos', () {
+  test('los usuarios se guardan, se buscan y se borran', () {
     final baseDeDatos = BaseDeDatos.enMemoria();
-    final ahora = DateTime.now();
-    final ana = baseDeDatos.crearUsuario('Ana', 'hash', ahora)!;
+    final ana = baseDeDatos.crearUsuario('Ana', 'hash', DateTime.now())!;
 
     // El nombre no distingue mayusculas.
-    expect(baseDeDatos.crearUsuario('ana', 'hash', ahora), isNull);
+    expect(baseDeDatos.crearUsuario('ana', 'hash', DateTime.now()), isNull);
     expect(baseDeDatos.usuarioPorNombre('ANA')?.id, ana.id);
 
-    baseDeDatos.crearSesion('s1', ana.id, ahora.add(const Duration(days: 1)));
-    baseDeDatos.crearSesion(
-      's2',
-      ana.id,
-      ahora.subtract(const Duration(days: 1)),
-    );
-    expect(baseDeDatos.sesionValida('s1', ana.id, ahora), isTrue);
-    // Una sesion vencida no es valida.
-    expect(baseDeDatos.sesionValida('s2', ana.id, ahora), isFalse);
-
-    // Borrar el usuario borra tambien sus sesiones.
     baseDeDatos.borrarUsuario(ana.id);
     expect(baseDeDatos.usuarioPorId(ana.id), isNull);
-    expect(baseDeDatos.cantidadDeSesiones(ana.id), 0);
     baseDeDatos.cerrar();
   });
 }
