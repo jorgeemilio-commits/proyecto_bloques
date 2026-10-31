@@ -1,16 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-// Direccion del servidor de cuentas (servidor/bin/servidor.dart). En el
-// emulador de Android, 10.0.2.2 es la computadora donde corre el servidor.
-// Para un telefono real, cambiar por la IP que muestra el servidor al
-// arrancar, por ejemplo 'http://192.168.1.50:8080'.
-final Uri direccionServidor = Uri.parse(
-  Platform.isAndroid ? 'http://10.0.2.2:8080' : 'http://localhost:8080',
-);
+// Direccion del servidor de cuentas (servidor/bin/servidor.dart), que corre
+// en la computadora. Los telefonos se conectan a la zona Wi-Fi que comparte
+// esa computadora, donde ella siempre tiene la IP 192.168.137.1.
+final Uri direccionServidor = Uri.parse('http://192.168.137.1:8080');
 
 // Error al hablar con el servidor, con un mensaje para mostrar al jugador.
 class ErrorDeCuenta implements Exception {

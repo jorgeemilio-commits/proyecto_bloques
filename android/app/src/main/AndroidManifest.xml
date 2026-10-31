@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Para conectarse al servidor de cuentas. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- usesCleartextTraffic: permite http:// (sin cifrar), porque el servidor
+         corre en la red local del hotspot de la computadora. Al pasar a ngrok
+         (https://) ya no hace falta. -->
     <application
         android:label="proyecto_bloques"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -21,3 +21,9 @@ build/
 android/.gradle/
 android/local.properties
 windows/flutter/ephemeral/
+
+# Configuracion local de Claude Code
+.claude/
+
+# Documentos de trabajo que no van en el repositorio
+OPCIONES_LOGIN.md
