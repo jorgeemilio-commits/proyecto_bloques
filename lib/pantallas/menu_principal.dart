@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
 
 import '../constantes.dart';
+import '../cuenta/servicio_cuenta.dart';
 import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../region.dart';
 import '../widgets/celda_widget.dart';
+import 'cuenta.dart';
 import 'seleccion_mapa.dart';
 
 // Colores del logo, usados en el fondo y en el boton Jugar.
 const Color _naranjaLogo = Color(0xFFF7A21B);
 const Color _rosaLogo = Color(0xFFE8197D);
 
-// Primera pantalla de la app: un tablero pequeño de adorno, el logo y el
-// boton para jugar.
+// Pantalla despues de iniciar sesion: un tablero pequeño de adorno, el logo,
+// el boton para jugar y, arriba a la derecha, el boton de la cuenta.
 class MenuPrincipal extends StatelessWidget {
-  const MenuPrincipal({super.key});
+  final ServicioDeCuenta servicio;
+
+  const MenuPrincipal({super.key, required this.servicio});
+
+  void _abrirCuenta(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaCuenta(
+          servicio: servicio,
+          // Al salir de la cuenta se quita esta pantalla; debajo ya esta el
+          // inicio de sesion porque el servicio aviso que no hay sesion.
+          onSalir: () => Navigator.of(context).popUntil((ruta) => ruta.isFirst),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +62,15 @@ class MenuPrincipal extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
                 child: Column(
                   children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton.filledTonal(
+                        key: const ValueKey('boton-cuenta'),
+                        tooltip: 'Mi cuenta',
+                        onPressed: () => _abrirCuenta(context),
+                        icon: const Icon(Icons.person),
+                      ),
+                    ),
                     const Spacer(flex: 2),
                     // Entrada animada: el tablero baja y aparece, y el logo
                     // crece hasta su tamaño.

@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
 import 'package:proyecto_bloques/main.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
 
 void main() {
   testWidgets('menu -> Jugar -> elegir mapa -> partida, y regresar', (
     tester,
   ) async {
-    await tester.pumpWidget(const ProyectoBloquesApp());
+    final servicio = ServicioDeCuenta(cliente: servidorFalso());
+    await servicio.crearCuenta('Ana', 'secreta123');
+    await servicio.iniciarSesion('Ana', 'secreta123');
+    await tester.pumpWidget(ProyectoBloquesApp(servicio: servicio));
 
-    // La app empieza en el menu principal.
+    // Con sesion, la app empieza en el menu principal.
     expect(find.byKey(const ValueKey('menu-principal')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('boton-jugar')));

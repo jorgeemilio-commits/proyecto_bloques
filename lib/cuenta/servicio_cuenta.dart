@@ -5,8 +5,14 @@ import 'package:http/http.dart' as http;
 
 // Direccion del servidor de cuentas (servidor/bin/servidor.dart), que corre
 // en la computadora. Los telefonos se conectan a la zona Wi-Fi que comparte
-// esa computadora, donde ella siempre tiene la IP 192.168.137.1.
-final Uri direccionServidor = Uri.parse('http://192.168.137.1:8080');
+// esa computadora, donde ella siempre tiene la IP 192.168.137.1. En la misma
+// computadora (Windows) se usa localhost, que funciona aunque la zona Wi-Fi
+// este apagada. Usa el puerto 8081 porque el 8080 lo ocupa Apache de XAMPP.
+final Uri direccionServidor = Uri.parse(
+  defaultTargetPlatform == TargetPlatform.windows
+      ? 'http://localhost:8081'
+      : 'http://192.168.137.1:8081',
+);
 
 // Error al hablar con el servidor, con un mensaje para mostrar al jugador.
 class ErrorDeCuenta implements Exception {
@@ -108,11 +114,14 @@ class ServicioDeCuenta extends ChangeNotifier {
       peticion.body = jsonEncode(cuerpo);
     }
 
+    // El limite de tiempo cubre toda la peticion, tambien la conexion: si el
+    // telefono no alcanza al servidor, conectar puede tardar minutos.
+    Future<http.Response> enviar() async =>
+        http.Response.fromStream(await _cliente.send(peticion));
+
     final http.Response respuesta;
     try {
-      respuesta = await http.Response.fromStream(
-        await _cliente.send(peticion),
-      ).timeout(const Duration(seconds: 10));
+      respuesta = await enviar().timeout(const Duration(seconds: 10));
     } on Exception {
       throw const ErrorDeCuenta('No se pudo conectar con el servidor.');
     }

@@ -1,63 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
+import 'ayudantes.dart';
 import 'consola.dart';
-
-// Servidor falso que responde como servidor/bin/servidor.dart, para probar
-// el servicio sin red. Guarda los usuarios en memoria y usa como token
-// "token-<usuario>".
-MockClient servidorFalso() {
-  final usuarios = <String, String>{};
-
-  // Igual que el servidor real: JSON en UTF-8, para que lleguen bien los
-  // acentos y la ñ (por ejemplo, en "contraseña").
-  http.Response json(int estado, Map<String, Object?> datos) => http.Response(
-    jsonEncode(datos),
-    estado,
-    headers: {'content-type': 'application/json; charset=utf-8'},
-  );
-
-  return MockClient((peticion) async {
-    final datos = peticion.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(peticion.body) as Map<String, dynamic>;
-    final token = peticion.headers['authorization']?.replaceFirst(
-      'Bearer token-',
-      '',
-    );
-    final conSesion = token != null && usuarios.containsKey(token);
-
-    switch ((peticion.method, peticion.url.path)) {
-      case ('POST', '/registro'):
-        if (usuarios.containsKey(datos['usuario'])) {
-          return json(409, {'error': 'Ese nombre de usuario ya existe.'});
-        }
-        usuarios[datos['usuario'] as String] = datos['contrasena'] as String;
-        return json(201, {'usuario': datos['usuario']});
-      case ('POST', '/login'):
-        if (usuarios[datos['usuario']] != datos['contrasena']) {
-          return json(401, {'error': 'Usuario o contraseña incorrectos.'});
-        }
-        return json(200, {
-          'token': 'token-${datos['usuario']}',
-          'usuario': datos['usuario'],
-        });
-      case ('GET', '/cuenta') when conSesion:
-        return json(200, {'usuario': token});
-      case ('DELETE', '/cuenta') when conSesion:
-        if (usuarios[token] != datos['contrasena']) {
-          return json(401, {'error': 'La contraseña no es correcta.'});
-        }
-        usuarios.remove(token);
-        return http.Response('', 204);
-      default:
-        return json(401, {'error': 'Sesion no valida o vencida.'});
-    }
-  });
-}
 
 void main() {
   test('crear cuenta, iniciar sesion y cerrar sesion', () async {

@@ -10,7 +10,9 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 // Servidor de cuentas de Proyecto Bloques.
 //
 // Uso (desde cualquier carpeta):
-//   dart run servidor/bin/servidor.dart [--puerto 8080] [--datos carpeta]
+//   dart run servidor/bin/servidor.dart [--puerto 8081] [--datos carpeta]
+//
+// - El puerto es 8081 porque el 8080 lo ocupa Apache de XAMPP.
 //
 // - Usa la base de datos y la clave secreta de servidor/datos/ (o de la
 //   carpeta indicada). Si no existen, las crea; la base de datos nueva es la
@@ -19,7 +21,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 Future<void> main(List<String> argumentos) async {
   final carpetaServidor = File.fromUri(Platform.script).parent.parent.path;
   final separador = Platform.pathSeparator;
-  final puerto = int.parse(_opcion(argumentos, '--puerto') ?? '8080');
+  final puerto = int.parse(_opcion(argumentos, '--puerto') ?? '8081');
   final carpetaDatos =
       _opcion(argumentos, '--datos') ?? '$carpetaServidor${separador}datos';
   Directory(carpetaDatos).createSync(recursive: true);
@@ -85,7 +87,7 @@ Future<void> main(List<String> argumentos) async {
   });
 }
 
-// Valor de una opcion como "--puerto 8080", o null si no se paso.
+// Valor de una opcion como "--puerto 8081", o null si no se paso.
 String? _opcion(List<String> argumentos, String nombre) {
   final indice = argumentos.indexOf(nombre);
   return indice >= 0 && indice + 1 < argumentos.length
