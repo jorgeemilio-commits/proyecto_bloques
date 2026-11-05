@@ -4,14 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 // Direccion del servidor de cuentas (servidor/bin/servidor.dart), que corre
-// en la computadora. Los telefonos se conectan a la zona Wi-Fi que comparte
-// esa computadora, donde ella siempre tiene la IP 192.168.137.1. En la misma
-// computadora (Windows) se usa localhost, que funciona aunque la zona Wi-Fi
-// este apagada. Usa el puerto 8081 porque el 8080 lo ocupa Apache de XAMPP.
+// en la computadora en el puerto 8081. ngrok la publica en internet con este
+// dominio fijo, asi que los jugadores se conectan desde cualquier red.
 final Uri direccionServidor = Uri.parse(
-  defaultTargetPlatform == TargetPlatform.windows
-      ? 'http://localhost:8081'
-      : 'http://192.168.137.1:8081',
+  'https://dreamt-broken-broadly.ngrok-free.dev',
 );
 
 // Error al hablar con el servidor, con un mensaje para mostrar al jugador.
@@ -106,7 +102,10 @@ class ServicioDeCuenta extends ChangeNotifier {
     required int esperado,
   }) async {
     final peticion = http.Request(metodo, servidor.resolve(ruta))
-      ..headers['content-type'] = 'application/json';
+      ..headers['content-type'] = 'application/json'
+      // Sin esto, ngrok a veces responde con su pagina de aviso en lugar de
+      // pasar la peticion al servidor.
+      ..headers['ngrok-skip-browser-warning'] = 'true';
     if (_token != null) {
       peticion.headers['authorization'] = 'Bearer $_token';
     }
