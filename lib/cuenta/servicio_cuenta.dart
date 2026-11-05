@@ -6,6 +6,12 @@ import 'package:http/http.dart' as http;
 // Direccion del servidor de cuentas (servidor/bin/servidor.dart), que corre
 // en la computadora en el puerto 8081. ngrok la publica en internet con este
 // dominio fijo, asi que los jugadores se conectan desde cualquier red.
+//
+// Para usar tu propio servidor, cambia la direccion por una de estas:
+// - Tu dominio de ngrok: 'https://<tu-dominio>.ngrok-free.dev'
+// - En la misma computadora (Windows): 'http://localhost:8081'
+// - Emulador de Android: 'http://10.0.2.2:8081'
+// - Telefono en la misma red: 'http://<IP de la computadora>:8081'
 final Uri direccionServidor = Uri.parse(
   'https://dreamt-broken-broadly.ngrok-free.dev',
 );
