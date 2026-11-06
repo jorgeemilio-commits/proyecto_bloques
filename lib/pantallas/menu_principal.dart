@@ -15,8 +15,9 @@ import 'seleccion_mapa.dart';
 const Color _naranjaLogo = Color(0xFFF7A21B);
 const Color _rosaLogo = Color(0xFFE8197D);
 
-// Pantalla despues de iniciar sesion: un tablero pequeño de adorno, el logo,
-// el boton para jugar y, arriba a la derecha, el boton de la cuenta.
+// Pantalla despues de iniciar sesion: el saludo y el boton de la cuenta, un
+// tablero pequeño de adorno, el logo, el lema con lo que ofrece el juego y los
+// botones para jugar en linea u offline.
 class MenuPrincipal extends StatelessWidget {
   final ServicioDeCuenta servicio;
 
@@ -64,14 +65,37 @@ class MenuPrincipal extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
                 child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton.filledTonal(
-                        key: const ValueKey('boton-cuenta'),
-                        tooltip: 'Mi cuenta',
-                        onPressed: () => _abrirCuenta(context),
-                        icon: const Icon(Icons.person),
-                      ),
+                    // Saludo con el nombre del jugador y el boton de la cuenta.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '¡Hola, ${servicio.usuario ?? 'jugador'}!',
+                                key: const ValueKey('saludo'),
+                                overflow: TextOverflow.ellipsis,
+                                style: tema.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                '¿Listo para tu próxima partida?',
+                                style: tema.textTheme.bodySmall?.copyWith(
+                                  color: tema.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          key: const ValueKey('boton-cuenta'),
+                          tooltip: 'Mi cuenta',
+                          onPressed: () => _abrirCuenta(context),
+                          icon: const Icon(Icons.person),
+                        ),
+                      ],
                     ),
                     // El tablero, el logo y el lema ocupan el espacio libre y
                     // se encogen si no caben (pantallas bajitas).
@@ -112,11 +136,34 @@ class MenuPrincipal extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Llena las regiones con los dados',
-                                style: tema.textTheme.bodyLarge?.copyWith(
-                                  color: tema.colorScheme.onSurfaceVariant,
+                              const SizedBox(height: 16),
+                              // Ancho fijo para que el texto se acomode en
+                              // varias lineas dentro del FittedBox.
+                              SizedBox(
+                                width: 330,
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Tira, coloca y reclama.',
+                                      textAlign: TextAlign.center,
+                                      style: tema.textTheme.headlineSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Usa los dados para llenar cada región '
+                                      'antes que tus rivales, roba los mejores '
+                                      'premios y sé el primero en llegar a la '
+                                      'meta.',
+                                      textAlign: TextAlign.center,
+                                      style: tema.textTheme.bodyLarge?.copyWith(
+                                        color:
+                                            tema.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -125,10 +172,13 @@ class MenuPrincipal extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // "Jugar" es en linea, con otros jugadores.
                     _BotonJugar(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const SeleccionMapa(),
+                          builder: (_) => PantallaMultijugador(
+                            sala: ServicioDeSala(cuenta: servicio),
+                          ),
                         ),
                       ),
                     ),
@@ -137,7 +187,7 @@ class MenuPrincipal extends StatelessWidget {
                       width: double.infinity,
                       height: 52,
                       child: OutlinedButton.icon(
-                        key: const ValueKey('boton-multijugador'),
+                        key: const ValueKey('boton-jugar-offline'),
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
@@ -145,13 +195,11 @@ class MenuPrincipal extends StatelessWidget {
                         ),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => PantallaMultijugador(
-                              sala: ServicioDeSala(cuenta: servicio),
-                            ),
+                            builder: (_) => const SeleccionMapa(),
                           ),
                         ),
-                        icon: const Icon(Icons.groups_rounded),
-                        label: const Text('Multijugador'),
+                        icon: const Icon(Icons.wifi_off_rounded),
+                        label: const Text('Jugar offline'),
                       ),
                     ),
                   ],
@@ -277,7 +325,7 @@ class _TableroDeAdornoState extends State<_TableroDeAdorno> {
   }
 }
 
-// Boton grande con el degradado del logo.
+// Boton grande con el degradado del logo: "Jugar" en linea.
 class _BotonJugar extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -308,19 +356,35 @@ class _BotonJugar extends StatelessWidget {
           onTap: onPressed,
           child: const SizedBox(
             width: double.infinity,
-            height: 60,
+            height: 70,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.play_arrow_rounded, color: Colors.white, size: 30),
-                SizedBox(width: 6),
-                Text(
-                  'Jugar',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+                SizedBox(width: 8),
+                // Flexible: si no cabe, el texto se corta en lugar de
+                // desbordarse.
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jugar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        'Crea una sala o únete con un código',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
               ],

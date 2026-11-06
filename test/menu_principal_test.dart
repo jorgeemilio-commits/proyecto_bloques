@@ -6,7 +6,7 @@ import 'ayudantes.dart';
 import 'consola.dart';
 
 void main() {
-  testWidgets('menu -> Jugar -> elegir mapa -> partida, y regresar', (
+  testWidgets('menu -> Jugar offline -> elegir mapa -> partida, y regresar', (
     tester,
   ) async {
     final servicio = ServicioDeCuenta(cliente: servidorFalso());
@@ -17,7 +17,7 @@ void main() {
     // Con sesion, la app empieza en el menu principal.
     expect(find.byKey(const ValueKey('menu-principal')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('boton-jugar')));
+    await tester.tap(find.byKey(const ValueKey('boton-jugar-offline')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('seleccion-mapa')), findsOneWidget);
     expect(find.byKey(const ValueKey('mapa-clasico')), findsOneWidget);
@@ -40,7 +40,7 @@ void main() {
     expect(find.byKey(const ValueKey('pantalla-principal')), findsNothing);
 
     mostrar(
-      'Menu -> Jugar -> (Clasico, Borde) -> Clasico -> partida, y atras a '
+      'Menu -> Jugar offline -> (Clasico, Borde) -> Clasico -> partida, y atras a '
       'elegir mapa.',
     );
   });
