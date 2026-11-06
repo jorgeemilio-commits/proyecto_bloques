@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:proyecto_bloques/proyecto_bloques.dart';
+import 'package:stream_channel/stream_channel.dart';
 
 // El mapa clasico leido de su archivo real (assets/mapas/clasico.txt). Se lee
 // directo del disco para poder usarlo en cualquier prueba sin esperar.
@@ -104,4 +105,51 @@ MockClient servidorFalso() {
         return json(401, {'error': 'Sesion no valida o vencida.'});
     }
   });
+}
+
+// Servidor de salas falso: cada vez que la app abre una conexion, se crea un
+// canal nuevo; la prueba lee lo que mando la app y le contesta.
+class ServidorDeSalasFalso {
+  final List<StreamChannelController<dynamic>> canales = [];
+  final List<Map<String, dynamic>> recibidos = [];
+  // Si es true, las conexiones nuevas se cierran enseguida (servidor caido).
+  bool caido = false;
+
+  StreamChannel<dynamic> abrir(Uri direccion) {
+    final canal = StreamChannelController<dynamic>();
+    canales.add(canal);
+    canal.local.stream.listen(
+      (texto) => recibidos.add(jsonDecode(texto as String)),
+    );
+    if (caido) {
+      canal.local.sink.close();
+    }
+    return canal.foreign;
+  }
+
+  void mandar(Map<String, Object?> mensaje) =>
+      canales.last.local.sink.add(jsonEncode(mensaje));
+
+  void mandarSinSala() =>
+      mandar({'tipo': 'estado', 'fase': 'sinSala', 'usuario': 'Ana'});
+
+  void mandarLobby({String anfitrion = 'Ana'}) => mandar({
+    'tipo': 'estado',
+    'fase': 'lobby',
+    'usuario': 'Ana',
+    'codigo': 'K7MQ2P',
+    'anfitrion': anfitrion,
+    'mapa': 'clasico',
+    'maximo': 6,
+    'jugadores': [
+      {'usuario': anfitrion, 'conectado': true},
+      {
+        'usuario': anfitrion == 'Ana' ? 'Luis' : 'Ana',
+        'conectado': anfitrion != 'Ana',
+      },
+    ],
+  });
+
+  // Simula que se cae la conexion actual.
+  void cortar() => canales.last.local.sink.close();
 }

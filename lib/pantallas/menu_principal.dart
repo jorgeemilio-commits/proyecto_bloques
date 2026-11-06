@@ -6,7 +6,9 @@ import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../region.dart';
 import '../widgets/celda_widget.dart';
+import '../multijugador/servicio_sala.dart';
 import 'cuenta.dart';
+import 'multijugador.dart';
 import 'seleccion_mapa.dart';
 
 // Colores del logo, usados en el fondo y en el boton Jugar.
@@ -71,51 +73,85 @@ class MenuPrincipal extends StatelessWidget {
                         icon: const Icon(Icons.person),
                       ),
                     ),
-                    const Spacer(flex: 2),
-                    // Entrada animada: el tablero baja y aparece, y el logo
-                    // crece hasta su tamaño.
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: 1),
-                      duration: const Duration(milliseconds: 900),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, entrada, _) => Column(
-                        children: [
-                          Opacity(
-                            opacity: entrada,
-                            child: Transform.translate(
-                              offset: Offset(0, -24 * (1 - entrada)),
-                              child: const _TableroDeAdorno(),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Opacity(
-                            opacity: entrada,
-                            child: Transform.scale(
-                              scale: 0.85 + 0.15 * entrada,
-                              child: Image.asset(
-                                'assets/imagenes/brilliant_logo_3x.png',
-                                key: const ValueKey('logo'),
-                                width: 300,
-                                semanticLabel: 'Brilliant',
+                    // El tablero, el logo y el lema ocupan el espacio libre y
+                    // se encogen si no caben (pantallas bajitas).
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            children: [
+                              // Entrada animada: el tablero baja y aparece, y
+                              // el logo crece hasta su tamaño.
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 900),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, entrada, _) => Column(
+                                  children: [
+                                    Opacity(
+                                      opacity: entrada,
+                                      child: Transform.translate(
+                                        offset: Offset(0, -24 * (1 - entrada)),
+                                        child: const _TableroDeAdorno(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 28),
+                                    Opacity(
+                                      opacity: entrada,
+                                      child: Transform.scale(
+                                        scale: 0.85 + 0.15 * entrada,
+                                        child: Image.asset(
+                                          'assets/imagenes/brilliant_logo_3x.png',
+                                          key: const ValueKey('logo'),
+                                          width: 300,
+                                          semanticLabel: 'Brilliant',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Llena las regiones con los dados',
+                                style: tema.textTheme.bodyLarge?.copyWith(
+                                  color: tema.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Llena las regiones con los dados',
-                      style: tema.textTheme.bodyLarge?.copyWith(
-                        color: tema.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Spacer(flex: 3),
+                    const SizedBox(height: 16),
                     _BotonJugar(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const SeleccionMapa(),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('boton-multijugador'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => PantallaMultijugador(
+                              sala: ServicioDeSala(cuenta: servicio),
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.groups_rounded),
+                        label: const Text('Multijugador'),
                       ),
                     ),
                   ],

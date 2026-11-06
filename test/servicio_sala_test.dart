@@ -1,52 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
 import 'package:proyecto_bloques/multijugador/servicio_sala.dart';
-import 'package:stream_channel/stream_channel.dart';
 import 'ayudantes.dart';
 import 'consola.dart';
-
-// Servidor de salas falso: cada vez que la app abre una conexion, se crea un
-// canal nuevo; la prueba lee lo que mando la app y le contesta.
-class ServidorDeSalasFalso {
-  final List<StreamChannelController<dynamic>> canales = [];
-  final List<Map<String, dynamic>> recibidos = [];
-  // Si es true, las conexiones nuevas se cierran enseguida (servidor caido).
-  bool caido = false;
-
-  StreamChannel<dynamic> abrir(Uri direccion) {
-    final canal = StreamChannelController<dynamic>();
-    canales.add(canal);
-    canal.local.stream.listen(
-      (texto) => recibidos.add(jsonDecode(texto as String)),
-    );
-    if (caido) {
-      canal.local.sink.close();
-    }
-    return canal.foreign;
-  }
-
-  void mandar(Map<String, Object?> mensaje) =>
-      canales.last.local.sink.add(jsonEncode(mensaje));
-
-  void mandarLobby() => mandar({
-    'tipo': 'estado',
-    'fase': 'lobby',
-    'usuario': 'Ana',
-    'codigo': 'K7MQ2P',
-    'anfitrion': 'Ana',
-    'mapa': 'clasico',
-    'maximo': 6,
-    'jugadores': [
-      {'usuario': 'Ana', 'conectado': true},
-      {'usuario': 'Luis', 'conectado': false},
-    ],
-  });
-
-  // Simula que se cae la conexion actual.
-  void cortar() => canales.last.local.sink.close();
-}
 
 Future<void> esperar([int milisegundos = 0]) =>
     Future<void>.delayed(Duration(milliseconds: milisegundos));
