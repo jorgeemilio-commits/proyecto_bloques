@@ -41,9 +41,14 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
   @override
   void dispose() {
     _avisos.cancel();
-    // Salir de la sala a proposito, para que los demas no esperen los 80
-    // segundos de reconexion.
-    if (widget.sala.estado?.fase == 'lobby') {
+    // Salir de la pantalla es salir de la sala a proposito: en el lobby se
+    // sale, y en la partida se rinde (ya lo confirmo al presionar atras). Asi
+    // los demas no esperan los 80 segundos de reconexion, y al volver a entrar
+    // no regresa a la partida. Esos 80 segundos son solo para cuando se cae
+    // la red.
+    if (_enLaPartida) {
+      widget.sala.rendirse();
+    } else if (widget.sala.estado?.fase == 'lobby') {
       widget.sala.salir();
     }
     widget.sala.desconectar();
@@ -51,8 +56,36 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     super.dispose();
   }
 
+  // Ya empezo la partida (fase distinta de sin sala y de lobby).
+  bool get _enLaPartida {
+    final fase = widget.sala.estado?.fase;
+    return fase != null && fase != 'sinSala' && fase != 'lobby';
+  }
+
+  // Atras durante la partida: salir es rendirse, asi que primero pregunta.
+  Future<void> _alPresionarAtras(bool yaSalio, Object? _) async {
+    if (yaSalio || !await _confirmarRendirse(context)) {
+      return;
+    }
+    if (mounted) {
+      // Al cerrarse la pantalla, dispose manda "rendirse".
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.sala,
+      builder: (context, _) => PopScope(
+        canPop: !_enLaPartida,
+        onPopInvokedWithResult: _alPresionarAtras,
+        child: _pantalla(context),
+      ),
+    );
+  }
+
+  Widget _pantalla(BuildContext context) {
     final colores = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -79,7 +112,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
           } else if (estado.fase == 'lobby') {
             contenido = _SalaDeEspera(sala: sala, estado: estado);
           } else {
-            contenido = _PartidaPendiente(estado: estado);
+            contenido = _PartidaPendiente(sala: sala, estado: estado);
           }
 
           return SafeArea(
@@ -480,12 +513,45 @@ class _SelectorDeMapaState extends State<_SelectorDeMapa> {
   }
 }
 
+// Pide confirmacion antes de rendirse: no se puede volver a la partida.
+Future<bool> _confirmarRendirse(BuildContext context) async {
+  final seguro = await showDialog<bool>(
+    context: context,
+    builder: (contexto) => AlertDialog(
+      title: const Text('¿Rendirte?'),
+      content: const Text(
+        'Saldrás de la partida y no podrás volver. Los demás seguirán '
+        'jugando.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(contexto).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const ValueKey('confirmar-rendirse'),
+          onPressed: () => Navigator.of(contexto).pop(true),
+          child: const Text('Rendirme'),
+        ),
+      ],
+    ),
+  );
+  return seguro ?? false;
+}
+
 // Por ahora, al iniciar solo se muestra esto: la partida en linea se agrega
 // en los siguientes pasos.
 class _PartidaPendiente extends StatelessWidget {
+  final ServicioDeSala sala;
   final EstadoSala estado;
 
-  const _PartidaPendiente({required this.estado});
+  const _PartidaPendiente({required this.sala, required this.estado});
+
+  Future<void> _rendirse(BuildContext context) async {
+    if (await _confirmarRendirse(context)) {
+      sala.rendirse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -514,6 +580,14 @@ class _PartidaPendiente extends StatelessWidget {
           style: tema.textTheme.bodyMedium?.copyWith(
             color: tema.colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: 24),
+        TextButton.icon(
+          key: const ValueKey('boton-rendirse'),
+          style: TextButton.styleFrom(foregroundColor: tema.colorScheme.error),
+          onPressed: () => _rendirse(context),
+          icon: const Icon(Icons.flag_outlined),
+          label: const Text('Rendirse'),
         ),
       ],
     );

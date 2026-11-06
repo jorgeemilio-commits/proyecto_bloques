@@ -126,6 +126,9 @@ class ServicioDeSala extends ChangeNotifier {
 
   void iniciar() => _mandar({'tipo': 'iniciar'});
 
+  // Deja la partida; los demas siguen jugando.
+  void rendirse() => _mandar({'tipo': 'rendirse'});
+
   // Cierra la conexion a proposito (por ejemplo, al cerrar sesion).
   void desconectar() {
     _sinReintentos = true;

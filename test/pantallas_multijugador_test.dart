@@ -79,7 +79,13 @@ void main() {
     await tester.pump();
     final partida = porLlave('partida-pendiente').evaluate().isNotEmpty;
 
-    // Al cerrar la pantalla en la partida no se manda "salir".
+    // Rendirse pide confirmacion antes de mandarlo.
+    await tester.tap(porLlave('boton-rendirse'));
+    await tester.pumpAndSettle();
+    final antesDeConfirmar = servidor.recibidos.last;
+    await tester.tap(porLlave('confirmar-rendirse'));
+    await tester.pumpAndSettle();
+    final rendido = servidor.recibidos.last;
     await cerrar(tester);
 
     expect(entrada, isTrue);
@@ -89,8 +95,12 @@ void main() {
     expect(puedeIniciar, isTrue);
     expect(pidioIniciar, {'tipo': 'iniciar'});
     expect(partida, isTrue);
-    expect(servidor.recibidos.last, {'tipo': 'iniciar'});
-    mostrar('Crear sala -> sala $codigo con Luis desconectado -> iniciar.');
+    expect(antesDeConfirmar, {'tipo': 'iniciar'});
+    expect(rendido, {'tipo': 'rendirse'});
+    mostrar(
+      'Crear sala -> sala $codigo con Luis desconectado -> iniciar -> '
+      'rendirse (con confirmacion).',
+    );
   });
 
   testWidgets('unirse con codigo, ver el error y la barra de reconexion', (
@@ -122,6 +132,72 @@ void main() {
     expect(error, isTrue);
     expect(reconectando, isTrue);
     mostrar('Unirse con k7mq2p -> error en pantalla; al caer, "Reconectando".');
+  });
+
+  testWidgets('atras en la partida pregunta, y al confirmar se rinde y sale', (
+    tester,
+  ) async {
+    final cuenta = ServicioDeCuenta(cliente: servidorFalso());
+    await cuenta.crearCuenta('Ana', 'secreta123');
+    await cuenta.iniciarSesion('Ana', 'secreta123');
+    servidor = ServidorDeSalasFalso();
+    // La pantalla se abre encima de otra, como desde el menu.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => PantallaMultijugador(
+                  sala: ServicioDeSala(
+                    cuenta: cuenta,
+                    abrirCanal: servidor.abrir,
+                  ),
+                ),
+              ),
+            ),
+            child: const Text('abrir'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('abrir'));
+    // Mientras conecta hay un circulo girando: se espera la animacion de
+    // entrada en lugar de pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    servidor.mandar({
+      'tipo': 'estado',
+      'fase': 'valoresIniciales',
+      'usuario': 'Ana',
+      'codigo': 'K7MQ2P',
+      'anfitrion': 'Ana',
+      'mapa': 'clasico',
+      'meta': 26,
+      'jugadores': [
+        {'usuario': 'Ana', 'conectado': true},
+        {'usuario': 'Luis', 'conectado': true},
+      ],
+    });
+    await tester.pump();
+
+    // Atras y "Cancelar": sigue en la partida.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    final sigueAlCancelar = porLlave('partida-pendiente').evaluate().isNotEmpty;
+
+    // Atras y "Rendirme": se rinde y vuelve al menu.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(porLlave('confirmar-rendirse'));
+    await tester.pumpAndSettle();
+
+    expect(sigueAlCancelar, isTrue);
+    expect(porLlave('pantalla-multijugador'), findsNothing);
+    expect(servidor.recibidos.last, {'tipo': 'rendirse'});
+    mostrar('Atras en la partida: Cancelar sigue; Rendirme manda rendirse.');
   });
 
   testWidgets('al salir de la pantalla en el lobby, sale de la sala', (

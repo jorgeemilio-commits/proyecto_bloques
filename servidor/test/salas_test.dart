@@ -226,6 +226,44 @@ void main() {
     expect(conexion.cerrada, isTrue);
   });
 
+  test(
+    'en la partida: rendirse, o no volver a tiempo, saca de la sala',
+    () async {
+      final ana = conectar('Ana');
+      final luis = conectar('Luis');
+      final eva = conectar('Eva');
+      mandar(ana, {'tipo': 'crearSala'});
+      final codigo = ana.estado['codigo'] as String;
+      mandar(luis, {'tipo': 'unirse', 'codigo': codigo});
+      mandar(eva, {'tipo': 'unirse', 'codigo': codigo});
+      mandar(ana, {'tipo': 'iniciar'});
+
+      mandar(luis, {'tipo': 'rendirse'});
+      final faseDeLuis = luis.estado['fase'];
+      // Eva se cae: al volver a tiempo sigue en la partida.
+      salas.desconectar(eva);
+      final evaVuelve = conectar('Eva');
+      final faseAlVolver = evaVuelve.estado['fase'];
+      // Se cae otra vez y ya no vuelve.
+      salas.desconectar(evaVuelve);
+      await Future<void>.delayed(_esperaCorta * 2);
+      // Ya sin partida, Eva puede entrar a otra sala.
+      final evaDespues = conectar('Eva');
+
+      expect(faseDeLuis, 'sinSala');
+      expect(faseAlVolver, 'valoresIniciales');
+      expect(evaDespues.estado['fase'], 'sinSala');
+      expect(ana.jugadores, ['Ana']);
+      expect(ana.deTipo('aviso').map((aviso) => aviso['texto']), [
+        'Luis se rindió.',
+        'Eva se desconectó.',
+        'Eva volvió.',
+        'Eva se desconectó.',
+        'Eva se rindió.',
+      ]);
+    },
+  );
+
   test('por WebSocket de verdad: hola y crear sala', () async {
     final baseDeDatos = BaseDeDatos.enMemoria();
     final tokens = Tokens(crearSecreto());

@@ -109,18 +109,19 @@ class Salas {
     }
     _avisar(sala, '$usuario se desconectó.', excepto: usuario);
     _enviarEstado(sala);
-    // En el lobby, si no vuelve a tiempo, sale de la sala. (En la partida lo
-    // que pasa al no volver se agrega en el paso de desconexiones.)
-    if (sala.enLobby) {
-      _esperandoReconexion[usuario] = Timer(esperaReconexion, () {
-        _esperandoReconexion.remove(usuario);
-        if (_salaDe[usuario] == sala &&
-            sala.enLobby &&
-            !_conexiones.containsKey(usuario)) {
-          _salirDelLobby(usuario, sala);
-        }
-      });
-    }
+    // Si no vuelve a tiempo: en el lobby sale de la sala; en la partida
+    // cuenta como que se rindio.
+    _esperandoReconexion[usuario] = Timer(esperaReconexion, () {
+      _esperandoReconexion.remove(usuario);
+      if (_salaDe[usuario] != sala || _conexiones.containsKey(usuario)) {
+        return;
+      }
+      if (sala.enLobby) {
+        _salirDelLobby(usuario, sala);
+      } else {
+        _rendirse(usuario, sala);
+      }
+    });
   }
 
   // Llego un mensaje de texto por la conexion.
@@ -201,8 +202,7 @@ class Salas {
     }
   }
 
-
-// Atiende un mensaje de un usuario ya identificado.
+  // Atiende un mensaje de un usuario ya identificado.
   void _atender(String usuario, Map<String, dynamic> mensaje) {
     switch (mensaje['tipo']) {
       case 'crearSala':
@@ -239,6 +239,12 @@ class Salas {
           throw _mensajeInvalido;
         }
         _salirDelLobby(usuario, sala);
+      case 'rendirse':
+        final sala = _salaDe[usuario];
+        if (sala == null || sala.enLobby) {
+          throw _mensajeInvalido;
+        }
+        _rendirse(usuario, sala);
       case 'elegirMapa':
         final sala = _salaDelAnfitrion(usuario);
         final mapa = mensaje['mapa'];
@@ -265,15 +271,14 @@ class Salas {
     }
   }
 
-
-// Lanza un error si el usuario ya esta en una sala.
+  // Lanza un error si el usuario ya esta en una sala.
   void _sinSala(String usuario) {
     if (_salaDe.containsKey(usuario)) {
       throw const _ErrorDeSala('yaEnSala', 'Ya estás en una sala.');
     }
   }
 
-// Devuelve la sala del usuario si es el anfitrion; si no, lanza un error.
+  // Devuelve la sala del usuario si es el anfitrion; si no, lanza un error.
   Sala _salaDelAnfitrion(String usuario) {
     final sala = _salaDe[usuario];
     if (sala == null || !sala.enLobby) {
@@ -311,6 +316,16 @@ class Salas {
     }
     _sacarDeLaSala(usuario, sala);
     _avisar(sala, '$usuario salió de la sala.');
+    _enviarEstadoA(usuario);
+    _enviarEstado(sala);
+  }
+
+  // El usuario se rinde en la partida (con "rendirse" o por no volver a
+  // tiempo): sale de la sala y los demas siguen. (En el paso de la partida se
+  // quedara en la lista como rendido, con sus puntos.)
+  void _rendirse(String usuario, Sala sala) {
+    _sacarDeLaSala(usuario, sala);
+    _avisar(sala, '$usuario se rindió.');
     _enviarEstadoA(usuario);
     _enviarEstado(sala);
   }
