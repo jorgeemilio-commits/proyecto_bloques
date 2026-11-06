@@ -62,9 +62,12 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     return fase != null && fase != 'sinSala' && fase != 'lobby';
   }
 
-  // Atras durante la partida: salir es rendirse, asi que primero pregunta.
+  bool get _enElLobby => widget.sala.estado?.fase == 'lobby';
+
+  // Atras durante la partida: salir es rendirse, asi que primero pregunta. En
+  // el lobby no hace nada: se sale con el boton de salir o borrar la sala.
   Future<void> _alPresionarAtras(bool yaSalio, Object? _) async {
-    if (yaSalio || !await _confirmarRendirse(context)) {
+    if (yaSalio || _enElLobby || !await _confirmarRendirse(context)) {
       return;
     }
     if (mounted) {
@@ -78,7 +81,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     return ListenableBuilder(
       listenable: widget.sala,
       builder: (context, _) => PopScope(
-        canPop: !_enLaPartida,
+        canPop: !_enLaPartida && !_enElLobby,
         onPopInvokedWithResult: _alPresionarAtras,
         child: _pantalla(context),
       ),
@@ -92,6 +95,9 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
       key: const ValueKey('pantalla-multijugador'),
       backgroundColor: colores.surfaceContainerLow,
       appBar: AppBar(
+        // En la sala de espera no hay flecha de atras: se sale con el boton
+        // de abajo.
+        automaticallyImplyLeading: !_enElLobby,
         title: const Text('Multijugador'),
         centerTitle: true,
         backgroundColor: colores.surfaceContainerLow,
@@ -436,11 +442,24 @@ class _SalaDeEspera extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        TextButton.icon(
-          key: const ValueKey('boton-salir-sala'),
-          onPressed: sala.salir,
-          icon: const Icon(Icons.logout),
-          label: Text(estado.soyAnfitrion ? 'Cerrar la sala' : 'Salir'),
+        // La unica forma de salir de la sala: el anfitrion la borra (salen
+        // todos) y los demas solo salen ellos.
+        SizedBox(
+          height: 48,
+          child: OutlinedButton.icon(
+            key: const ValueKey('boton-salir-sala'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: tema.colorScheme.error,
+              side: BorderSide(color: tema.colorScheme.error),
+            ),
+            onPressed: sala.salir,
+            icon: Icon(
+              estado.soyAnfitrion ? Icons.delete_outline : Icons.logout,
+            ),
+            label: Text(
+              estado.soyAnfitrion ? 'Borrar sala' : 'Salir de la sala',
+            ),
+          ),
         ),
       ],
     );
