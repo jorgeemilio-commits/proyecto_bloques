@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'base_de_datos.dart';
+import 'salas.dart';
 import 'seguridad.dart';
 
 // Nombre de usuario: de 3 a 20 letras (incluidas las acentuadas y la ñ),
@@ -20,13 +23,44 @@ const int _minimoContrasena = 8;
 // - POST /login: iniciar sesion; devuelve el JWT.
 // - GET /cuenta: datos del usuario (pide el JWT).
 // - DELETE /cuenta: borrar la cuenta (pide el JWT y la contraseña).
+// - GET /sala: WebSocket para jugar en linea (ver PROTOCOLO_MULTIJUGADOR.md).
+//
+// Si no se pasan [salas], se crean unas nuevas.
 Handler crearManejador({
   required BaseDeDatos baseDeDatos,
   required Tokens tokens,
   int costoBcrypt = 10,
+  Salas? salas,
 }) {
   final rutas = Router(
     notFoundHandler: (_) => _error(404, 'Ruta no encontrada.'),
+  );
+  final salasDelServidor =
+      salas ??
+      Salas(
+        usuarioDelToken: (token) {
+          final usuarioId = tokens.verificar(token);
+          return usuarioId == null
+              ? null
+              : baseDeDatos.usuarioPorId(usuarioId)?.nombre;
+        },
+      );
+
+  // El ping cada 10 segundos detecta pronto las conexiones caidas.
+  rutas.get(
+    '/sala',
+    webSocketHandler((WebSocketChannel canal, _) {
+      final conexion = _ConexionWebSocket(canal);
+      salasDelServidor.conectar(conexion);
+      canal.stream.listen(
+        (mensaje) => salasDelServidor.recibir(
+          conexion,
+          mensaje is String ? mensaje : '',
+        ),
+        onDone: () => salasDelServidor.desconectar(conexion),
+        onError: (_) {},
+      );
+    }, pingInterval: const Duration(seconds: 10)),
   );
 
   rutas.post('/registro', (Request peticion) async {
@@ -141,3 +175,17 @@ Response _json(int estado, Map<String, Object?> datos) => Response(
 
 Response _error(int estado, String mensaje) =>
     _json(estado, {'error': mensaje});
+
+// Conexion de las salas sobre un WebSocket: los mensajes van como JSON.
+class _ConexionWebSocket implements Conexion {
+  final WebSocketChannel canal;
+
+  _ConexionWebSocket(this.canal);
+
+  @override
+  void enviar(Map<String, Object?> mensaje) =>
+      canal.sink.add(jsonEncode(mensaje));
+
+  @override
+  void cerrar() => canal.sink.close();
+}

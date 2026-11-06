@@ -45,6 +45,9 @@ class ServicioDeCuenta extends ChangeNotifier {
   // Nombre del usuario con la sesion abierta, o null si no hay sesion.
   String? get usuario => _usuario;
 
+  // JWT de la sesion abierta; el multijugador lo usa para identificarse.
+  String? get token => _token;
+
   Future<void> crearCuenta(String usuario, String contrasena) async {
     await _pedir(
       'POST',
