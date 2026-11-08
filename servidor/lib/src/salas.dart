@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'partida.dart';
+
 // Salas de juego en linea (ver PROTOCOLO_MULTIJUGADOR.md en la raiz del
-// repositorio). Aqui esta toda la logica del lobby, sin nada de red: rutas.dart
-// conecta cada WebSocket con una Conexion.
+// repositorio). Aqui estan el lobby y los tiempos de la partida, sin nada de
+// red: rutas.dart conecta cada WebSocket con una Conexion, y las reglas de la
+// partida estan en partida.dart.
 
 // Una conexion de un jugador: por donde se le mandan mensajes.
 abstract interface class Conexion {
@@ -37,14 +40,6 @@ const int largoDelCodigo = 6;
 const int maximoDeJugadores = 6;
 const int minimoDeJugadores = 2;
 
-// Puntos para ganar segun cuantos jugadores empiezan la partida.
-int metaPara(int jugadores) => switch (jugadores) {
-  2 => 26,
-  3 => 24,
-  4 => 22,
-  _ => 20,
-};
-
 // Un jugador que se identifico con "hola": su conexion actual, la sala en la
 // que esta y, si se desconecto estando en una sala, el tiempo que le queda
 // para volver. Su lugar en la sala dura mas que su conexion.
@@ -64,18 +59,22 @@ class Jugador {
 
 class Sala {
   final String codigo;
-  // Jugadores en el orden en que entraron; el primero es el anfitrion.
+  // Jugadores en el orden en que entraron; el primero es el anfitrion. En la
+  // partida, quien se rinde sale de esta lista (pero sigue en la partida).
   final List<Jugador> jugadores = [];
   String mapa = 'clasico';
-  // 'lobby' o, ya iniciada, 'valoresIniciales'.
-  String fase = 'lobby';
-  // Puntos para ganar; se fija al iniciar la partida.
-  int? meta;
+  // null mientras se esta en el lobby.
+  Partida? partida;
+  // Tiempo de la fase actual de la partida (valores iniciales, ronda o entre
+  // rondas) y cuando se acaba.
+  Timer? temporizador;
+  DateTime? limite;
 
   Sala(this.codigo);
 
   Jugador get anfitrion => jugadores.first;
-  bool get enLobby => fase == 'lobby';
+  bool get enLobby => partida == null;
+  String get fase => partida?.fase ?? 'lobby';
 }
 
 class Salas {
@@ -85,6 +84,12 @@ class Salas {
   final Duration esperaHola;
   // Tiempo que un jugador desconectado sigue en la sala esperando volver.
   final Duration esperaReconexion;
+  // Tiempos de la partida: para poner los valores iniciales, para cada
+  // ronda y para ver los resultados antes de la siguiente.
+  final Duration esperaValoresIniciales;
+  final Duration esperaRonda;
+  final Duration esperaEntreRondas;
+  // Codigos de invitacion, dados y valores iniciales al azar.
   final Random _azar;
 
   // Salas por su codigo de invitacion.
@@ -101,6 +106,9 @@ class Salas {
     required this.usuarioDelToken,
     this.esperaHola = const Duration(seconds: 10),
     this.esperaReconexion = const Duration(seconds: 80),
+    this.esperaValoresIniciales = const Duration(minutes: 1),
+    this.esperaRonda = const Duration(seconds: 40),
+    this.esperaEntreRondas = const Duration(seconds: 1),
     Random? azar,
   }) : _azar = azar ?? Random.secure();
 
@@ -131,7 +139,9 @@ class Salas {
       return;
     }
     _avisar(sala, '${jugador.nombre} se desconectó.', excepto: jugador);
-    _enviarEstado(sala);
+    // En la ronda no se le espera: si ya jugaron todos los conectados, la
+    // ronda termina (el desconectado pasa).
+    _revisarRonda(sala);
     // Si no vuelve a tiempo: en el lobby sale de la sala; en la partida
     // cuenta como que se rindio.
     jugador.esperaReconexion = Timer(esperaReconexion, () {
@@ -194,6 +204,9 @@ class Salas {
     }
     for (final jugador in _jugadores.values) {
       jugador.esperaReconexion?.cancel();
+    }
+    for (final sala in _salas.values) {
+      sala.temporizador?.cancel();
     }
   }
 
@@ -293,14 +306,155 @@ class Salas {
             'Se necesitan al menos $minimoDeJugadores jugadores para empezar.',
           );
         }
-        // La partida en si se agrega en el siguiente paso; por ahora solo
-        // cierra la sala a nuevos jugadores y fija la meta.
-        sala.fase = 'valoresIniciales';
-        sala.meta = metaPara(sala.jugadores.length);
+        // Empieza la partida: la sala se cierra a nuevos jugadores, la meta
+        // queda fija y hay un tiempo para poner los valores iniciales; al
+        // acabarse, quien no los puso los recibe al azar.
+        final partida = Partida([
+          for (final otro in sala.jugadores) otro.nombre,
+        ]);
+        sala.partida = partida;
+        _programar(sala, esperaValoresIniciales, () {
+          partida.valoresAlAzar(_azar);
+          _empezarRonda(sala);
+        });
         _enviarEstado(sala);
+      case 'valoresIniciales':
+        final (sala, partida, participante) = _enLaPartida(jugador);
+        final valores = mensaje['valores'];
+        if (valores is! List ||
+            valores.any((valor) => valor is! int) ||
+            !partida.ponerValores(participante, valores.cast<int>())) {
+          throw _mensajeInvalido;
+        }
+        if (partida.todosTienenValores) {
+          _empezarRonda(sala);
+        } else {
+          _enviarEstado(sala);
+        }
+      case 'colocar':
+      case 'pasar':
+        final (sala, partida, participante) = _enLaPartida(jugador);
+        // Una jugada vieja (de otra ronda) que llego tarde no cuenta.
+        if (mensaje['ronda'] != partida.ronda) {
+          throw _mensajeInvalido;
+        }
+        final jugada = mensaje['tipo'] == 'colocar'
+            ? _leerJugada(mensaje)
+            : null;
+        if (!partida.jugar(participante, jugada)) {
+          throw _mensajeInvalido;
+        }
+        _revisarRonda(sala);
       default:
         throw _mensajeInvalido;
     }
+  }
+
+  // Sala, partida y participante del jugador que juega; si no esta en una
+  // partida, lanza un error.
+  (Sala, Partida, Participante) _enLaPartida(Jugador jugador) {
+    final sala = jugador.sala;
+    final partida = sala?.partida;
+    final participante = partida?.de(jugador.nombre);
+    if (sala == null || partida == null || participante == null) {
+      throw _mensajeInvalido;
+    }
+    return (sala, partida, participante);
+  }
+
+  // Lee la jugada de un mensaje "colocar"; si no es valida, lanza un error.
+  Jugada _leerJugada(Map<String, dynamic> mensaje) {
+    final x = mensaje['x'];
+    final y = mensaje['y'];
+    final numero = mensaje['numero'];
+    final reclamo = mensaje['reclamo'];
+    if (x is! int ||
+        y is! int ||
+        numero is! int ||
+        x < 0 ||
+        y < 0 ||
+        numero < 1 ||
+        numero > 6) {
+      throw _mensajeInvalido;
+    }
+    if (reclamo == null) {
+      return Jugada(x: x, y: y, numero: numero);
+    }
+    final region = reclamo is Map ? reclamo['region'] : null;
+    final premios = reclamo is Map ? reclamo['premios'] : null;
+    if (region is! String ||
+        premios is! List ||
+        premios.any((premio) => premio is! int)) {
+      throw _mensajeInvalido;
+    }
+    return Jugada(
+      x: x,
+      y: y,
+      numero: numero,
+      region: region,
+      premios: premios.cast<int>(),
+    );
+  }
+
+  // Cambia el tiempo de la fase actual de la partida.
+  void _programar(Sala sala, Duration espera, void Function() alAcabarse) {
+    sala.temporizador?.cancel();
+    sala.limite = DateTime.now().add(espera);
+    sala.temporizador = Timer(espera, alAcabarse);
+  }
+
+  // Tira los dados y empieza la siguiente ronda, con su tiempo.
+  void _empezarRonda(Sala sala) {
+    final partida = sala.partida!;
+    partida.empezarRonda(_azar);
+    _programar(sala, esperaRonda, () => _terminarRonda(sala));
+    _enviarEstado(sala);
+  }
+
+  // Si ya jugaron todos los conectados que siguen jugando, termina la ronda;
+  // si no, solo avisa del cambio. Los desconectados no se esperan (pasan).
+  // Si no hay nadie conectado, se espera a que se acabe el tiempo.
+  void _revisarRonda(Sala sala) {
+    final partida = sala.partida;
+    if (partida != null && partida.fase == 'ronda') {
+      final conectados = [
+        for (final participante in partida.participantes)
+          if (participante.jugando && _sigueConectado(participante, sala))
+            participante,
+      ];
+      if (conectados.isNotEmpty &&
+          conectados.every((participante) => participante.yaJugo)) {
+        _terminarRonda(sala);
+        return;
+      }
+    }
+    _enviarEstado(sala);
+  }
+
+  // Termina la ronda: se reparten los puntos y, tras un momento para ver los
+  // resultados, empieza la siguiente (o se acaba la partida).
+  void _terminarRonda(Sala sala) {
+    final partida = sala.partida!;
+    partida.resolverRonda();
+    if (partida.fase == 'terminada') {
+      _terminar(sala);
+      return;
+    }
+    _programar(sala, esperaEntreRondas, () => _empezarRonda(sala));
+    _enviarEstado(sala);
+  }
+
+  void _terminar(Sala sala) {
+    sala.temporizador?.cancel();
+    sala.temporizador = null;
+    sala.limite = null;
+    _enviarEstado(sala);
+  }
+
+  // El participante sigue en la sala (no se rindio ni salio) y conectado.
+  bool _sigueConectado(Participante participante, Sala sala) {
+    final jugador = _jugadores[participante.nombre];
+    return jugador != null && jugador.sala == sala && jugador.conectado;
   }
 
   // Lanza un error si el jugador ya esta en una sala.
@@ -352,14 +506,33 @@ class Salas {
     _enviarEstado(sala);
   }
 
-  // El jugador se rinde en la partida (con "rendirse" o por no volver a
-  // tiempo): sale de la sala y los demas siguen. (En el paso de la partida se
-  // quedara en la lista como rendido, con sus puntos.)
+  // El jugador deja la partida (con "rendirse" o por no volver a tiempo):
+  // queda libre para entrar a otra sala, pero sigue en la partida como
+  // rendido, con su tablero y sus puntos, y los demas siguen jugando. Si ya
+  // habia llegado a la meta (o la partida termino), solo sale.
   void _rendirse(Jugador jugador, Sala sala) {
+    final partida = sala.partida!;
+    final participante = partida.de(jugador.nombre);
+    final seguiaJugando = participante?.jugando ?? false;
+    if (participante != null) {
+      partida.rendir(participante);
+    }
     _sacarDeLaSala(jugador, sala);
-    _avisar(sala, '${jugador.nombre} se rindió.');
     _enviarEstadoA(jugador);
-    _enviarEstado(sala);
+    if (!_salas.containsKey(sala.codigo)) {
+      return;
+    }
+    if (seguiaJugando) {
+      _avisar(sala, '${jugador.nombre} se rindió.');
+    }
+    if (partida.fase == 'terminada') {
+      _terminar(sala);
+    } else if (partida.fase == 'valoresIniciales' &&
+        partida.todosTienenValores) {
+      _empezarRonda(sala);
+    } else {
+      _revisarRonda(sala);
+    }
   }
 
   // Saca al jugador de la sala; si ya no queda nadie, la sala se borra.
@@ -369,6 +542,7 @@ class Salas {
     jugador.esperaReconexion?.cancel();
     jugador.esperaReconexion = null;
     if (sala.jugadores.isEmpty) {
+      sala.temporizador?.cancel();
       _salas.remove(sala.codigo);
     }
     _olvidarSiSobra(jugador);
@@ -405,6 +579,8 @@ class Salas {
   // ninguna.
   void _enviarEstadoA(Jugador jugador) {
     final sala = jugador.sala;
+    final partida = sala?.partida;
+    final limite = sala?.limite;
     jugador.enviar({
       'tipo': 'estado',
       'fase': sala?.fase ?? 'sinSala',
@@ -414,13 +590,56 @@ class Salas {
         'anfitrion': sala.anfitrion.nombre,
         'mapa': sala.mapa,
         'maximo': maximoDeJugadores,
-        if (sala.meta != null) 'meta': sala.meta,
-        'jugadores': [
-          for (final otro in sala.jugadores)
-            {'usuario': otro.nombre, 'conectado': otro.conectado},
-        ],
+        if (partida == null)
+          'jugadores': [
+            for (final otro in sala.jugadores)
+              {'usuario': otro.nombre, 'conectado': otro.conectado},
+          ]
+        else ...{
+          'meta': partida.meta,
+          'ronda': partida.ronda,
+          'dados': partida.dados,
+          // Lo que le queda a los valores iniciales o a la ronda.
+          if (limite != null &&
+              (partida.fase == 'valoresIniciales' || partida.fase == 'ronda'))
+            'restanteMs': max(
+              0,
+              limite.difference(DateTime.now()).inMilliseconds,
+            ),
+          'ganadores': partida.ganadores,
+          'jugadores': [
+            for (final participante in partida.participantes)
+              _participanteEnJson(participante, sala, partida, jugador),
+          ],
+        },
       },
     });
+  }
+
+  // Un participante como lo ve [para]. Los valores iniciales de los demas no
+  // se ven hasta que empieza la primera ronda, para que nadie copie.
+  Map<String, Object?> _participanteEnJson(
+    Participante participante,
+    Sala sala,
+    Partida partida,
+    Jugador para,
+  ) {
+    final reclamo = participante.ultimoReclamo;
+    final verIniciales =
+        partida.fase != 'valoresIniciales' ||
+        participante.nombre == para.nombre;
+    return {
+      'usuario': participante.nombre,
+      'conectado': _sigueConectado(participante, sala),
+      'situacion': participante.situacion,
+      'yaJugo': participante.yaJugo,
+      'puntos': participante.puntos,
+      'iniciales': verIniciales ? participante.iniciales : null,
+      'casillas': participante.casillas,
+      'ultimoReclamo': reclamo == null
+          ? null
+          : {'region': reclamo.region, 'puntos': reclamo.puntos},
+    };
   }
 
   // Manda un aviso a los jugadores conectados de la sala, excepto a

@@ -14,8 +14,11 @@ class ConexionFalsa implements Conexion {
   final List<Map<String, Object?>> mensajes = [];
   bool cerrada = false;
 
+  // Se guarda una copia hecha con JSON, como lo que viaja por la red: asi los
+  // cambios posteriores del servidor no alteran lo que ya se "envio".
   @override
-  void enviar(Map<String, Object?> mensaje) => mensajes.add(mensaje);
+  void enviar(Map<String, Object?> mensaje) =>
+      mensajes.add(jsonDecode(jsonEncode(mensaje)) as Map<String, Object?>);
 
   @override
   void cerrar() => cerrada = true;
@@ -30,6 +33,17 @@ class ConexionFalsa implements Conexion {
     for (final jugador in estado['jugadores'] as List)
       (jugador as Map)['usuario'] as String,
   ];
+
+  // Datos de cada jugador en la partida, por su nombre.
+  Map<String, Map<String, Object?>> get enPartida => {
+    for (final jugador in estado['jugadores'] as List)
+      (jugador as Map)['usuario'] as String: jugador.cast<String, Object?>(),
+  };
+
+  Map<String, Object?> get situaciones => {
+    for (final MapEntry(:key, :value) in enPartida.entries)
+      key: value['situacion'],
+  };
 }
 
 const _esperaCorta = Duration(milliseconds: 50);
@@ -244,7 +258,7 @@ void main() {
   });
 
   test(
-    'en la partida: rendirse, o no volver a tiempo, saca de la sala',
+    'en la partida: rendirse, o no volver a tiempo, deja la partida',
     () async {
       final ana = conectar('Ana');
       final luis = conectar('Luis');
@@ -270,7 +284,14 @@ void main() {
       expect(faseDeLuis, 'sinSala');
       expect(faseAlVolver, 'valoresIniciales');
       expect(evaDespues.estado['fase'], 'sinSala');
-      expect(ana.jugadores, ['Ana']);
+      // Los que se rindieron siguen en la lista; Ana quedo sola y gano.
+      expect(ana.situaciones, {
+        'Ana': 'llegoALaMeta',
+        'Luis': 'rendido',
+        'Eva': 'rendido',
+      });
+      expect(ana.estado['fase'], 'terminada');
+      expect(ana.estado['ganadores'], ['Ana']);
       expect(ana.deTipo('aviso').map((aviso) => aviso['texto']), [
         'Luis se rindió.',
         'Eva se desconectó.',
@@ -280,6 +301,131 @@ void main() {
       ]);
     },
   );
+
+  group('partida', () {
+    // Tiempos cortos para que la partida avance rapido en las pruebas.
+    setUp(() {
+      salas.cerrar();
+      salas = Salas(
+        usuarioDelToken: (token) =>
+            token.startsWith('token-') ? token.substring(6) : null,
+        esperaReconexion: const Duration(seconds: 5),
+        esperaValoresIniciales: const Duration(milliseconds: 60),
+        esperaRonda: const Duration(milliseconds: 100),
+        esperaEntreRondas: const Duration(milliseconds: 20),
+      );
+    });
+
+    // Ana y Luis en una sala con la partida ya iniciada.
+    (ConexionFalsa, ConexionFalsa) iniciada() {
+      final ana = conectar('Ana');
+      final luis = conectar('Luis');
+      mandar(ana, {'tipo': 'crearSala'});
+      mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+      mandar(ana, {'tipo': 'iniciar'});
+      return (ana, luis);
+    }
+
+    test(
+      'valores iniciales: ocultos para los demas; al azar si no llegan',
+      () async {
+        final (ana, luis) = iniciada();
+
+        mandar(ana, {
+          'tipo': 'valoresIniciales',
+          'valores': [6, 5, 4, 3, 2, 1],
+        });
+        final anaVistaPorLuis = luis.enPartida['Ana'];
+        final anaVistaPorAna = ana.enPartida['Ana'];
+        final restante = ana.estado['restanteMs'] as int;
+        // Luis no los manda: al acabarse el minuto se le ponen al azar.
+        await Future<void>.delayed(const Duration(milliseconds: 90));
+
+        expect(ana.estado['meta'], 26);
+        expect(restante, inInclusiveRange(1, 60));
+        expect(anaVistaPorLuis!['yaJugo'], isTrue);
+        expect(anaVistaPorLuis['iniciales'], isNull);
+        expect(anaVistaPorAna!['iniciales'], [6, 5, 4, 3, 2, 1]);
+        expect(luis.estado['fase'], 'ronda');
+        expect(luis.estado['ronda'], 1);
+        expect((luis.enPartida['Luis']!['iniciales'] as List).toSet(), {
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+        });
+        // Ya en la ronda, cada uno ve los valores iniciales del otro.
+        expect(luis.enPartida['Ana']!['iniciales'], [6, 5, 4, 3, 2, 1]);
+      },
+    );
+
+    test('ronda: termina cuando todos juegan, y reparte los puntos', () {
+      final (ana, luis) = iniciada();
+      for (final quien in [ana, luis]) {
+        mandar(quien, {
+          'tipo': 'valoresIniciales',
+          'valores': [1, 2, 3, 4, 5, 6],
+        });
+      }
+      final dados = ana.estado['dados'] as List;
+
+      mandar(ana, {
+        'tipo': 'colocar',
+        'ronda': 1,
+        'x': 3,
+        'y': 0,
+        'numero': 4,
+        'reclamo': {
+          'region': 'Z1',
+          'premios': [7, 5, 3],
+        },
+      });
+      // Mientras Luis no juega, Ana no ve aun la jugada en su tablero.
+      final casillasAntes = luis.enPartida['Ana']!['casillas'];
+      mandar(luis, {'tipo': 'pasar', 'ronda': 1});
+      // Una jugada de una ronda que ya paso no cuenta.
+      mandar(luis, {'tipo': 'pasar', 'ronda': 1});
+
+      expect(dados, hasLength(2));
+      expect(casillasAntes, isEmpty);
+      expect(luis.estado['fase'], 'entreRondas');
+      expect(luis.enPartida['Ana']!['casillas'], [
+        [3, 0, 4],
+      ]);
+      expect(luis.enPartida['Ana']!['puntos'], 7);
+      expect(luis.enPartida['Ana']!['ultimoReclamo'], {
+        'region': 'Z1',
+        'puntos': 7,
+      });
+      expect(luis.ultimoError, 'mensajeInvalido');
+    });
+
+    test(
+      'ronda: quien no juega a tiempo pasa; el desconectado no se espera',
+      () async {
+        final (ana, luis) = iniciada();
+        for (final quien in [ana, luis]) {
+          mandar(quien, {
+            'tipo': 'valoresIniciales',
+            'valores': [1, 2, 3, 4, 5, 6],
+          });
+        }
+
+        // Ronda 1: nadie juega; al acabarse el tiempo pasa a la ronda 2.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        final rondaTrasEsperar = ana.estado['ronda'];
+        // Luis se desconecta: Ana juega y la ronda termina sin esperarlo.
+        salas.desconectar(luis);
+        mandar(ana, {'tipo': 'pasar', 'ronda': rondaTrasEsperar});
+
+        expect(rondaTrasEsperar, 2);
+        expect(ana.estado['fase'], 'entreRondas');
+        expect(ana.enPartida['Luis']!['conectado'], isFalse);
+      },
+    );
+  });
 
   test('por WebSocket de verdad: hola y crear sala', () async {
     final baseDeDatos = BaseDeDatos.enMemoria();

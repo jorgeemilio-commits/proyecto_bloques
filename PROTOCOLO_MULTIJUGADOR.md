@@ -140,14 +140,15 @@ En la partida (además de lo del lobby):
   iniciales) en el momento de enviar.
   La app hace la cuenta regresiva con su propio reloj, para no depender de que
   los relojes coincidan.
-- `situacion` de cada jugador: `jugando`, `llegoALaMeta`, `rendido` o
-  `desconectado` (sigue en la partida, con su tiempo para volver).
-- `yaJugo`: si ya mandó su jugada en esta ronda. Las jugadas de los demás
-  **no se ven hasta que termina la ronda**: `casillas` solo cambia al
-  resolverla, para que nadie copie.
+- `situacion` de cada jugador: `jugando`, `llegoALaMeta` o `rendido`. Si se
+  le cayó la conexión sigue `jugando`, con `conectado: false` mientras tiene
+  su tiempo para volver.
+- `yaJugo`: si ya mandó su jugada en esta ronda (en `valoresIniciales`: si ya
+  mandó sus valores). Las jugadas de los demás **no se ven hasta que termina
+  la ronda**: `casillas` solo cambia al resolverla, para que nadie copie.
 - `iniciales`: sus 6 valores iniciales en el orden de las casillas iniciales
-  del mapa (`null` mientras no los tenga). Los rivales los ven hasta que
-  empieza la ronda 1.
+  del mapa (`null` mientras no los tenga). Los de los rivales **no se ven
+  hasta que empieza la ronda 1**: mientras tanto llegan como `null`.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.
   Con `iniciales` y `casillas` se dibujan los tableros de los rivales.
 
@@ -176,8 +177,9 @@ En la partida (además de lo del lobby):
    app los adopta en lugar de lo que llevaba. La ronda 1 empieza cuando todos
    tienen valores, ya sea porque los mandaron o al acabarse el minuto.
 3. **Ronda:** el servidor tira los 2 dados, pasa a `ronda` y espera hasta
-   **40 segundos**. Termina antes si todos los jugadores que siguen jugando ya
-   mandaron su jugada. Quien no jugó a tiempo, pasa.
+   **40 segundos**. Termina antes si todos los jugadores que siguen jugando y
+   están conectados ya mandaron su jugada (a los desconectados no se les
+   espera). Quien no jugó a tiempo, pasa.
 4. **Resolver la ronda:**
    - Se agrupan los reclamos por región. Si varios completaron la misma región
      en la misma ronda, **todos ganan el mismo premio** (el siguiente que toca)
@@ -199,8 +201,8 @@ En la partida (además de lo del lobby):
 
 ## Desconexiones y rendirse
 
-- **Se cae la conexión:** el jugador pasa a `desconectado` y los demás reciben
-  un `aviso`. Tiene **80 segundos** para volver.
+- **Se cae la conexión:** el jugador queda con `conectado: false` y los demás
+  reciben un `aviso`. Tiene **80 segundos** para volver.
   - Mientras tanto la partida **no se detiene**: en cada ronda pasa
     automáticamente por él.
   - Si vuelve a tiempo (conecta de nuevo y manda `hola`), recibe el `estado`
@@ -208,7 +210,9 @@ En la partida (además de lo del lobby):
   - Si no vuelve, cuenta como **rendido**.
 - **Rendirse:** el jugador manda `rendirse` (la app pide confirmación). Pasa a
   `rendido`, ya no juega, y los demás reciben un `aviso`. Su tablero y puntos
-  se siguen viendo.
+  se siguen viendo, y él queda libre (`sinSala`) para entrar a otra sala.
+  Quien ya llegó a la meta (o con la partida terminada) también manda
+  `rendirse` para salir: solo sale, sin cambiar su situación.
 - **Se cae el servidor:** la app no puede reconectarse; después de intentarlo
   durante 80 segundos muestra un mensaje y vuelve al menú.
 - Una sala en `terminada` se borra cuando todos salen, o a los 5 minutos.
