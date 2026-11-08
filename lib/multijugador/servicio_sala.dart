@@ -10,17 +10,65 @@ import '../cuenta/servicio_cuenta.dart';
 // Estado de la conexion con el servidor de salas.
 enum EstadoConexion { desconectado, conectando, conectado, reconectando }
 
+// Un jugador de la sala. En el lobby solo importan su nombre y si esta
+// conectado; en la partida llegan tambien sus puntos y su tablero.
 class JugadorEnSala {
   final String usuario;
   final bool conectado;
+  // 'jugando', 'llegoALaMeta' o 'rendido'.
+  final String situacion;
+  // Si ya mando su jugada de esta ronda (o sus valores iniciales).
+  final bool yaJugo;
+  final int puntos;
+  // Sus valores iniciales en el orden de las casillas iniciales del mapa; los
+  // de los rivales llegan como null hasta la primera ronda.
+  final List<int>? iniciales;
+  // Los numeros que coloco, como (x, y, numero).
+  final List<(int, int, int)> casillas;
+  // Region que completo en la ultima ronda y los puntos que le dio.
+  final ({String region, int puntos})? ultimoReclamo;
 
-  const JugadorEnSala(this.usuario, {required this.conectado});
+  const JugadorEnSala(
+    this.usuario, {
+    required this.conectado,
+    this.situacion = 'jugando',
+    this.yaJugo = false,
+    this.puntos = 0,
+    this.iniciales,
+    this.casillas = const [],
+    this.ultimoReclamo,
+  });
+
+  factory JugadorEnSala.desdeJson(Map<String, dynamic> datos) {
+    final reclamo = datos['ultimoReclamo'] as Map?;
+    return JugadorEnSala(
+      datos['usuario'] as String,
+      conectado: datos['conectado'] as bool,
+      situacion: datos['situacion'] as String? ?? 'jugando',
+      yaJugo: datos['yaJugo'] as bool? ?? false,
+      puntos: datos['puntos'] as int? ?? 0,
+      iniciales: (datos['iniciales'] as List?)?.cast<int>(),
+      casillas: [
+        for (final casilla in datos['casillas'] as List? ?? const [])
+          (casilla[0] as int, casilla[1] as int, casilla[2] as int),
+      ],
+      ultimoReclamo: reclamo == null
+          ? null
+          : (
+              region: reclamo['region'] as String,
+              puntos: reclamo['puntos'] as int,
+            ),
+    );
+  }
+
+  bool get jugando => situacion == 'jugando';
 }
 
 // Lo que manda el servidor en cada mensaje "estado" (ver
-// PROTOCOLO_MULTIJUGADOR.md). Por ahora solo lo del lobby.
+// PROTOCOLO_MULTIJUGADOR.md).
 class EstadoSala {
-  // 'sinSala', 'lobby', 'valoresIniciales'...
+  // 'sinSala', 'lobby', 'valoresIniciales', 'ronda', 'entreRondas' o
+  // 'terminada'.
   final String fase;
   final String usuario;
   final String? codigo;
@@ -29,6 +77,14 @@ class EstadoSala {
   final int maximo;
   final int? meta;
   final List<JugadorEnSala> jugadores;
+  final int ronda;
+  final List<int>? dados;
+  // Cuando se acaba la ronda (o los valores iniciales), con el reloj de este
+  // dispositivo; null si no hay tiempo corriendo.
+  final DateTime? limite;
+  final List<String> ganadores;
+  // Veces que se ha reclamado cada region, por su id.
+  final Map<String, int> reclamos;
 
   const EstadoSala({
     required this.fase,
@@ -39,27 +95,52 @@ class EstadoSala {
     this.maximo = 6,
     this.meta,
     this.jugadores = const [],
+    this.ronda = 0,
+    this.dados,
+    this.limite,
+    this.ganadores = const [],
+    this.reclamos = const {},
   });
 
-  factory EstadoSala.desdeJson(Map<String, dynamic> datos) => EstadoSala(
-    fase: datos['fase'] as String,
-    usuario: datos['usuario'] as String,
-    codigo: datos['codigo'] as String?,
-    anfitrion: datos['anfitrion'] as String?,
-    mapa: datos['mapa'] as String?,
-    maximo: datos['maximo'] as int? ?? 6,
-    meta: datos['meta'] as int?,
-    jugadores: [
-      for (final jugador in datos['jugadores'] as List? ?? const [])
-        JugadorEnSala(
-          (jugador as Map)['usuario'] as String,
-          conectado: jugador['conectado'] as bool,
-        ),
-    ],
-  );
+  factory EstadoSala.desdeJson(Map<String, dynamic> datos) {
+    final restante = datos['restanteMs'] as int?;
+    return EstadoSala(
+      fase: datos['fase'] as String,
+      usuario: datos['usuario'] as String,
+      codigo: datos['codigo'] as String?,
+      anfitrion: datos['anfitrion'] as String?,
+      mapa: datos['mapa'] as String?,
+      maximo: datos['maximo'] as int? ?? 6,
+      meta: datos['meta'] as int?,
+      jugadores: [
+        for (final jugador in datos['jugadores'] as List? ?? const [])
+          JugadorEnSala.desdeJson((jugador as Map).cast<String, dynamic>()),
+      ],
+      ronda: datos['ronda'] as int? ?? 0,
+      dados: (datos['dados'] as List?)?.cast<int>(),
+      // El servidor manda cuanto falta; la cuenta regresiva se hace con el
+      // reloj de aqui para no depender de que los relojes coincidan.
+      limite: restante == null
+          ? null
+          : DateTime.now().add(Duration(milliseconds: restante)),
+      ganadores: (datos['ganadores'] as List? ?? const []).cast<String>(),
+      reclamos: (datos['reclamos'] as Map? ?? const {}).cast<String, int>(),
+    );
+  }
 
   bool get enSala => fase != 'sinSala';
   bool get soyAnfitrion => anfitrion == usuario;
+  bool get enLaPartida => enSala && fase != 'lobby';
+
+  // Los datos de este jugador en la sala.
+  JugadorEnSala? get yo {
+    for (final jugador in jugadores) {
+      if (jugador.usuario == usuario) {
+        return jugador;
+      }
+    }
+    return null;
+  }
 }
 
 // Habla con el servidor de salas por WebSocket: manda los mensajes del
@@ -128,6 +209,30 @@ class ServicioDeSala extends ChangeNotifier {
 
   // Deja la partida; los demas siguen jugando.
   void rendirse() => _mandar({'tipo': 'rendirse'});
+
+  // Los 6 valores iniciales, en el orden de las casillas iniciales del mapa.
+  void mandarValores(List<int> valores) =>
+      _mandar({'tipo': 'valoresIniciales', 'valores': valores});
+
+  // La jugada de la ronda: el numero que se puso y donde, y la region que se
+  // completo con el (si se completo una) con sus premios.
+  void colocar({
+    required int ronda,
+    required int x,
+    required int y,
+    required int numero,
+    String? region,
+    List<int> premios = const [],
+  }) => _mandar({
+    'tipo': 'colocar',
+    'ronda': ronda,
+    'x': x,
+    'y': y,
+    'numero': numero,
+    'reclamo': region == null ? null : {'region': region, 'premios': premios},
+  });
+
+  void pasar(int ronda) => _mandar({'tipo': 'pasar', 'ronda': ronda});
 
   // Cierra la conexion a proposito (por ejemplo, al cerrar sesion).
   void desconectar() {

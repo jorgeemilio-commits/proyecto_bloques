@@ -286,7 +286,7 @@ void main() {
       expect(evaDespues.estado['fase'], 'sinSala');
       // Los que se rindieron siguen en la lista; Ana quedo sola y gano.
       expect(ana.situaciones, {
-        'Ana': 'llegoALaMeta',
+        'Ana': 'jugando',
         'Luis': 'rendido',
         'Eva': 'rendido',
       });
@@ -313,6 +313,7 @@ void main() {
         esperaValoresIniciales: const Duration(milliseconds: 60),
         esperaRonda: const Duration(milliseconds: 100),
         esperaEntreRondas: const Duration(milliseconds: 20),
+        esperaSalaTerminada: const Duration(milliseconds: 50),
       );
     });
 
@@ -425,6 +426,30 @@ void main() {
         expect(ana.enPartida['Luis']!['conectado'], isFalse);
       },
     );
+  });
+
+  test('una sala con la partida terminada se borra al rato', () async {
+    salas.cerrar();
+    salas = Salas(
+      usuarioDelToken: (token) =>
+          token.startsWith('token-') ? token.substring(6) : null,
+      esperaSalaTerminada: const Duration(milliseconds: 50),
+    );
+    final ana = conectar('Ana');
+    final luis = conectar('Luis');
+    mandar(ana, {'tipo': 'crearSala'});
+    final codigo = ana.estado['codigo'] as String;
+    mandar(luis, {'tipo': 'unirse', 'codigo': codigo});
+    mandar(ana, {'tipo': 'iniciar'});
+
+    // Luis se rinde: Ana gana y la partida termina.
+    mandar(luis, {'tipo': 'rendirse'});
+    final faseAlTerminar = ana.estado['fase'];
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    expect(faseAlTerminar, 'terminada');
+    expect(ana.estado['fase'], 'sinSala');
+    expect(salas.sala(codigo), isNull);
   });
 
   test('por WebSocket de verdad: hola y crear sala', () async {

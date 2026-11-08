@@ -65,10 +65,37 @@ final RegExp _formatoPuntos = RegExp(
 const String carpetaMapas = 'assets/mapas/';
 const String rutaMapaClasico = '${carpetaMapas}clasico.txt';
 
+// Mapas ya leidos (por ruta) y la lista de rutas. Se guardan en memoria
+// porque en Windows, si se vuelve a compilar mientras la app esta abierta (por
+// ejemplo, al abrir una segunda ventana con flutter run), la app abierta ya
+// no puede leer ningun archivo de sus assets hasta reiniciarla.
+final Map<String, Mapa> _mapasLeidos = {};
+List<String>? _rutasLeidas;
+
+// Lee todos los mapas al arrancar la app, para tenerlos en memoria. Si alguno
+// falla no pasa nada: se vuelve a intentar al pedirlo.
+Future<void> precargarMapas() async {
+  try {
+    for (final ruta in await rutasDeMapas()) {
+      try {
+        await cargarMapa(ruta);
+      } on Object {
+        // Por ejemplo, un mapa con un error de formato.
+      }
+    }
+  } on Object {
+    // Sin la lista de mapas: se vuelve a intentar al pedirla.
+  }
+}
+
 // Rutas de todos los mapas (.txt) de la carpeta: el clasico primero y los
 // demas en orden alfabetico. Para agregar un mapa basta con poner su archivo
 // en assets/mapas/.
 Future<List<String>> rutasDeMapas() async {
+  final leidas = _rutasLeidas;
+  if (leidas != null) {
+    return [...leidas];
+  }
   final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
   final rutas =
       manifiesto
@@ -82,15 +109,23 @@ Future<List<String>> rutasDeMapas() async {
   if (rutas.remove(rutaMapaClasico)) {
     rutas.insert(0, rutaMapaClasico);
   }
-  return rutas;
+  _rutasLeidas = rutas;
+  return [...rutas];
 }
 
-// Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa. Se
-// lee sin cache: Flutter guarda en cache incluso una lectura fallida (por
-// ejemplo, si el archivo se estaba copiando al compilar), y entonces el mapa
-// ya no cargaria hasta reiniciar la app. Asi, la siguiente vez lo reintenta.
-Future<Mapa> cargarMapa(String ruta) async =>
-    leerMapa(await rootBundle.loadString(ruta, cache: false));
+// Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa. Si ya
+// se habia leido, lo devuelve de memoria. Solo se guardan las lecturas que
+// salen bien (el cache de Flutter guarda tambien las fallidas, por eso no se
+// usa): si una falla, la siguiente vez se reintenta.
+Future<Mapa> cargarMapa(String ruta) async {
+  final leido = _mapasLeidos[ruta];
+  if (leido != null) {
+    return leido;
+  }
+  final mapa = leerMapa(await rootBundle.loadString(ruta, cache: false));
+  _mapasLeidos[ruta] = mapa;
+  return mapa;
+}
 
 Mapa leerMapa(String texto) {
   // Se guarda el numero de linea original para los mensajes de error.

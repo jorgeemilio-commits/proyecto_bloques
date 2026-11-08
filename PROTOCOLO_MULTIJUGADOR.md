@@ -119,6 +119,7 @@ En la partida (además de lo del lobby):
   "dados": [3, 5],
   "restanteMs": 31500,
   "ganadores": [],
+  "reclamos": {"Z1": 1},
   "jugadores": [
     {
       "usuario": "Ana",
@@ -149,6 +150,8 @@ En la partida (además de lo del lobby):
 - `iniciales`: sus 6 valores iniciales en el orden de las casillas iniciales
   del mapa (`null` mientras no los tenga). Los de los rivales **no se ven
   hasta que empieza la ronda 1**: mientras tanto llegan como `null`.
+- `reclamos`: cuántas veces se ha reclamado cada región (por su id). Sirve
+  para apagar las regiones ya reclamadas y mostrar los puntos que les quedan.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.
   Con `iniciales` y `casillas` se dibujan los tableros de los rivales.
 
@@ -191,13 +194,13 @@ En la partida (además de lo del lobby):
    - **Gana** el primero en llegar. Si varios llegan en la misma ronda, gana el
      de más puntos; si empatan en puntos, ganan todos los empatados.
    - Después de que hay ganador, **los demás siguen jugando** hasta llegar a la
-     meta (como en el juego de mesa). Quien ya llegó puede seguir viendo la
-     partida o salir.
+     meta (como en el juego de mesa), mientras queden al menos dos jugando.
+     Quien ya llegó puede seguir viendo la partida o salir.
 6. **Entre rondas:** `entreRondas` dura 1 segundo para mostrar los resultados y
    luego empieza la siguiente ronda.
-7. **Fin:** la partida termina (`terminada`) cuando ya no queda nadie
-   `jugando`, o cuando queda un solo jugador porque los demás se rindieron (ese
-   jugador gana si todavía no había ganador).
+7. **Fin:** la partida termina (`terminada`) en cuanto queda **un solo
+   jugador jugando** (o ninguno): ya sea porque los demás llegaron a la meta o
+   porque se rindieron. Si todavía no había ganador, gana el que quedó.
 
 ## Desconexiones y rendirse
 

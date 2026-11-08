@@ -5,7 +5,10 @@ import 'package:flutter/services.dart';
 
 import '../constantes.dart';
 import '../lector_mapas.dart';
+import '../mapa.dart';
 import '../multijugador/servicio_sala.dart';
+import 'partida_en_linea.dart';
+import 'seleccion_mapa.dart';
 
 // Pantalla para jugar en linea. Se conecta al servidor al abrirse y muestra,
 // segun el estado: entrar a una sala (crear o unirse con codigo), la sala de
@@ -67,12 +70,18 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
   }
 
   // Ya empezo la partida (fase distinta de sin sala y de lobby).
-  bool get _enLaPartida {
-    final fase = widget.sala.estado?.fase;
-    return fase != null && fase != 'sinSala' && fase != 'lobby';
-  }
+  bool get _enLaPartida => widget.sala.estado?.enLaPartida ?? false;
 
   bool get _enElLobby => widget.sala.estado?.fase == 'lobby';
+
+  // Salir ahora seria rendirse: la partida sigue y yo sigo jugando. (Si ya
+  // llegue a la meta o la partida termino, salir no cambia nada.)
+  bool get _saliresRendirse {
+    final estado = widget.sala.estado;
+    return _enLaPartida &&
+        estado?.fase != 'terminada' &&
+        (estado?.yo?.jugando ?? false);
+  }
 
   // Atras durante la partida: salir es rendirse, asi que primero pregunta. En
   // el lobby no hace nada: se sale con el boton de salir o borrar la sala.
@@ -86,12 +95,18 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     }
   }
 
+  Future<void> _rendirseSinSalir() async {
+    if (await _confirmarRendirse(context)) {
+      widget.sala.rendirse();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: widget.sala,
       builder: (context, _) => PopScope(
-        canPop: !_enLaPartida && !_enElLobby,
+        canPop: !_saliresRendirse && !_enElLobby,
         onPopInvokedWithResult: _alPresionarAtras,
         child: _pantalla(context),
       ),
@@ -108,9 +123,19 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
         // En la sala de espera no hay flecha de atras: se sale con el boton
         // de abajo.
         automaticallyImplyLeading: !_enElLobby,
-        title: const Text('Multijugador'),
+        title: Text(_enLaPartida ? 'Partida' : 'Multijugador'),
         centerTitle: true,
         backgroundColor: colores.surfaceContainerLow,
+        actions: [
+          if (_saliresRendirse)
+            IconButton(
+              key: const ValueKey('boton-rendirse'),
+              tooltip: 'Rendirse',
+              color: colores.error,
+              onPressed: _rendirseSinSalir,
+              icon: const Icon(Icons.flag_outlined),
+            ),
+        ],
       ),
       body: ListenableBuilder(
         listenable: widget.sala,
@@ -128,7 +153,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
           } else if (estado.fase == 'lobby') {
             contenido = _SalaDeEspera(sala: sala, estado: estado);
           } else {
-            contenido = _PartidaPendiente(sala: sala, estado: estado);
+            contenido = PartidaEnLinea(sala: sala, estado: estado);
           }
 
           return SafeArea(
@@ -137,17 +162,21 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
                 if (sala.conexion == EstadoConexion.reconectando)
                   const _BarraReconectando(),
                 Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: anchoMaximoTelefono,
+                  // La partida ocupa toda la pantalla; lo demas va centrado y
+                  // con scroll.
+                  child: estado != null && estado.enLaPartida
+                      ? Center(child: contenido)
+                      : Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: anchoMaximoTelefono,
+                              ),
+                              child: contenido,
+                            ),
+                          ),
                         ),
-                        child: contenido,
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -425,7 +454,7 @@ class _SalaDeEspera extends StatelessWidget {
         const SizedBox(height: 20),
         Text('Mapa', style: tema.textTheme.titleMedium),
         const SizedBox(height: 8),
-        _SelectorDeMapa(
+        _MapaDeLaSala(
           mapa: estado.mapa ?? 'clasico',
           // Solo el anfitrion lo cambia; los demas solo lo ven.
           onElegir: estado.soyAnfitrion ? sala.elegirMapa : null,
@@ -476,66 +505,71 @@ class _SalaDeEspera extends StatelessWidget {
   }
 }
 
-// Mapa de la sala. Si hay [onElegir] (el anfitrion), es una lista para
-// cambiarlo; si no, solo muestra el nombre.
-class _SelectorDeMapa extends StatefulWidget {
+// Mapa de la sala con su vista previa, como en la eleccion de mapa offline.
+// El anfitrion lo toca para cambiarlo (se abre la misma pantalla de elegir
+// mapa); los demas solo lo ven.
+class _MapaDeLaSala extends StatefulWidget {
   final String mapa;
   final ValueChanged<String>? onElegir;
 
-  const _SelectorDeMapa({required this.mapa, this.onElegir});
+  const _MapaDeLaSala({required this.mapa, this.onElegir});
 
   @override
-  State<_SelectorDeMapa> createState() => _SelectorDeMapaState();
+  State<_MapaDeLaSala> createState() => _MapaDeLaSalaState();
 }
 
-class _SelectorDeMapaState extends State<_SelectorDeMapa> {
-  // Nombre de cada mapa por su archivo ('clasico' -> 'Clásico'). Se lee una
-  // sola vez.
-  late final Future<Map<String, String>> _nombres = _leerNombres();
+class _MapaDeLaSalaState extends State<_MapaDeLaSala> {
+  late Future<Mapa> _carga = _cargar();
 
-  static Future<Map<String, String>> _leerNombres() async {
-    final nombres = <String, String>{};
-    for (final ruta in await rutasDeMapas()) {
-      final archivo = ruta
-          .substring(ruta.lastIndexOf('/') + 1)
-          .replaceAll('.txt', '');
-      try {
-        nombres[archivo] = (await cargarMapa(ruta)).nombre;
-      } on FormatException {
-        // Un mapa con errores no se puede elegir.
-      }
+  Future<Mapa> _cargar() => cargarMapa('$carpetaMapas${widget.mapa}.txt');
+
+  @override
+  void didUpdateWidget(_MapaDeLaSala anterior) {
+    super.didUpdateWidget(anterior);
+    // El anfitrion cambio el mapa.
+    if (anterior.mapa != widget.mapa) {
+      _carga = _cargar();
     }
-    return nombres;
+  }
+
+  void _cambiar(ValueChanged<String> onElegir) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (contextoRuta) => SeleccionMapa(
+          alElegir: (archivo) {
+            Navigator.of(contextoRuta).pop();
+            if (archivo != widget.mapa) {
+              onElegir(archivo);
+            }
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, String>>(
-      future: _nombres,
-      builder: (context, carga) {
-        final nombres = carga.data ?? const {};
-        final nombre = nombres[widget.mapa] ?? widget.mapa;
-        final onElegir = widget.onElegir;
+    final onElegir = widget.onElegir;
 
-        if (onElegir == null || nombres.isEmpty) {
-          return InputDecorator(
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            child: Text(nombre, key: const ValueKey('mapa-de-la-sala')),
+    return FutureBuilder<Mapa>(
+      future: _carga,
+      builder: (context, carga) {
+        final mapa = carga.data;
+        if (mapa == null) {
+          return SizedBox(
+            height: 136,
+            child: Center(
+              child: carga.hasError
+                  ? Text('No se pudo leer el mapa "${widget.mapa}".')
+                  : const CircularProgressIndicator(),
+            ),
           );
         }
-        return DropdownButtonFormField<String>(
-          key: const ValueKey('selector-mapa'),
-          initialValue: nombres.containsKey(widget.mapa) ? widget.mapa : null,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          items: [
-            for (final MapEntry(key: archivo, value: nombre) in nombres.entries)
-              DropdownMenuItem(value: archivo, child: Text(nombre)),
-          ],
-          onChanged: (archivo) {
-            if (archivo != null && archivo != widget.mapa) {
-              onElegir(archivo);
-            }
-          },
+        return TarjetaMapa(
+          key: const ValueKey('mapa-de-la-sala'),
+          mapa: mapa,
+          onElegir: onElegir == null ? null : () => _cambiar(onElegir),
+          detalle: onElegir == null ? null : 'Toca para cambiar el mapa',
         );
       },
     );
@@ -566,59 +600,4 @@ Future<bool> _confirmarRendirse(BuildContext context) async {
     ),
   );
   return seguro ?? false;
-}
-
-// Por ahora, al iniciar solo se muestra esto: la partida en linea se agrega
-// en los siguientes pasos.
-class _PartidaPendiente extends StatelessWidget {
-  final ServicioDeSala sala;
-  final EstadoSala estado;
-
-  const _PartidaPendiente({required this.sala, required this.estado});
-
-  Future<void> _rendirse(BuildContext context) async {
-    if (await _confirmarRendirse(context)) {
-      sala.rendirse();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-
-    return Column(
-      key: const ValueKey('partida-pendiente'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.casino, size: 56, color: tema.colorScheme.primary),
-        const SizedBox(height: 16),
-        Text(
-          '¡La partida empezó!',
-          style: tema.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '${estado.jugadores.length} jugadores · meta: ${estado.meta} puntos',
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'La partida en línea todavía no está lista: aquí empezaría.',
-          textAlign: TextAlign.center,
-          style: tema.textTheme.bodyMedium?.copyWith(
-            color: tema.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 24),
-        TextButton.icon(
-          key: const ValueKey('boton-rendirse'),
-          style: TextButton.styleFrom(foregroundColor: tema.colorScheme.error),
-          onPressed: () => _rendirse(context),
-          icon: const Icon(Icons.flag_outlined),
-          label: const Text('Rendirse'),
-        ),
-      ],
-    );
-  }
 }

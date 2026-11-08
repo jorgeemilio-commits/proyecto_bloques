@@ -101,14 +101,13 @@ void main() {
   });
 
   test('meta: gana el de mas puntos de los que llegan; los demas siguen', () {
-    final partida = empezada(['Ana', 'Luis', 'Eva']);
-    final [ana, luis, eva] = partida.participantes;
-    // Meta con 3 jugadores: 24.
-    ana.puntos = 20;
-    luis.puntos = 22;
-    eva.puntos = 10;
+    final partida = empezada(['Ana', 'Luis', 'Eva', 'Leo']);
+    final [ana, luis, eva, leo] = partida.participantes;
+    // Meta con 4 jugadores: 22.
+    ana.puntos = 18;
+    luis.puntos = 20;
 
-    // Ana llega a 27 y Luis a 29 en la misma ronda: gana Luis.
+    // Ana llega a 25 y Luis a 27 en la misma ronda: gana Luis.
     partida.jugar(
       ana,
       const Jugada(x: 0, y: 0, numero: 1, region: 'R1', premios: [7]),
@@ -118,16 +117,29 @@ void main() {
       const Jugada(x: 0, y: 0, numero: 1, region: 'V1', premios: [7]),
     );
     partida.resolverRonda();
+    // Eva y Leo siguen jugando.
     final faseTrasGanar = partida.fase;
-    // Eva llega despues: ya no gana, y la partida termina.
+    // Eva llega despues: ya no gana, y como Leo queda solo, termina.
     partida.empezarRonda(Random(1));
     eva.puntos = 30;
-    partida.jugar(eva, const Jugada(x: 0, y: 0, numero: 1));
     partida.resolverRonda();
 
     expect(partida.ganadores, ['Luis']);
     expect(faseTrasGanar, 'entreRondas');
     expect(ana.situacion, 'llegoALaMeta');
+    expect(leo.situacion, 'jugando');
+    expect(partida.fase, 'terminada');
+  });
+
+  test('si queda un solo jugador jugando, la partida termina', () {
+    final partida = empezada(['Ana', 'Luis']);
+    final [ana, _] = partida.participantes;
+    ana.puntos = 26;
+
+    partida.resolverRonda();
+
+    // Ana llego a la meta y Luis quedo solo: no sigue jugando solo.
+    expect(partida.ganadores, ['Ana']);
     expect(partida.fase, 'terminada');
   });
 
@@ -153,7 +165,7 @@ void main() {
     expect(faseConDos, 'ronda');
     expect(partida.ganadores, ['Ana']);
     expect(partida.fase, 'terminada');
-    expect(ana.situacion, 'llegoALaMeta');
+    expect(ana.situacion, 'jugando');
     expect(luis.situacion, 'rendido');
   });
 }

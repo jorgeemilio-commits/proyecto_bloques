@@ -7,9 +7,13 @@ import '../widgets/tablero_widget.dart';
 import 'partida.dart';
 
 // Pantalla para elegir el mapa de la partida. Muestra una tarjeta por cada
-// archivo de assets/mapas/; al tocar una empieza la partida con ese mapa.
+// archivo de assets/mapas/; al tocar una empieza la partida con ese mapa. Si
+// se pasa [alElegir] (desde una sala en linea), al tocar un mapa se llama con
+// su nombre de archivo ('clasico', 'borde'...) en lugar de empezar.
 class SeleccionMapa extends StatefulWidget {
-  const SeleccionMapa({super.key});
+  final ValueChanged<String>? alElegir;
+
+  const SeleccionMapa({super.key, this.alElegir});
 
   @override
   State<SeleccionMapa> createState() => _SeleccionMapaState();
@@ -50,8 +54,9 @@ class _SeleccionMapaState extends State<SeleccionMapa> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _ArchivoDeMapa(
-                          key: ValueKey('mapa-${_nombreDeArchivo(ruta)}'),
+                          key: ValueKey('mapa-${nombreDeArchivo(ruta)}'),
                           ruta: ruta,
+                          alElegir: widget.alElegir,
                         ),
                       ),
                   ],
@@ -67,15 +72,16 @@ class _SeleccionMapaState extends State<SeleccionMapa> {
 
 // Nombre del archivo sin carpeta ni extension: 'assets/mapas/borde.txt' ->
 // 'borde'.
-String _nombreDeArchivo(String ruta) =>
+String nombreDeArchivo(String ruta) =>
     ruta.substring(ruta.lastIndexOf('/') + 1).replaceAll('.txt', '');
 
 // Carga un archivo de mapa y muestra su tarjeta. Si el archivo tiene un error,
 // muestra el error en su lugar sin afectar a los demas mapas.
 class _ArchivoDeMapa extends StatefulWidget {
   final String ruta;
+  final ValueChanged<String>? alElegir;
 
-  const _ArchivoDeMapa({super.key, required this.ruta});
+  const _ArchivoDeMapa({super.key, required this.ruta, this.alElegir});
 
   @override
   State<_ArchivoDeMapa> createState() => _ArchivoDeMapaState();
@@ -101,7 +107,7 @@ class _ArchivoDeMapaState extends State<_ArchivoDeMapa> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'No se pudo leer ${_nombreDeArchivo(widget.ruta)}.txt: '
+                'No se pudo leer ${nombreDeArchivo(widget.ruta)}.txt: '
                 '${error is FormatException ? error.message : error}',
                 key: const ValueKey('error-mapa'),
                 style: TextStyle(color: colores.onErrorContainer),
@@ -117,25 +123,35 @@ class _ArchivoDeMapaState extends State<_ArchivoDeMapa> {
           );
         }
 
-        return _TarjetaMapa(
+        final alElegir = widget.alElegir;
+        return TarjetaMapa(
           mapa: mapa,
-          onElegir: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => VistaPreviaTablero(mapa: mapa),
-            ),
-          ),
+          onElegir: alElegir != null
+              ? () => alElegir(nombreDeArchivo(widget.ruta))
+              : () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => VistaPreviaTablero(mapa: mapa),
+                  ),
+                ),
         );
       },
     );
   }
 }
 
-// Tarjeta de un mapa con su vista previa, nombre y tamaño.
-class _TarjetaMapa extends StatelessWidget {
+// Tarjeta de un mapa con su vista previa, nombre y tamaño. Sin [onElegir]
+// solo se muestra (no se puede tocar). [detalle] reemplaza el texto del tamaño.
+class TarjetaMapa extends StatelessWidget {
   final Mapa mapa;
-  final VoidCallback onElegir;
+  final VoidCallback? onElegir;
+  final String? detalle;
 
-  const _TarjetaMapa({required this.mapa, required this.onElegir});
+  const TarjetaMapa({
+    super.key,
+    required this.mapa,
+    this.onElegir,
+    this.detalle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -172,8 +188,9 @@ class _TarjetaMapa extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${mapa.columnas}×${mapa.filas} · '
-                      '${mapa.regiones.length} regiones',
+                      detalle ??
+                          '${mapa.columnas}×${mapa.filas} · '
+                              '${mapa.regiones.length} regiones',
                       style: tema.textTheme.bodyMedium?.copyWith(
                         color: tema.colorScheme.onSurfaceVariant,
                       ),
@@ -181,10 +198,11 @@ class _TarjetaMapa extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
+              if (onElegir != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
             ],
           ),
         ),

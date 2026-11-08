@@ -77,7 +77,8 @@ void main() {
       ],
     });
     await tester.pump();
-    final partida = porLlave('partida-pendiente').evaluate().isNotEmpty;
+    // La partida se reconoce por el titulo de la barra.
+    final partida = find.text('Partida').evaluate().isNotEmpty;
 
     // Rendirse pide confirmacion antes de mandarlo.
     await tester.tap(porLlave('boton-rendirse'));
@@ -197,9 +198,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
-      final sigueAlCancelar = porLlave(
-        'partida-pendiente',
-      ).evaluate().isNotEmpty;
+      final sigueAlCancelar = find.text('Partida').evaluate().isNotEmpty;
 
       // Atras y "Rendirme": se rinde y vuelve al menu.
       await tester.tap(find.byType(BackButton));
@@ -215,6 +214,119 @@ void main() {
       mostrar('Atras en la partida: Cancelar sigue; Rendirme manda rendirse.');
     },
   );
+
+  testWidgets(
+    'partida: manda los valores, pasa, ve al rival y los resultados',
+    (tester) async {
+      await abrir(tester);
+      // Estado de la partida con lo que cambia en cada fase.
+      void mandarPartida(
+        String fase, {
+        List<int>? misIniciales,
+        bool yaJugue = false,
+        List<String> ganadores = const [],
+      }) => servidor.mandar({
+        'tipo': 'estado',
+        'fase': fase,
+        'usuario': 'Ana',
+        'codigo': 'K7MQ2P',
+        'anfitrion': 'Ana',
+        'mapa': 'clasico',
+        'meta': 26,
+        'ronda': fase == 'valoresIniciales' ? 0 : 1,
+        'dados': fase == 'valoresIniciales' ? null : [3, 5],
+        'ganadores': ganadores,
+        'reclamos': <String, int>{},
+        'jugadores': [
+          {
+            'usuario': 'Ana',
+            'conectado': true,
+            'situacion': ganadores.contains('Ana') ? 'llegoALaMeta' : 'jugando',
+            'yaJugo': yaJugue,
+            'puntos': ganadores.contains('Ana') ? 26 : 0,
+            'iniciales': misIniciales,
+            'casillas': <List<int>>[],
+          },
+          {
+            'usuario': 'Luis',
+            'conectado': true,
+            'situacion': 'jugando',
+            'yaJugo': false,
+            'puntos': 7,
+            'iniciales': fase == 'valoresIniciales' ? null : [1, 2, 3, 4, 5, 6],
+            'casillas': [
+              [3, 0, 4],
+            ],
+          },
+        ],
+      });
+
+      // Valores iniciales: al azar y "Listo".
+      mandarPartida('valoresIniciales');
+      await tester.pumpAndSettle();
+      await tester.tap(porLlave('boton-aleatorio'));
+      await tester.pump();
+      await tester.tap(porLlave('boton-listo'));
+      await tester.pump();
+      final valores = servidor.recibidos.last;
+
+      // Ronda 1: se ve al rival y se puede pasar.
+      mandarPartida('ronda', misIniciales: [6, 5, 4, 3, 2, 1]);
+      await tester.pumpAndSettle();
+      final veAlRival = porLlave('rival-Luis').evaluate().isNotEmpty;
+      await tester.tap(porLlave('boton-pasar'));
+      await tester.pump();
+      final paso = servidor.recibidos.last;
+      final esperando = porLlave('esperando-ronda').evaluate().isNotEmpty;
+
+      // Fin: Ana gano.
+      mandarPartida(
+        'terminada',
+        misIniciales: [6, 5, 4, 3, 2, 1],
+        ganadores: ['Ana'],
+      );
+      await tester.pumpAndSettle();
+      final gano = find.text('¡Ganaste!').evaluate().isNotEmpty;
+      await cerrar(tester);
+
+      expect(valores['tipo'], 'valoresIniciales');
+      expect((valores['valores'] as List).toSet(), {1, 2, 3, 4, 5, 6});
+      expect(veAlRival, isTrue);
+      expect(paso, {'tipo': 'pasar', 'ronda': 1});
+      expect(esperando, isTrue);
+      expect(gano, isTrue);
+      mostrar(
+        'Valores ${valores['valores']} -> ronda 1: pasa y espera -> ¡Ganaste!',
+      );
+    },
+  );
+
+  testWidgets('el anfitrion elige el mapa con las tarjetas, como en offline', (
+    tester,
+  ) async {
+    await abrir(tester);
+    servidor.mandarLobby();
+    await tester.pumpAndSettle();
+    final tarjeta = porLlave('mapa-de-la-sala').evaluate().isNotEmpty;
+
+    await tester.ensureVisible(porLlave('mapa-de-la-sala'));
+    await tester.tap(porLlave('mapa-de-la-sala'));
+    await tester.pumpAndSettle();
+    final abrioLaEleccion = porLlave('seleccion-mapa').evaluate().isNotEmpty;
+    await tester.ensureVisible(porLlave('mapa-borde'));
+    await tester.pumpAndSettle();
+    await tester.tap(porLlave('mapa-borde'));
+    await tester.pumpAndSettle();
+    final pidio = servidor.recibidos.last;
+    final regreso = porLlave('seleccion-mapa').evaluate().isEmpty;
+    await cerrar(tester);
+
+    expect(tarjeta, isTrue);
+    expect(abrioLaEleccion, isTrue);
+    expect(pidio, {'tipo': 'elegirMapa', 'mapa': 'borde'});
+    expect(regreso, isTrue);
+    mostrar('Tarjeta del mapa -> Elige un mapa -> Borde -> elegirMapa borde.');
+  });
 
   testWidgets('al salir de la pantalla en el lobby, sale de la sala', (
     tester,

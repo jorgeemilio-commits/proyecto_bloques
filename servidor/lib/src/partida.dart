@@ -58,7 +58,7 @@ class Partida {
   final int meta;
   final List<Participante> participantes;
   // Veces que se ha reclamado cada region entre todos.
-  final Map<String, int> _reclamos = {};
+  final Map<String, int> reclamos = {};
   // 'valoresIniciales', 'ronda', 'entreRondas' o 'terminada'.
   String fase = 'valoresIniciales';
   int ronda = 0;
@@ -151,8 +151,8 @@ class Partida {
     // reclamo la region ya no da puntos.
     for (final MapEntry(key: region, value: quienes)
         in reclamosDeLaRonda.entries) {
-      final veces = _reclamos[region] ?? 0;
-      _reclamos[region] = veces + 1;
+      final veces = reclamos[region] ?? 0;
+      reclamos[region] = veces + 1;
       for (final participante in quienes) {
         final premios = participante.jugada!.premios;
         final puntos = veces < premios.length ? premios[veces] : 0;
@@ -182,31 +182,30 @@ class Partida {
     for (final participante in participantes) {
       participante.jugada = null;
     }
-    fase = _jugando.isEmpty ? 'terminada' : 'entreRondas';
+    fase = 'entreRondas';
+    _revisarFin();
   }
 
-  // El jugador se rinde. Si solo queda uno jugando y todos los demas se
-  // rindieron, ese gana (si aun no habia ganador). Sin nadie jugando, la
-  // partida termina.
+  // El jugador se rinde.
   void rendir(Participante participante) {
     if (!participante.jugando) {
       return;
     }
     participante.situacion = 'rendido';
     participante.jugada = null;
+    _revisarFin();
+  }
 
+  // La partida termina en cuanto queda uno solo jugando (o ninguno). Si aun
+  // no habia ganador (los demas se rindieron), gana el que queda.
+  void _revisarFin() {
     final quedan = _jugando.toList();
-    final todosLosDemasSeRindieron = participantes.every(
-      (otro) => otro.jugando || otro.situacion == 'rendido',
-    );
-    if (quedan.length == 1 && todosLosDemasSeRindieron) {
-      if (ganadores.isEmpty) {
-        ganadores.add(quedan.single.nombre);
-      }
-      quedan.single.situacion = 'llegoALaMeta';
-      fase = 'terminada';
-    } else if (quedan.isEmpty) {
-      fase = 'terminada';
+    if (quedan.length > 1) {
+      return;
     }
+    if (quedan.length == 1 && ganadores.isEmpty) {
+      ganadores.add(quedan.single.nombre);
+    }
+    fase = 'terminada';
   }
 }

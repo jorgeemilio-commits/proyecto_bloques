@@ -89,6 +89,8 @@ class Salas {
   final Duration esperaValoresIniciales;
   final Duration esperaRonda;
   final Duration esperaEntreRondas;
+  // Tiempo que se guarda una sala con la partida terminada.
+  final Duration esperaSalaTerminada;
   // Codigos de invitacion, dados y valores iniciales al azar.
   final Random _azar;
 
@@ -109,6 +111,7 @@ class Salas {
     this.esperaValoresIniciales = const Duration(minutes: 1),
     this.esperaRonda = const Duration(seconds: 40),
     this.esperaEntreRondas = const Duration(seconds: 1),
+    this.esperaSalaTerminada = const Duration(minutes: 5),
     Random? azar,
   }) : _azar = azar ?? Random.secure();
 
@@ -444,10 +447,21 @@ class Salas {
     _enviarEstado(sala);
   }
 
+  // La partida termino: se muestran los resultados y, si los jugadores no
+  // salen antes, la sala se borra despues de [esperaSalaTerminada].
   void _terminar(Sala sala) {
-    sala.temporizador?.cancel();
-    sala.temporizador = null;
     sala.limite = null;
+    sala.temporizador?.cancel();
+    sala.temporizador = Timer(esperaSalaTerminada, () {
+      final quedan = [...sala.jugadores];
+      for (final jugador in quedan) {
+        _sacarDeLaSala(jugador, sala);
+      }
+      for (final jugador in quedan) {
+        _enviarEstadoA(jugador);
+      }
+      _salas.remove(sala.codigo);
+    });
     _enviarEstado(sala);
   }
 
@@ -607,6 +621,8 @@ class Salas {
               limite.difference(DateTime.now()).inMilliseconds,
             ),
           'ganadores': partida.ganadores,
+          // Veces que se ha reclamado cada region, por su id.
+          'reclamos': partida.reclamos,
           'jugadores': [
             for (final participante in partida.participantes)
               _participanteEnJson(participante, sala, partida, jugador),
