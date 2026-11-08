@@ -10,6 +10,9 @@ import 'consola.dart';
 Finder porLlave(String llave) => find.byKey(ValueKey(llave));
 
 Future<void> tocar(WidgetTester tester, String llave) async {
+  // Si el boton quedo abajo de la pantalla, primero se hace scroll hasta el.
+  await tester.ensureVisible(porLlave(llave));
+  await tester.pumpAndSettle();
   await tester.tap(porLlave(llave));
   await tester.pumpAndSettle();
 }

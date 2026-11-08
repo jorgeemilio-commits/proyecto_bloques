@@ -85,9 +85,12 @@ Future<List<String>> rutasDeMapas() async {
   return rutas;
 }
 
-// Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa.
+// Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa. Se
+// lee sin cache: Flutter guarda en cache incluso una lectura fallida (por
+// ejemplo, si el archivo se estaba copiando al compilar), y entonces el mapa
+// ya no cargaria hasta reiniciar la app. Asi, la siguiente vez lo reintenta.
 Future<Mapa> cargarMapa(String ruta) async =>
-    leerMapa(await rootBundle.loadString(ruta));
+    leerMapa(await rootBundle.loadString(ruta, cache: false));
 
 Mapa leerMapa(String texto) {
   // Se guarda el numero de linea original para los mensajes de error.

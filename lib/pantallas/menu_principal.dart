@@ -11,10 +11,6 @@ import 'cuenta.dart';
 import 'multijugador.dart';
 import 'seleccion_mapa.dart';
 
-// Colores del logo, usados en el fondo y en el boton Jugar.
-const Color _naranjaLogo = Color(0xFFF7A21B);
-const Color _rosaLogo = Color(0xFFE8197D);
-
 // Pantalla despues de iniciar sesion: el saludo y el boton de la cuenta, un
 // tablero pequeño de adorno, el logo, el lema con lo que ofrece el juego y los
 // botones para jugar en linea u offline.
@@ -50,8 +46,8 @@ class MenuPrincipal extends StatelessWidget {
             center: const Alignment(0, -0.35),
             radius: 0.9,
             colors: [
-              _rosaLogo.withValues(alpha: 0.18),
-              _naranjaLogo.withValues(alpha: 0.06),
+              rosaLogo.withValues(alpha: 0.18),
+              naranjaLogo.withValues(alpha: 0.06),
               Colors.transparent,
             ],
             stops: const [0, 0.45, 1],
@@ -257,7 +253,7 @@ class _TableroDeAdornoState extends State<_TableroDeAdorno> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: _rosaLogo.withValues(alpha: 0.25),
+              color: rosaLogo.withValues(alpha: 0.25),
               blurRadius: 30,
               offset: const Offset(0, 12),
             ),
@@ -338,10 +334,10 @@ class _BotonJugar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: borde,
-        gradient: const LinearGradient(colors: [_naranjaLogo, _rosaLogo]),
+        gradient: const LinearGradient(colors: [naranjaLogo, rosaLogo]),
         boxShadow: [
           BoxShadow(
-            color: _rosaLogo.withValues(alpha: 0.4),
+            color: rosaLogo.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

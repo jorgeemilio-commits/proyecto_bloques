@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
+import '../widgets/estilo_cuenta.dart';
 
 // Pantalla para crear una cuenta nueva. Al crearla, inicia sesion con ella.
 class PantallaCrearCuenta extends StatefulWidget {
@@ -23,6 +24,7 @@ class _PantallaCrearCuentaState extends State<PantallaCrearCuenta> {
   final _contrasena = TextEditingController();
   final _confirmacion = TextEditingController();
   bool _cargando = false;
+  bool _verContrasenas = false;
   String? _error;
 
   @override
@@ -68,92 +70,144 @@ class _PantallaCrearCuentaState extends State<PantallaCrearCuenta> {
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-    final estiloAyuda = tema.textTheme.bodySmall?.copyWith(
-      color: tema.colorScheme.onSurfaceVariant,
+    final colores = tema.colorScheme;
+    // El mismo "ojito" muestra u oculta las dos contraseñas.
+    final ojito = BotonVerContrasena(
+      visible: _verContrasenas,
+      onPressed: () => setState(() => _verContrasenas = !_verContrasenas),
     );
-
-    InputDecoration decoracion(String etiqueta, IconData icono) =>
-        InputDecoration(
-          labelText: etiqueta,
-          prefixIcon: Icon(icono),
-          border: const OutlineInputBorder(),
-        );
 
     return Scaffold(
       key: const ValueKey('pantalla-crear-cuenta'),
-      backgroundColor: tema.colorScheme.surfaceContainerLow,
-      appBar: AppBar(
-        title: const Text('Crear cuenta'),
-        centerTitle: true,
-        backgroundColor: tema.colorScheme.surfaceContainerLow,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: anchoMaximoTelefono),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    key: const ValueKey('campo-usuario'),
-                    controller: _usuario,
-                    enabled: !_cargando,
-                    textInputAction: TextInputAction.next,
-                    decoration: decoracion('Usuario', Icons.person_outline),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'De 3 a 20 letras (con acentos o ñ), números o guion bajo.',
-                    style: estiloAyuda,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    key: const ValueKey('campo-contrasena'),
-                    controller: _contrasena,
-                    enabled: !_cargando,
-                    obscureText: true,
-                    textInputAction: TextInputAction.next,
-                    decoration: decoracion('Contraseña', Icons.lock_outline),
-                  ),
-                  const SizedBox(height: 6),
-                  Text('Al menos 8 caracteres.', style: estiloAyuda),
-                  const SizedBox(height: 12),
-                  TextField(
-                    key: const ValueKey('campo-confirmacion'),
-                    controller: _confirmacion,
-                    enabled: !_cargando,
-                    obscureText: true,
-                    onSubmitted: (_) => _crear(),
-                    decoration: decoracion(
-                      'Repite la contraseña',
-                      Icons.lock_outline,
+      backgroundColor: colores.surfaceContainerLow,
+      // La barra de arriba es transparente para que se vea el fondo.
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(backgroundColor: Colors.transparent),
+      body: FondoDelLogo(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              // Arriba se deja lugar para la flecha de regresar.
+              padding: const EdgeInsets.fromLTRB(24, kToolbarHeight, 24, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: anchoMaximoTelefono,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Image.asset(
+                      'assets/imagenes/brilliant_logo_3x.png',
+                      height: 80,
+                      semanticLabel: 'Brilliant',
                     ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Text(
-                      _error!,
-                      key: const ValueKey('mensaje-error'),
-                      style: TextStyle(color: tema.colorScheme.error),
+                      'Crea tu cuenta',
+                      textAlign: TextAlign.center,
+                      style: tema.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Elige tu nombre de jugador y una contraseña para '
+                      'empezar a jugar.',
+                      textAlign: TextAlign.center,
+                      style: tema.textTheme.bodyLarge?.copyWith(
+                        color: colores.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Tarjeta con el formulario.
+                    Card(
+                      elevation: 0,
+                      color: colores.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              key: const ValueKey('campo-usuario'),
+                              controller: _usuario,
+                              enabled: !_cargando,
+                              textInputAction: TextInputAction.next,
+                              decoration: decoracionDeCampo(
+                                'Usuario',
+                                Icons.person_outline,
+                                ayuda:
+                                    'De 3 a 20 letras (con acentos o ñ), '
+                                    'números o guion bajo.',
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            TextField(
+                              key: const ValueKey('campo-contrasena'),
+                              controller: _contrasena,
+                              enabled: !_cargando,
+                              obscureText: !_verContrasenas,
+                              textInputAction: TextInputAction.next,
+                              decoration: decoracionDeCampo(
+                                'Contraseña',
+                                Icons.lock_outline,
+                                ayuda: 'Al menos 8 caracteres.',
+                              ).copyWith(suffixIcon: ojito),
+                            ),
+                            const SizedBox(height: 14),
+                            TextField(
+                              key: const ValueKey('campo-confirmacion'),
+                              controller: _confirmacion,
+                              enabled: !_cargando,
+                              obscureText: !_verContrasenas,
+                              onSubmitted: (_) => _crear(),
+                              decoration: decoracionDeCampo(
+                                'Repite la contraseña',
+                                Icons.lock_outline,
+                              ),
+                            ),
+                            if (_error != null) ...[
+                              const SizedBox(height: 14),
+                              RecuadroDeError(mensaje: _error!),
+                            ],
+                            const SizedBox(height: 20),
+                            BotonDegradado(
+                              key: const ValueKey('boton-crear-cuenta'),
+                              texto: 'Crear cuenta',
+                              cargando: _cargando,
+                              onPressed: _crear,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Wrap: si no cabe en una linea, el boton baja a la otra.
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '¿Ya tienes cuenta?',
+                          style: TextStyle(color: colores.onSurfaceVariant),
+                        ),
+                        TextButton(
+                          key: const ValueKey('ir-a-iniciar-sesion'),
+                          onPressed: _cargando
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Iniciar sesión',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 52,
-                    child: FilledButton(
-                      key: const ValueKey('boton-crear-cuenta'),
-                      onPressed: _cargando ? null : _crear,
-                      child: _cargando
-                          ? const SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Crear cuenta'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
