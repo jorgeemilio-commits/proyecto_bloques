@@ -45,10 +45,27 @@ int metaPara(int jugadores) => switch (jugadores) {
   _ => 20,
 };
 
+// Un jugador que se identifico con "hola": su conexion actual, la sala en la
+// que esta y, si se desconecto estando en una sala, el tiempo que le queda
+// para volver. Su lugar en la sala dura mas que su conexion.
+class Jugador {
+  final String nombre;
+  // null si esta desconectado.
+  Conexion? conexion;
+  Sala? sala;
+  Timer? esperaReconexion;
+
+  Jugador(this.nombre);
+
+  bool get conectado => conexion != null;
+
+  void enviar(Map<String, Object?> mensaje) => conexion?.enviar(mensaje);
+}
+
 class Sala {
   final String codigo;
   // Jugadores en el orden en que entraron; el primero es el anfitrion.
-  final List<String> jugadores = [];
+  final List<Jugador> jugadores = [];
   String mapa = 'clasico';
   // 'lobby' o, ya iniciada, 'valoresIniciales'.
   String fase = 'lobby';
@@ -57,7 +74,7 @@ class Sala {
 
   Sala(this.codigo);
 
-  String get anfitrion => jugadores.first;
+  Jugador get anfitrion => jugadores.first;
   bool get enLobby => fase == 'lobby';
 }
 
@@ -70,14 +87,15 @@ class Salas {
   final Duration esperaReconexion;
   final Random _azar;
 
+  // Salas por su codigo de invitacion.
   final Map<String, Sala> _salas = {};
-  // Conexion actual de cada usuario (solo de los que ya mandaron "hola").
-  final Map<String, Conexion> _conexiones = {};
-  final Map<Conexion, String> _usuarios = {};
-  // Sala en la que esta cada usuario.
-  final Map<String, Sala> _salaDe = {};
+  // Jugadores por su nombre: los conectados y los que esperan volver a su
+  // sala.
+  final Map<String, Jugador> _jugadores = {};
+  // De quien es cada conexion (solo las que ya mandaron "hola").
+  final Map<Conexion, Jugador> _duenos = {};
+  // Conexiones que todavia no mandan "hola", con su tiempo para hacerlo.
   final Map<Conexion, Timer> _esperandoHola = {};
-  final Map<String, Timer> _esperandoReconexion = {};
 
   Salas({
     required this.usuarioDelToken,
@@ -100,30 +118,31 @@ class Salas {
   // La conexion se cerro (el jugador salio o se le cayo la red).
   void desconectar(Conexion conexion) {
     _esperandoHola.remove(conexion)?.cancel();
-    final usuario = _usuarios.remove(conexion);
-    // Si ya la reemplazo una conexion nueva del mismo usuario, no pasa nada.
-    if (usuario == null || _conexiones[usuario] != conexion) {
+    final jugador = _duenos.remove(conexion);
+    // Si ya la reemplazo una conexion nueva del mismo jugador, no pasa nada.
+    if (jugador == null || jugador.conexion != conexion) {
       return;
     }
-    _conexiones.remove(usuario);
+    jugador.conexion = null;
 
-    final sala = _salaDe[usuario];
+    final sala = jugador.sala;
     if (sala == null) {
+      _olvidarSiSobra(jugador);
       return;
     }
-    _avisar(sala, '$usuario se desconectó.', excepto: usuario);
+    _avisar(sala, '${jugador.nombre} se desconectó.', excepto: jugador);
     _enviarEstado(sala);
     // Si no vuelve a tiempo: en el lobby sale de la sala; en la partida
     // cuenta como que se rindio.
-    _esperandoReconexion[usuario] = Timer(esperaReconexion, () {
-      _esperandoReconexion.remove(usuario);
-      if (_salaDe[usuario] != sala || _conexiones.containsKey(usuario)) {
+    jugador.esperaReconexion = Timer(esperaReconexion, () {
+      jugador.esperaReconexion = null;
+      if (jugador.sala != sala || jugador.conectado) {
         return;
       }
       if (sala.enLobby) {
-        _salirDelLobby(usuario, sala);
+        _salirDelLobby(jugador, sala);
       } else {
-        _rendirse(usuario, sala);
+        _rendirse(jugador, sala);
       }
     });
   }
@@ -142,12 +161,12 @@ class Salas {
       return;
     }
 
-    final usuario = _usuarios[conexion];
+    final jugador = _duenos[conexion];
     try {
-      if (usuario == null) {
+      if (jugador == null) {
         _hola(conexion, mensaje);
       } else {
-        _atender(usuario, mensaje);
+        _atender(jugador, mensaje);
       }
     } on _ErrorDeSala catch (error) {
       _enviarError(conexion, error);
@@ -159,7 +178,7 @@ class Salas {
   // Su lugar en la sala se guarda los 80 segundos de siempre, por si entra
   // desde el dispositivo nuevo.
   void sesionNueva(String usuario) {
-    final conexion = _conexiones[usuario];
+    final conexion = _jugadores[usuario]?.conexion;
     if (conexion == null) {
       return;
     }
@@ -170,60 +189,61 @@ class Salas {
 
   // Cancela todos los tiempos de espera (al detener el servidor).
   void cerrar() {
-    for (final espera in [
-      ..._esperandoHola.values,
-      ..._esperandoReconexion.values,
-    ]) {
+    for (final espera in _esperandoHola.values) {
       espera.cancel();
+    }
+    for (final jugador in _jugadores.values) {
+      jugador.esperaReconexion?.cancel();
     }
   }
 
   void _hola(Conexion conexion, Map<String, dynamic> mensaje) {
+    _esperandoHola.remove(conexion)?.cancel();
     final token = mensaje['token'];
     final usuario = mensaje['tipo'] == 'hola' && token is String
         ? usuarioDelToken(token)
         : null;
     if (usuario == null) {
-      _esperandoHola.remove(conexion)?.cancel();
       _enviarError(conexion, _sesionInvalida);
       conexion.cerrar();
       return;
     }
-    _esperandoHola.remove(conexion)?.cancel();
 
+    final jugador = _jugadores.putIfAbsent(usuario, () => Jugador(usuario));
     // Una cuenta, una conexion: la nueva reemplaza a la vieja.
-    final vieja = _conexiones[usuario];
+    final vieja = jugador.conexion;
     if (vieja != null) {
-      _usuarios.remove(vieja);
+      _duenos.remove(vieja);
       _enviarError(vieja, _sesionReemplazada);
       vieja.cerrar();
     }
-    _conexiones[usuario] = conexion;
-    _usuarios[conexion] = usuario;
+    jugador.conexion = conexion;
+    _duenos[conexion] = jugador;
 
     // Si estaba en una sala, vuelve a ella.
-    _esperandoReconexion.remove(usuario)?.cancel();
-    final sala = _salaDe[usuario];
+    jugador.esperaReconexion?.cancel();
+    jugador.esperaReconexion = null;
+    final sala = jugador.sala;
     if (sala == null) {
-      _enviarEstadoA(usuario);
+      _enviarEstadoA(jugador);
     } else {
       if (vieja == null) {
-        _avisar(sala, '$usuario volvió.', excepto: usuario);
+        _avisar(sala, '${jugador.nombre} volvió.', excepto: jugador);
       }
       _enviarEstado(sala);
     }
   }
 
-  // Atiende un mensaje de un usuario ya identificado.
-  void _atender(String usuario, Map<String, dynamic> mensaje) {
+  // Atiende un mensaje de un jugador ya identificado.
+  void _atender(Jugador jugador, Map<String, dynamic> mensaje) {
     switch (mensaje['tipo']) {
       case 'crearSala':
-        _sinSala(usuario);
+        _sinSala(jugador);
         final sala = Sala(_codigoNuevo());
         _salas[sala.codigo] = sala;
-        _entrar(usuario, sala);
+        _entrar(jugador, sala);
       case 'unirse':
-        _sinSala(usuario);
+        _sinSala(jugador);
         final codigo = mensaje['codigo'];
         final sala = codigo is String
             ? _salas[codigo.trim().toUpperCase()]
@@ -243,22 +263,22 @@ class Salas {
             'La sala ya tiene $maximoDeJugadores jugadores.',
           );
         }
-        _entrar(usuario, sala);
+        _entrar(jugador, sala);
       case 'salir':
-        final sala = _salaDe[usuario];
-        // En la partida no se sale: se rinde (paso de desconexiones).
+        final sala = jugador.sala;
+        // En la partida no se sale: se rinde.
         if (sala == null || !sala.enLobby) {
           throw _mensajeInvalido;
         }
-        _salirDelLobby(usuario, sala);
+        _salirDelLobby(jugador, sala);
       case 'rendirse':
-        final sala = _salaDe[usuario];
+        final sala = jugador.sala;
         if (sala == null || sala.enLobby) {
           throw _mensajeInvalido;
         }
-        _rendirse(usuario, sala);
+        _rendirse(jugador, sala);
       case 'elegirMapa':
-        final sala = _salaDelAnfitrion(usuario);
+        final sala = _salaDelAnfitrion(jugador);
         final mapa = mensaje['mapa'];
         if (mapa is! String || !RegExp(r'^[a-z0-9_]+$').hasMatch(mapa)) {
           throw _mensajeInvalido;
@@ -266,7 +286,7 @@ class Salas {
         sala.mapa = mapa;
         _enviarEstado(sala);
       case 'iniciar':
-        final sala = _salaDelAnfitrion(usuario);
+        final sala = _salaDelAnfitrion(jugador);
         if (sala.jugadores.length < minimoDeJugadores) {
           throw const _ErrorDeSala(
             'faltanJugadores',
@@ -283,20 +303,20 @@ class Salas {
     }
   }
 
-  // Lanza un error si el usuario ya esta en una sala.
-  void _sinSala(String usuario) {
-    if (_salaDe.containsKey(usuario)) {
+  // Lanza un error si el jugador ya esta en una sala.
+  void _sinSala(Jugador jugador) {
+    if (jugador.sala != null) {
       throw const _ErrorDeSala('yaEnSala', 'Ya estás en una sala.');
     }
   }
 
-  // Devuelve la sala del usuario si es el anfitrion; si no, lanza un error.
-  Sala _salaDelAnfitrion(String usuario) {
-    final sala = _salaDe[usuario];
+  // Devuelve la sala del jugador si es el anfitrion; si no, lanza un error.
+  Sala _salaDelAnfitrion(Jugador jugador) {
+    final sala = jugador.sala;
     if (sala == null || !sala.enLobby) {
       throw _mensajeInvalido;
     }
-    if (sala.anfitrion != usuario) {
+    if (sala.anfitrion != jugador) {
       throw const _ErrorDeSala(
         'soloAnfitrion',
         'Solo el anfitrión puede hacer eso.',
@@ -305,50 +325,59 @@ class Salas {
     return sala;
   }
 
-  // Agrega al usuario a la sala y le manda el estado a todos.
-  void _entrar(String usuario, Sala sala) {
-    sala.jugadores.add(usuario);
-    _salaDe[usuario] = sala;
+  // Agrega al jugador a la sala y le manda el estado a todos.
+  void _entrar(Jugador jugador, Sala sala) {
+    sala.jugadores.add(jugador);
+    jugador.sala = sala;
     _enviarEstado(sala);
   }
 
-  // El usuario sale de la sala en el lobby (con "salir" o por no volver a
+  // El jugador sale de la sala en el lobby (con "salir" o por no volver a
   // tiempo). Si es el anfitrion, la sala se deshace y salen todos.
-  void _salirDelLobby(String usuario, Sala sala) {
-    if (usuario == sala.anfitrion) {
-      _avisar(sala, 'El anfitrión cerró la sala.', excepto: usuario);
+  void _salirDelLobby(Jugador jugador, Sala sala) {
+    if (jugador == sala.anfitrion) {
+      _avisar(sala, 'El anfitrión cerró la sala.', excepto: jugador);
       final todos = [...sala.jugadores];
-      for (final jugador in todos) {
-        _sacarDeLaSala(jugador, sala);
+      for (final otro in todos) {
+        _sacarDeLaSala(otro, sala);
       }
-      for (final jugador in todos) {
-        _enviarEstadoA(jugador);
+      for (final otro in todos) {
+        _enviarEstadoA(otro);
       }
       return;
     }
-    _sacarDeLaSala(usuario, sala);
-    _avisar(sala, '$usuario salió de la sala.');
-    _enviarEstadoA(usuario);
+    _sacarDeLaSala(jugador, sala);
+    _avisar(sala, '${jugador.nombre} salió de la sala.');
+    _enviarEstadoA(jugador);
     _enviarEstado(sala);
   }
 
-  // El usuario se rinde en la partida (con "rendirse" o por no volver a
+  // El jugador se rinde en la partida (con "rendirse" o por no volver a
   // tiempo): sale de la sala y los demas siguen. (En el paso de la partida se
   // quedara en la lista como rendido, con sus puntos.)
-  void _rendirse(String usuario, Sala sala) {
-    _sacarDeLaSala(usuario, sala);
-    _avisar(sala, '$usuario se rindió.');
-    _enviarEstadoA(usuario);
+  void _rendirse(Jugador jugador, Sala sala) {
+    _sacarDeLaSala(jugador, sala);
+    _avisar(sala, '${jugador.nombre} se rindió.');
+    _enviarEstadoA(jugador);
     _enviarEstado(sala);
   }
 
-  // Saca al usuario de la sala; si ya no queda nadie, la sala se borra.
-  void _sacarDeLaSala(String usuario, Sala sala) {
-    sala.jugadores.remove(usuario);
-    _salaDe.remove(usuario);
-    _esperandoReconexion.remove(usuario)?.cancel();
+  // Saca al jugador de la sala; si ya no queda nadie, la sala se borra.
+  void _sacarDeLaSala(Jugador jugador, Sala sala) {
+    sala.jugadores.remove(jugador);
+    jugador.sala = null;
+    jugador.esperaReconexion?.cancel();
+    jugador.esperaReconexion = null;
     if (sala.jugadores.isEmpty) {
       _salas.remove(sala.codigo);
+    }
+    _olvidarSiSobra(jugador);
+  }
+
+  // Un jugador desconectado y sin sala ya no hace falta guardarlo.
+  void _olvidarSiSobra(Jugador jugador) {
+    if (!jugador.conectado && jugador.sala == null) {
+      _jugadores.remove(jugador.nombre);
     }
   }
 
@@ -367,46 +396,44 @@ class Salas {
 
   // Manda el estado de la sala a todos los jugadores conectados.
   void _enviarEstado(Sala sala) {
-    for (final usuario in sala.jugadores) {
-      _enviarEstadoA(usuario);
+    for (final jugador in sala.jugadores) {
+      _enviarEstadoA(jugador);
     }
   }
 
-  // Manda el estado de la sala a un jugador, o "sinSala" si no esta en ninguna.
-  void _enviarEstadoA(String usuario) {
-    final conexion = _conexiones[usuario];
-    if (conexion == null) {
-      return;
-    }
-    final sala = _salaDe[usuario];
-    conexion.enviar({
+  // Manda el estado de su sala a un jugador, o "sinSala" si no esta en
+  // ninguna.
+  void _enviarEstadoA(Jugador jugador) {
+    final sala = jugador.sala;
+    jugador.enviar({
       'tipo': 'estado',
       'fase': sala?.fase ?? 'sinSala',
-      'usuario': usuario,
+      'usuario': jugador.nombre,
       if (sala != null) ...{
         'codigo': sala.codigo,
-        'anfitrion': sala.anfitrion,
+        'anfitrion': sala.anfitrion.nombre,
         'mapa': sala.mapa,
         'maximo': maximoDeJugadores,
         if (sala.meta != null) 'meta': sala.meta,
         'jugadores': [
-          for (final jugador in sala.jugadores)
-            {'usuario': jugador, 'conectado': _conexiones.containsKey(jugador)},
+          for (final otro in sala.jugadores)
+            {'usuario': otro.nombre, 'conectado': otro.conectado},
         ],
       },
     });
   }
 
-  // Manda un aviso a todos los jugadores conectados de la sala, excepto a [excepto].
-  void _avisar(Sala sala, String texto, {String? excepto}) {
-    for (final usuario in sala.jugadores) {
-      if (usuario != excepto) {
-        _conexiones[usuario]?.enviar({'tipo': 'aviso', 'texto': texto});
+  // Manda un aviso a los jugadores conectados de la sala, excepto a
+  // [excepto].
+  void _avisar(Sala sala, String texto, {Jugador? excepto}) {
+    for (final jugador in sala.jugadores) {
+      if (jugador != excepto) {
+        jugador.enviar({'tipo': 'aviso', 'texto': texto});
       }
     }
   }
 
-  // Manda un error a la conexion del jugador.
+  // Manda un error por la conexion.
   void _enviarError(Conexion conexion, _ErrorDeSala error) {
     conexion.enviar({
       'tipo': 'error',
