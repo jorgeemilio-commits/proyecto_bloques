@@ -191,7 +191,11 @@ class ServicioDeSala extends ChangeNotifier {
       case 'error':
         final codigo = mensaje['codigo'];
         if (codigo == 'sesionInvalida' || codigo == 'sesionReemplazada') {
+          // La sesion ya no vale (por ejemplo, se inicio sesion con la misma
+          // cuenta en otro dispositivo): se cierra y la app vuelve al inicio
+          // de sesion.
           _rendirse(mensaje['mensaje'] as String);
+          cuenta.cerrarSesion();
         } else {
           _avisos.add(mensaje['mensaje'] as String);
         }

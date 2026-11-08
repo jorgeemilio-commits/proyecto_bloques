@@ -105,7 +105,7 @@ void main() {
     mostrar('Tras ${servidor.canales.length - 1} reintentos: "${avisos.last}"');
   });
 
-  test('abrir la partida en otro dispositivo no reintenta', () async {
+  test('abrir la cuenta en otro dispositivo cierra la sesion', () async {
     sala.conectar();
     await esperar();
     servidor.mandarLobby();
@@ -114,14 +114,18 @@ void main() {
     servidor.mandar({
       'tipo': 'error',
       'codigo': 'sesionReemplazada',
-      'mensaje': 'Abriste la partida en otro dispositivo.',
+      'mensaje': 'Tu cuenta se abrió en otro dispositivo.',
     });
     servidor.cortar();
     await esperar(50);
 
     expect(sala.conexion, EstadoConexion.desconectado);
+    // No reintenta y la app vuelve al inicio de sesion.
     expect(servidor.canales, hasLength(1));
-    expect(avisos.last, 'Abriste la partida en otro dispositivo.');
-    mostrar('Sesion reemplazada: "${avisos.last}", sin reintentos.');
+    expect(sala.cuenta.conSesion, isFalse);
+    expect(avisos.last, 'Tu cuenta se abrió en otro dispositivo.');
+    mostrar(
+      'Sesion reemplazada: "${avisos.last}", sin reintentos y sin sesion.',
+    );
   });
 }

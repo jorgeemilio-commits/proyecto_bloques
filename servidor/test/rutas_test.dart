@@ -120,6 +120,22 @@ void main() {
     },
   );
 
+  test('iniciar sesion otra vez deja sin uso el token anterior', () async {
+    final primero = await registrarYEntrar('Ana', 'secreta123');
+    final (_, datos) = await pedir(
+      'POST',
+      '/login',
+      cuerpo: {'usuario': 'Ana', 'contrasena': 'secreta123'},
+    );
+    final segundo = datos!['token'] as String;
+
+    final (conElPrimero, _) = await pedir('GET', '/cuenta', token: primero);
+    final (conElSegundo, _) = await pedir('GET', '/cuenta', token: segundo);
+
+    // Solo vale la sesion del ultimo dispositivo.
+    expect((conElPrimero, conElSegundo), (401, 200));
+  });
+
   test('la cuenta pide un token valido', () async {
     final (sinToken, _) = await pedir('GET', '/cuenta');
     final (tokenFalso, _) = await pedir('GET', '/cuenta', token: 'falso');

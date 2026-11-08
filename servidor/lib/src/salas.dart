@@ -24,6 +24,10 @@ const _sesionInvalida = _ErrorDeSala(
   'sesionInvalida',
   'Tu sesión no es válida. Vuelve a iniciar sesión.',
 );
+const _sesionReemplazada = _ErrorDeSala(
+  'sesionReemplazada',
+  'Tu cuenta se abrió en otro dispositivo.',
+);
 const _mensajeInvalido = _ErrorDeSala('mensajeInvalido', 'Mensaje no válido.');
 
 // Letras y numeros del codigo de invitacion: sin 0, O, 1, I ni L, que se
@@ -150,6 +154,20 @@ class Salas {
     }
   }
 
+  // El usuario inicio sesion de nuevo (en otro dispositivo): si tenia una
+  // conexion abierta, se le avisa y se cierra, como si se le cayera la red.
+  // Su lugar en la sala se guarda los 80 segundos de siempre, por si entra
+  // desde el dispositivo nuevo.
+  void sesionNueva(String usuario) {
+    final conexion = _conexiones[usuario];
+    if (conexion == null) {
+      return;
+    }
+    _enviarError(conexion, _sesionReemplazada);
+    desconectar(conexion);
+    conexion.cerrar();
+  }
+
   // Cancela todos los tiempos de espera (al detener el servidor).
   void cerrar() {
     for (final espera in [
@@ -177,13 +195,7 @@ class Salas {
     final vieja = _conexiones[usuario];
     if (vieja != null) {
       _usuarios.remove(vieja);
-      _enviarError(
-        vieja,
-        const _ErrorDeSala(
-          'sesionReemplazada',
-          'Abriste la partida en otro dispositivo.',
-        ),
-      );
+      _enviarError(vieja, _sesionReemplazada);
       vieja.cerrar();
     }
     _conexiones[usuario] = conexion;

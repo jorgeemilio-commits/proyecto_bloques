@@ -13,10 +13,13 @@ void main() {
     expect(cifrarContrasena('secreta123', costo: 4), isNot(hash));
   });
 
-  test('un token valido devuelve el id del usuario', () {
+  test('un token valido devuelve el id del usuario y su sesion', () {
     final tokens = Tokens(crearSecreto());
 
-    expect(tokens.verificar(tokens.crear(7)), 7);
+    expect(tokens.verificar(tokens.crear(7, versionSesion: 3)), (
+      usuarioId: 7,
+      versionSesion: 3,
+    ));
   });
 
   test('se rechazan tokens falsos, modificados o vencidos', () {
@@ -33,6 +36,7 @@ void main() {
     // Firmado con la clave correcta pero ya vencido.
     final vencido = JWT({
       'sub': '7',
+      'ver': 0,
     }).sign(SecretKey(secreto), expiresIn: const Duration(seconds: -10));
 
     expect(tokens.verificar(deOtroServidor), isNull);

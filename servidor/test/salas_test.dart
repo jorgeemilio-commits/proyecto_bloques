@@ -217,6 +217,23 @@ void main() {
     expect(nueva.estado['codigo'], codigo);
   });
 
+  test('iniciar sesion en otro dispositivo saca a la conexion vieja', () {
+    final ana = conectar('Ana');
+    final luis = conectar('Luis');
+    mandar(ana, {'tipo': 'crearSala'});
+    mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+
+    salas.sesionNueva('Luis');
+
+    expect(luis.ultimoError, 'sesionReemplazada');
+    expect(luis.cerrada, isTrue);
+    // Para los demas es como si se le cayera la red: sigue en la sala.
+    expect(ana.estado['jugadores'], [
+      {'usuario': 'Ana', 'conectado': true},
+      {'usuario': 'Luis', 'conectado': false},
+    ]);
+  });
+
   test('sin un token valido no se puede entrar', () {
     final conexion = ConexionFalsa();
     salas.conectar(conexion);

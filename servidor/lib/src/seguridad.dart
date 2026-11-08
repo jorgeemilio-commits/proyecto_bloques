@@ -24,20 +24,25 @@ class Tokens {
   Tokens(String secreto, {this.duracion = const Duration(days: 7)})
     : _clave = SecretKey(secreto);
 
-  // Token para el usuario: lleva su id (sub) y cuando vence (exp).
-  String crear(int usuarioId) => JWT({
+  // Token para el usuario: lleva su id (sub), el numero de su sesion (ver) y
+  // cuando vence (exp).
+  String crear(int usuarioId, {int versionSesion = 0}) => JWT({
     'sub': '$usuarioId',
+    'ver': versionSesion,
   }).sign(_clave, algorithm: JWTAlgorithm.HS256, expiresIn: duracion);
 
-  // Devuelve el id del usuario del token, o null si el token es falso, fue
-  // modificado o ya vencio.
-  int? verificar(String token) {
+  // Devuelve el id del usuario y el numero de sesion del token, o null si el
+  // token es falso, fue modificado o ya vencio.
+  ({int usuarioId, int versionSesion})? verificar(String token) {
     try {
       final datos = JWT.verify(token, _clave).payload;
-      if (datos is! Map || datos['sub'] is! String) {
+      if (datos is! Map || datos['sub'] is! String || datos['ver'] is! int) {
         return null;
       }
-      return int.tryParse(datos['sub'] as String);
+      final usuarioId = int.tryParse(datos['sub'] as String);
+      return usuarioId == null
+          ? null
+          : (usuarioId: usuarioId, versionSesion: datos['ver'] as int);
     } on JWTException {
       return null;
     }

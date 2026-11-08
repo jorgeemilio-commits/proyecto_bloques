@@ -35,12 +35,22 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(texto)));
     });
+    widget.sala.cuenta.addListener(_alCambiarLaSesion);
     widget.sala.conectar();
+  }
+
+  // Si se cerro la sesion (se abrio la cuenta en otro dispositivo), se quita
+  // esta pantalla; debajo ya esta el inicio de sesion.
+  void _alCambiarLaSesion() {
+    if (mounted && !widget.sala.cuenta.conSesion) {
+      Navigator.of(context).popUntil((ruta) => ruta.isFirst);
+    }
   }
 
   @override
   void dispose() {
     _avisos.cancel();
+    widget.sala.cuenta.removeListener(_alCambiarLaSesion);
     // Salir de la pantalla es salir de la sala a proposito: en el lobby se
     // sale, y en la partida se rinde (ya lo confirmo al presionar atras). Asi
     // los demas no esperan los 80 segundos de reconexion, y al volver a entrar

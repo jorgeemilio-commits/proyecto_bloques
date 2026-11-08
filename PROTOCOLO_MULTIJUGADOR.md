@@ -33,6 +33,10 @@ invitación, partida con rondas simultáneas, desconexiones y rendirse.
 4. **Una cuenta, una conexión:** si la misma cuenta se conecta otra vez, la
    conexión nueva reemplaza a la vieja. La vieja recibe `error`
    (`sesionReemplazada`) y se cierra. Así funciona también la reconexión.
+   Además, una cuenta solo puede tener la sesión abierta en un dispositivo:
+   al iniciar sesión en otro, el token anterior deja de valer y, si ese
+   dispositivo estaba conectado, recibe `sesionReemplazada` y su app vuelve
+   al inicio de sesión.
 5. **Latido:** el servidor manda un ping de WebSocket cada 10 segundos. Si una
    conexión no responde, se considera caída.
 
@@ -214,7 +218,7 @@ En la partida (además de lo del lobby):
 | `codigo` | `mensaje` |
 |---|---|
 | `sesionInvalida` | Tu sesión no es válida. Vuelve a iniciar sesión. |
-| `sesionReemplazada` | Abriste la partida en otro dispositivo. |
+| `sesionReemplazada` | Tu cuenta se abrió en otro dispositivo. |
 | `salaNoExiste` | No existe una sala con ese código. |
 | `salaLlena` | La sala ya tiene 6 jugadores. |
 | `partidaEmpezada` | Esa partida ya empezó. |

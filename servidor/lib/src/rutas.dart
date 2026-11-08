@@ -38,12 +38,8 @@ Handler crearManejador({
   final salasDelServidor =
       salas ??
       Salas(
-        usuarioDelToken: (token) {
-          final usuarioId = tokens.verificar(token);
-          return usuarioId == null
-              ? null
-              : baseDeDatos.usuarioPorId(usuarioId)?.nombre;
-        },
+        usuarioDelToken: (token) =>
+            _usuarioDeSesion(token, baseDeDatos, tokens)?.nombre,
       );
 
   // El ping cada 10 segundos detecta pronto las conexiones caidas.
@@ -106,8 +102,12 @@ Handler crearManejador({
         !verificarContrasena(contrasena, encontrado.hashContrasena)) {
       return _error(401, 'Usuario o contraseña incorrectos.');
     }
+    // Sesion nueva: el token de cualquier otro dispositivo deja de valer, y si
+    // ese dispositivo estaba conectado a una sala, se le saca.
+    final versionSesion = baseDeDatos.nuevaSesion(encontrado.id);
+    salasDelServidor.sesionNueva(encontrado.nombre);
     return _json(200, {
-      'token': tokens.crear(encontrado.id),
+      'token': tokens.crear(encontrado.id, versionSesion: versionSesion),
       'usuario': encontrado.nombre,
     });
   });
@@ -143,7 +143,7 @@ Handler crearManejador({
 }
 
 // Usuario del token del encabezado "Authorization: Bearer <token>", o null si
-// no hay token, no es valido o el usuario ya no existe (cuenta borrada).
+// no hay token o no vale (ver _usuarioDeSesion).
 Usuario? _usuarioDelToken(
   Request peticion,
   BaseDeDatos baseDeDatos,
@@ -153,8 +153,29 @@ Usuario? _usuarioDelToken(
   if (encabezado == null || !encabezado.startsWith('Bearer ')) {
     return null;
   }
-  final usuarioId = tokens.verificar(encabezado.substring('Bearer '.length));
-  return usuarioId == null ? null : baseDeDatos.usuarioPorId(usuarioId);
+  return _usuarioDeSesion(
+    encabezado.substring('Bearer '.length),
+    baseDeDatos,
+    tokens,
+  );
+}
+
+// Usuario del token, o null si el token no es valido, el usuario ya no existe
+// (cuenta borrada) o el token es de una sesion anterior (despues inicio sesion
+// en otro dispositivo).
+Usuario? _usuarioDeSesion(
+  String token,
+  BaseDeDatos baseDeDatos,
+  Tokens tokens,
+) {
+  final datos = tokens.verificar(token);
+  final usuario = datos == null
+      ? null
+      : baseDeDatos.usuarioPorId(datos.usuarioId);
+  if (usuario == null || usuario.versionSesion != datos!.versionSesion) {
+    return null;
+  }
+  return usuario;
 }
 
 // Lee el cuerpo como un objeto JSON, o devuelve null si no lo es.
