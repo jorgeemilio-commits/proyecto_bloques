@@ -452,6 +452,42 @@ void main() {
     expect(salas.sala(codigo), isNull);
   });
 
+  test(
+    'al terminar una partida con rondas se avisa una vez para guardarla',
+    () {
+      final terminadas = <Sala>[];
+      salas.cerrar();
+      salas = Salas(
+        usuarioDelToken: (token) =>
+            token.startsWith('token-') ? token.substring(6) : null,
+        alTerminarPartida: terminadas.add,
+      );
+      final ana = conectar('Ana');
+      final luis = conectar('Luis');
+      final eva = conectar('Eva');
+      mandar(ana, {'tipo': 'crearSala'});
+      for (final quien in [luis, eva]) {
+        mandar(quien, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+      }
+      mandar(ana, {'tipo': 'iniciar'});
+      for (final quien in [ana, luis, eva]) {
+        mandar(quien, {
+          'tipo': 'valoresIniciales',
+          'valores': [1, 2, 3, 4, 5, 6],
+        });
+      }
+
+      // Ya en la ronda 1, Luis y Eva se rinden: Ana gana y se guarda.
+      mandar(luis, {'tipo': 'rendirse'});
+      mandar(eva, {'tipo': 'rendirse'});
+      // Ana sale de la partida terminada: no se guarda otra vez.
+      mandar(ana, {'tipo': 'rendirse'});
+
+      expect(terminadas, hasLength(1));
+      expect(terminadas.single.partida!.ganadores, ['Ana']);
+    },
+  );
+
   test('por WebSocket de verdad: hola y crear sala', () async {
     final baseDeDatos = BaseDeDatos.enMemoria();
     final tokens = Tokens(crearSecreto());

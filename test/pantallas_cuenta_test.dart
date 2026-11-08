@@ -88,7 +88,9 @@ void main() {
     },
   );
 
-  testWidgets('cuenta: cerrar sesion sale', (tester) async {
+  testWidgets('cuenta: muestra el historial y cerrar sesion sale', (
+    tester,
+  ) async {
     final servicio = ServicioDeCuenta(cliente: servidorFalso());
     await servicio.crearCuenta('Ana', 'secreta123');
     await servicio.iniciarSesion('Ana', 'secreta123');
@@ -98,14 +100,23 @@ void main() {
         home: PantallaCuenta(servicio: servicio, onSalir: () => salio = true),
       ),
     );
+    await tester.pumpAndSettle();
     final nombre = textoDe(tester, 'nombre-usuario');
+    final estadisticas = [
+      textoDe(tester, 'partidas-jugadas'),
+      textoDe(tester, 'partidas-ganadas'),
+      textoDe(tester, 'porcentaje-victorias'),
+    ];
+    final veLaPartida = find.text('Luis').evaluate().isNotEmpty;
 
     await tocar(tester, 'boton-cerrar-sesion');
 
     expect(nombre, 'Ana');
+    expect(estadisticas, ['3', '1', '33%']);
+    expect(veLaPartida, isTrue);
     expect(salio, isTrue);
     expect(servicio.conSesion, isFalse);
-    mostrar('Cuenta de $nombre: cerrar sesion sale y deja sin sesion.');
+    mostrar('Cuenta de $nombre: historial $estadisticas; cerrar sesion sale.');
   });
 
   testWidgets('cuenta: borrar pide la contraseña', (tester) async {

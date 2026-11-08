@@ -23,6 +23,7 @@ const int _minimoContrasena = 8;
 // - POST /login: iniciar sesion; devuelve el JWT.
 // - GET /cuenta: datos del usuario (pide el JWT).
 // - DELETE /cuenta: borrar la cuenta (pide el JWT y la contraseña).
+// - GET /historial: partidas en linea del usuario (pide el JWT).
 // - GET /sala: WebSocket para jugar en linea (ver PROTOCOLO_MULTIJUGADOR.md).
 //
 // Si no se pasan [salas], se crean unas nuevas.
@@ -40,6 +41,7 @@ Handler crearManejador({
       Salas(
         usuarioDelToken: (token) =>
             _usuarioDeSesion(token, baseDeDatos, tokens)?.nombre,
+        alTerminarPartida: (sala) => _guardarPartida(sala, baseDeDatos),
       );
 
   // El ping cada 10 segundos detecta pronto las conexiones caidas.
@@ -123,6 +125,36 @@ Handler crearManejador({
     });
   });
 
+  rutas.get('/historial', (Request peticion) {
+    final usuario = _usuarioDelToken(peticion, baseDeDatos, tokens);
+    if (usuario == null) {
+      return _error(401, 'Sesion no valida o vencida.');
+    }
+    final historial = baseDeDatos.historial(usuario.id);
+    return _json(200, {
+      'jugadas': historial.jugadas,
+      'ganadas': historial.ganadas,
+      'partidas': [
+        for (final partida in historial.partidas)
+          {
+            'terminada': partida.terminada.toIso8601String(),
+            'mapa': partida.mapa,
+            'meta': partida.meta,
+            'rondas': partida.rondas,
+            'jugadores': [
+              for (final jugador in partida.jugadores)
+                {
+                  'usuario': jugador.nombre,
+                  'puntos': jugador.puntos,
+                  'situacion': jugador.situacion,
+                  'gano': jugador.gano,
+                },
+            ],
+          },
+      ],
+    });
+  });
+
   rutas.delete('/cuenta', (Request peticion) async {
     final usuario = _usuarioDelToken(peticion, baseDeDatos, tokens);
     if (usuario == null) {
@@ -140,6 +172,34 @@ Handler crearManejador({
   });
 
   return rutas.call;
+}
+
+// Guarda en el historial la partida que termino en la sala. Los jugadores que
+// borraron su cuenta durante la partida no se guardan. Si algo falla, solo se
+// avisa en la consola: el servidor sigue funcionando.
+void _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
+  final partida = sala.partida!;
+  try {
+    baseDeDatos.guardarPartida(
+      mapa: sala.mapa,
+      meta: partida.meta,
+      rondas: partida.ronda,
+      terminada: DateTime.now(),
+      resultados: [
+        for (final participante in partida.participantes)
+          if (baseDeDatos.usuarioPorNombre(participante.nombre)
+              case final usuario?)
+            (
+              usuarioId: usuario.id,
+              puntos: participante.puntos,
+              situacion: participante.situacion,
+              gano: partida.ganadores.contains(participante.nombre),
+            ),
+      ],
+    );
+  } on Object catch (error) {
+    print('No se pudo guardar la partida de la sala ${sala.codigo}: $error');
+  }
 }
 
 // Usuario del token del encabezado "Authorization: Bearer <token>", o null si

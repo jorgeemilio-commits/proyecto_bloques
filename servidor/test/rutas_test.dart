@@ -201,6 +201,37 @@ void main() {
     expect(sesion!['usuario'], 'Iñaki');
   });
 
+  test('el historial pide sesion y devuelve las partidas', () async {
+    final token = await registrarYEntrar('Ana', 'secreta123');
+    final ana = baseDeDatos.usuarioPorNombre('Ana')!;
+    baseDeDatos.guardarPartida(
+      mapa: 'clasico',
+      meta: 26,
+      rondas: 9,
+      terminada: DateTime.now(),
+      resultados: [
+        (usuarioId: ana.id, puntos: 26, situacion: 'llegoALaMeta', gano: true),
+      ],
+    );
+
+    final (sinToken, _) = await pedir('GET', '/historial');
+    final (estado, datos) = await pedir('GET', '/historial', token: token);
+
+    expect(sinToken, 401);
+    expect(estado, 200);
+    expect((datos!['jugadas'], datos['ganadas']), (1, 1));
+    final partida = (datos['partidas'] as List).single as Map;
+    expect(partida['mapa'], 'clasico');
+    expect(partida['jugadores'], [
+      {
+        'usuario': 'Ana',
+        'puntos': 26,
+        'situacion': 'llegoALaMeta',
+        'gano': true,
+      },
+    ]);
+  });
+
   test('una ruta que no existe responde 404', () async {
     final (estado, _) = await pedir('GET', '/otra');
 

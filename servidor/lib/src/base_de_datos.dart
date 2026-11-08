@@ -21,6 +21,45 @@ class Usuario {
   });
 }
 
+// Como le fue a un jugador en una partida, para guardarla en el historial.
+typedef ResultadoDeJugador = ({
+  int usuarioId,
+  int puntos,
+  String situacion,
+  bool gano,
+});
+
+// Una partida del historial con el resultado de cada jugador.
+class PartidaDelHistorial {
+  final DateTime terminada;
+  final String mapa;
+  final int meta;
+  final int rondas;
+  final List<({String nombre, int puntos, String situacion, bool gano})>
+  jugadores;
+
+  const PartidaDelHistorial({
+    required this.terminada,
+    required this.mapa,
+    required this.meta,
+    required this.rondas,
+    required this.jugadores,
+  });
+}
+
+// Las partidas jugadas y ganadas de un usuario y sus ultimas partidas.
+class Historial {
+  final int jugadas;
+  final int ganadas;
+  final List<PartidaDelHistorial> partidas;
+
+  const Historial({
+    required this.jugadas,
+    required this.ganadas,
+    required this.partidas,
+  });
+}
+
 // Base de datos SQLite con los usuarios. Todas las consultas usan parametros
 // (?) para evitar inyeccion de SQL.
 class BaseDeDatos {
@@ -69,6 +108,28 @@ class BaseDeDatos {
       'CREATE UNIQUE INDEX IF NOT EXISTS usuarios_nombre_clave '
       'ON usuarios (nombre_clave)',
     );
+
+    // Historial: cada partida en linea terminada y como le fue a cada
+    // jugador en ella (situacion: 'jugando', 'llegoALaMeta' o 'rendido').
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS partidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        terminada TEXT NOT NULL,
+        mapa TEXT NOT NULL,
+        meta INTEGER NOT NULL,
+        rondas INTEGER NOT NULL
+      );
+    ''');
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS resultados (
+        partida_id INTEGER NOT NULL,
+        usuario_id INTEGER NOT NULL,
+        puntos INTEGER NOT NULL,
+        situacion TEXT NOT NULL,
+        gano INTEGER NOT NULL,
+        PRIMARY KEY (partida_id, usuario_id)
+      );
+    ''');
   }
 
   Usuario? usuarioPorNombre(String nombre) => _unUsuario(
@@ -112,8 +173,91 @@ class BaseDeDatos {
     return usuarioPorId(id)!.versionSesion;
   }
 
+  // Borra al usuario y sus resultados del historial.
   void borrarUsuario(int id) {
+    _db.execute('DELETE FROM resultados WHERE usuario_id = ?', [id]);
     _db.execute('DELETE FROM usuarios WHERE id = ?', [id]);
+  }
+
+  // Guarda una partida en linea terminada con el resultado de cada jugador.
+  void guardarPartida({
+    required String mapa,
+    required int meta,
+    required int rondas,
+    required DateTime terminada,
+    required List<ResultadoDeJugador> resultados,
+  }) {
+    _db.execute('BEGIN');
+    try {
+      _db.execute(
+        'INSERT INTO partidas (terminada, mapa, meta, rondas) '
+        'VALUES (?, ?, ?, ?)',
+        [terminada.toUtc().toIso8601String(), mapa, meta, rondas],
+      );
+      final partidaId = _db.lastInsertRowId;
+      for (final resultado in resultados) {
+        _db.execute(
+          'INSERT INTO resultados '
+          '(partida_id, usuario_id, puntos, situacion, gano) '
+          'VALUES (?, ?, ?, ?, ?)',
+          [
+            partidaId,
+            resultado.usuarioId,
+            resultado.puntos,
+            resultado.situacion,
+            resultado.gano ? 1 : 0,
+          ],
+        );
+      }
+      _db.execute('COMMIT');
+    } catch (_) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  // Cuantas partidas jugo y gano el usuario, y sus ultimas [limite] partidas
+  // (la mas reciente primero) con el resultado de todos los jugadores.
+  Historial historial(int usuarioId, {int limite = 20}) {
+    final totales = _db.select(
+      'SELECT COUNT(*) AS jugadas, COALESCE(SUM(gano), 0) AS ganadas '
+      'FROM resultados WHERE usuario_id = ?',
+      [usuarioId],
+    ).first;
+    final partidas = _db.select(
+      'SELECT p.id, p.terminada, p.mapa, p.meta, p.rondas '
+      'FROM partidas p JOIN resultados r ON r.partida_id = p.id '
+      'WHERE r.usuario_id = ? ORDER BY p.id DESC LIMIT ?',
+      [usuarioId, limite],
+    );
+    return Historial(
+      jugadas: totales['jugadas'] as int,
+      ganadas: totales['ganadas'] as int,
+      partidas: [
+        for (final partida in partidas)
+          PartidaDelHistorial(
+            terminada: DateTime.parse(partida['terminada'] as String),
+            mapa: partida['mapa'] as String,
+            meta: partida['meta'] as int,
+            rondas: partida['rondas'] as int,
+            // Los jugadores que ya borraron su cuenta no aparecen.
+            jugadores: [
+              for (final fila in _db.select(
+                'SELECT u.nombre, r.puntos, r.situacion, r.gano '
+                'FROM resultados r JOIN usuarios u ON u.id = r.usuario_id '
+                'WHERE r.partida_id = ? ORDER BY r.puntos DESC',
+                [partida['id']],
+              ))
+                (
+                  nombre: fila['nombre'] as String,
+                  puntos: fila['puntos'] as int,
+                  situacion: fila['situacion'] as String,
+                  gano: fila['gano'] == 1,
+                ),
+            ],
+          ),
+      ],
+    );
   }
 
   void cerrar() => _db.dispose();

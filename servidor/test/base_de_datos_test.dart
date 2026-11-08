@@ -91,4 +91,51 @@ void main() {
     expect(baseDeDatos.usuarioPorId(ana.id), isNull);
     baseDeDatos.cerrar();
   });
+
+  test('el historial guarda las partidas y cuenta las ganadas', () {
+    final baseDeDatos = BaseDeDatos.enMemoria();
+    final ana = baseDeDatos.crearUsuario('Ana', 'hash', DateTime.now())!;
+    final luis = baseDeDatos.crearUsuario('Luis', 'hash', DateTime.now())!;
+    for (final ganaAna in [true, false]) {
+      baseDeDatos.guardarPartida(
+        mapa: ganaAna ? 'clasico' : 'borde',
+        meta: 26,
+        rondas: 12,
+        terminada: DateTime.now(),
+        resultados: [
+          (
+            usuarioId: ana.id,
+            puntos: ganaAna ? 27 : 10,
+            situacion: ganaAna ? 'llegoALaMeta' : 'rendido',
+            gano: ganaAna,
+          ),
+          (
+            usuarioId: luis.id,
+            puntos: ganaAna ? 15 : 26,
+            situacion: ganaAna ? 'jugando' : 'llegoALaMeta',
+            gano: !ganaAna,
+          ),
+        ],
+      );
+    }
+
+    final deAna = baseDeDatos.historial(ana.id);
+    // Al borrar la cuenta de Luis, sus resultados ya no salen.
+    baseDeDatos.borrarUsuario(luis.id);
+    final trasBorrar = baseDeDatos.historial(ana.id);
+    baseDeDatos.cerrar();
+
+    expect((deAna.jugadas, deAna.ganadas), (2, 1));
+    // La mas reciente primero, con los jugadores de mas a menos puntos.
+    expect(deAna.partidas.first.mapa, 'borde');
+    expect(
+      [for (final j in deAna.partidas.first.jugadores) j.nombre],
+      ['Luis', 'Ana'],
+    );
+    expect(deAna.partidas.last.jugadores.first.gano, isTrue);
+    expect(
+      [for (final j in trasBorrar.partidas.first.jugadores) j.nombre],
+      ['Ana'],
+    );
+  });
 }

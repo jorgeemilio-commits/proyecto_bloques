@@ -69,6 +69,8 @@ class Sala {
   // rondas) y cuando se acaba.
   Timer? temporizador;
   DateTime? limite;
+  // Si la partida ya se guardo en el historial (se guarda una sola vez).
+  bool guardada = false;
 
   Sala(this.codigo);
 
@@ -80,6 +82,9 @@ class Sala {
 class Salas {
   // Devuelve el nombre del usuario del token, o null si no es valido.
   final String? Function(String token) usuarioDelToken;
+  // Se llama una vez cuando termina una partida (con al menos una ronda
+  // jugada), para guardarla en el historial.
+  final void Function(Sala sala)? alTerminarPartida;
   // Tiempo para mandar "hola" al conectarse.
   final Duration esperaHola;
   // Tiempo que un jugador desconectado sigue en la sala esperando volver.
@@ -106,6 +111,7 @@ class Salas {
 
   Salas({
     required this.usuarioDelToken,
+    this.alTerminarPartida,
     this.esperaHola = const Duration(seconds: 10),
     this.esperaReconexion = const Duration(seconds: 80),
     this.esperaValoresIniciales = const Duration(minutes: 1),
@@ -450,6 +456,10 @@ class Salas {
   // La partida termino: se muestran los resultados y, si los jugadores no
   // salen antes, la sala se borra despues de [esperaSalaTerminada].
   void _terminar(Sala sala) {
+    if (!sala.guardada && sala.partida!.ronda > 0) {
+      sala.guardada = true;
+      alTerminarPartida?.call(sala);
+    }
     sala.limite = null;
     sala.temporizador?.cancel();
     sala.temporizador = Timer(esperaSalaTerminada, () {

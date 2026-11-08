@@ -95,6 +95,34 @@ MockClient servidorFalso() {
         });
       case ('GET', '/cuenta') when conSesion:
         return json(200, {'usuario': token});
+      // Historial fijo: una partida ganada en el mapa clasico.
+      case ('GET', '/historial') when conSesion:
+        return json(200, {
+          'jugadas': 3,
+          'ganadas': 1,
+          'partidas': [
+            {
+              'terminada': '2026-11-08T18:30:00.000Z',
+              'mapa': 'clasico',
+              'meta': 26,
+              'rondas': 14,
+              'jugadores': [
+                {
+                  'usuario': token,
+                  'puntos': 27,
+                  'situacion': 'llegoALaMeta',
+                  'gano': true,
+                },
+                {
+                  'usuario': 'Luis',
+                  'puntos': 19,
+                  'situacion': 'jugando',
+                  'gano': false,
+                },
+              ],
+            },
+          ],
+        });
       case ('DELETE', '/cuenta') when conSesion:
         if (usuarios[token] != datos['contrasena']) {
           return json(401, {'error': 'La contraseña no es correcta.'});

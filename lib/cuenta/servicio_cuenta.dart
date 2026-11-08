@@ -16,6 +16,54 @@ final Uri direccionServidor = Uri.parse(
   'https://dreamt-broken-broadly.ngrok-free.dev',
 );
 
+// Una partida en linea terminada, como la guarda el servidor: el mapa, la
+// meta y como le fue a cada jugador (de mas a menos puntos).
+class PartidaJugada {
+  final DateTime terminada;
+  final String mapa;
+  final int meta;
+  final int rondas;
+  final List<({String usuario, int puntos, String situacion, bool gano})>
+  jugadores;
+
+  const PartidaJugada({
+    required this.terminada,
+    required this.mapa,
+    required this.meta,
+    required this.rondas,
+    required this.jugadores,
+  });
+
+  factory PartidaJugada.desdeJson(Map<String, dynamic> datos) => PartidaJugada(
+    terminada: DateTime.parse(datos['terminada'] as String).toLocal(),
+    mapa: datos['mapa'] as String,
+    meta: datos['meta'] as int,
+    rondas: datos['rondas'] as int,
+    jugadores: [
+      for (final jugador in datos['jugadores'] as List)
+        (
+          usuario: jugador['usuario'] as String,
+          puntos: jugador['puntos'] as int,
+          situacion: jugador['situacion'] as String,
+          gano: jugador['gano'] as bool,
+        ),
+    ],
+  );
+}
+
+// Las partidas en linea que jugo y gano el usuario, y las ultimas.
+class HistorialDeCuenta {
+  final int jugadas;
+  final int ganadas;
+  final List<PartidaJugada> partidas;
+
+  const HistorialDeCuenta({
+    required this.jugadas,
+    required this.ganadas,
+    required this.partidas,
+  });
+}
+
 // Error al hablar con el servidor, con un mensaje para mostrar al jugador.
 class ErrorDeCuenta implements Exception {
   final String mensaje;
@@ -88,6 +136,19 @@ class ServicioDeCuenta extends ChangeNotifier {
     _token = null;
     _usuario = null;
     notifyListeners();
+  }
+
+  // Historial de partidas en linea del usuario con la sesion abierta.
+  Future<HistorialDeCuenta> historial() async {
+    final datos = await _pedir('GET', '/historial', esperado: 200);
+    return HistorialDeCuenta(
+      jugadas: datos['jugadas'] as int,
+      ganadas: datos['ganadas'] as int,
+      partidas: [
+        for (final partida in datos['partidas'] as List)
+          PartidaJugada.desdeJson((partida as Map).cast<String, dynamic>()),
+      ],
+    );
   }
 
   // Borra la cuenta en el servidor (pide la contraseña) y cierra la sesion.

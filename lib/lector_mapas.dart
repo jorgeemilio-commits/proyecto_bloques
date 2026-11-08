@@ -113,6 +113,11 @@ Future<List<String>> rutasDeMapas() async {
   return [...rutas];
 }
 
+// Nombre para mostrar de un mapa por su archivo ('clasico' -> 'Clásico'), si
+// ya se leyo; si no, el nombre del archivo.
+String nombreDeMapa(String archivo) =>
+    _mapasLeidos['$carpetaMapas$archivo.txt']?.nombre ?? archivo;
+
 // Lee el archivo de un mapa (en assets/mapas/) y lo convierte en Mapa. Si ya
 // se habia leido, lo devuelve de memoria. Solo se guardan las lecturas que
 // salen bien (el cache de Flutter guarda tambien las fallidas, por eso no se
