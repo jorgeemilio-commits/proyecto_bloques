@@ -165,7 +165,7 @@ En la partida (además de lo del lobby):
   sin sala (`sinSala`) y reciben el aviso "El anfitrión cerró la sala.". Si
   sale otro jugador, la sala sigue. Si ya no queda nadie, la sala se borra.
 - **Desconexión en el lobby:** el jugador sigue en la lista como
-  `conectado: false` durante 80 segundos; si no vuelve, sale de la sala (y si
+  `conectado: false` durante 15 segundos; si no vuelve, sale de la sala (y si
   era el anfitrión, la sala se deshace).
 
 ## Partida
@@ -205,7 +205,7 @@ En la partida (además de lo del lobby):
 ## Desconexiones y rendirse
 
 - **Se cae la conexión:** el jugador queda con `conectado: false` y los demás
-  reciben un `aviso`. Tiene **80 segundos** para volver.
+  reciben un `aviso`. Tiene **15 segundos** para volver.
   - Mientras tanto la partida **no se detiene**: en cada ronda pasa
     automáticamente por él.
   - Si vuelve a tiempo (conecta de nuevo y manda `hola`), recibe el `estado`
@@ -217,7 +217,7 @@ En la partida (además de lo del lobby):
   Quien ya llegó a la meta (o con la partida terminada) también manda
   `rendirse` para salir: solo sale, sin cambiar su situación.
 - **Se cae el servidor:** la app no puede reconectarse; después de intentarlo
-  durante 80 segundos muestra un mensaje y vuelve al menú.
+  durante 15 segundos muestra un mensaje y vuelve al menú.
 - Una sala en `terminada` se borra cuando todos salen, o a los 5 minutos.
 
 ## Errores

@@ -301,6 +301,63 @@ void main() {
     },
   );
 
+  testWidgets(
+    'aviso que entra por la derecha si un rival completa una region',
+    (tester) async {
+      await abrir(tester);
+      // Ronda 1 y, al terminar, Luis completo la region Z1 (+7).
+      void mandarRonda(String fase, {bool luisReclamo = false}) =>
+          servidor.mandar({
+            'tipo': 'estado',
+            'fase': fase,
+            'usuario': 'Ana',
+            'codigo': 'K7MQ2P',
+            'anfitrion': 'Ana',
+            'mapa': 'clasico',
+            'meta': 26,
+            'ronda': 1,
+            'dados': [3, 5],
+            'ganadores': <String>[],
+            'reclamos': luisReclamo ? {'Z1': 1} : <String, int>{},
+            'jugadores': [
+              {
+                'usuario': 'Ana',
+                'conectado': true,
+                'iniciales': [1, 2, 3, 4, 5, 6],
+              },
+              {
+                'usuario': 'Luis',
+                'conectado': true,
+                'puntos': luisReclamo ? 7 : 0,
+                'iniciales': [6, 5, 4, 3, 2, 1],
+                'ultimoReclamo': luisReclamo
+                    ? {'region': 'Z1', 'puntos': 7}
+                    : null,
+              },
+            ],
+          });
+
+      mandarRonda('ronda');
+      await tester.pumpAndSettle();
+      mandarRonda('entreRondas', luisReclamo: true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final aviso = find.byKey(const ValueKey('texto-aviso-reclamo'));
+      final texto = aviso.evaluate().isEmpty
+          ? null
+          : tester.widget<Text>(aviso).textSpan!.toPlainText();
+      // A los pocos segundos se desvanece y se quita.
+      await tester.pump(const Duration(seconds: 4));
+      final sigue = aviso.evaluate().isNotEmpty;
+      await cerrar(tester);
+
+      expect(texto, startsWith('Luis completó una región'));
+      expect(texto, endsWith('+7'));
+      expect(sigue, isFalse);
+      mostrar('Aviso: "$texto" y luego se quita solo.');
+    },
+  );
+
   testWidgets('el anfitrion elige el mapa con las tarjetas, como en offline', (
     tester,
   ) async {

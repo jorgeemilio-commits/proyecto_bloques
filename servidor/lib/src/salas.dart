@@ -113,7 +113,7 @@ class Salas {
     required this.usuarioDelToken,
     this.alTerminarPartida,
     this.esperaHola = const Duration(seconds: 10),
-    this.esperaReconexion = const Duration(seconds: 80),
+    this.esperaReconexion = const Duration(seconds: 15),
     this.esperaValoresIniciales = const Duration(minutes: 1),
     this.esperaRonda = const Duration(seconds: 40),
     this.esperaEntreRondas = const Duration(seconds: 1),
@@ -194,7 +194,7 @@ class Salas {
 
   // El usuario inicio sesion de nuevo (en otro dispositivo): si tenia una
   // conexion abierta, se le avisa y se cierra, como si se le cayera la red.
-  // Su lugar en la sala se guarda los 80 segundos de siempre, por si entra
+  // Su lugar en la sala se guarda los 15 segundos de siempre, por si entra
   // desde el dispositivo nuevo.
   void sesionNueva(String usuario) {
     final conexion = _jugadores[usuario]?.conexion;

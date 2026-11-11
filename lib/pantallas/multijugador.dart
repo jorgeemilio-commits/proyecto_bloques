@@ -56,8 +56,8 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     widget.sala.cuenta.removeListener(_alCambiarLaSesion);
     // Salir de la pantalla es salir de la sala a proposito: en el lobby se
     // sale, y en la partida se rinde (ya lo confirmo al presionar atras). Asi
-    // los demas no esperan los 80 segundos de reconexion, y al volver a entrar
-    // no regresa a la partida. Esos 80 segundos son solo para cuando se cae
+    // los demas no esperan los 15 segundos de reconexion, y al volver a entrar
+    // no regresa a la partida. Esos 15 segundos son solo para cuando se cae
     // la red.
     if (_enLaPartida) {
       widget.sala.rendirse();

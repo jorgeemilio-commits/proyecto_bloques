@@ -169,7 +169,7 @@ class ServicioDeSala extends ChangeNotifier {
     required this.cuenta,
     StreamChannel<dynamic> Function(Uri direccion)? abrirCanal,
     this.esperaEntreIntentos = const Duration(seconds: 2),
-    this.tiempoReconexion = const Duration(seconds: 80),
+    this.tiempoReconexion = const Duration(seconds: 15),
   }) : _abrirCanal = abrirCanal ?? WebSocketChannel.connect;
 
   EstadoConexion get conexion => _conexion;

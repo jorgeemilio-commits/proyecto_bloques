@@ -10,6 +10,7 @@ import '../region.dart';
 import '../sonidos.dart';
 import '../tablero.dart';
 import '../valores_iniciales_bloc.dart';
+import '../widgets/celda_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
@@ -48,6 +49,12 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   // Dado que se esta arrastrando (0 o 1).
   int? _dadoArrastrado;
 
+  // El mapa ya leido, para saber el color de las regiones en los avisos.
+  Mapa? _mapaLeido;
+  // Avisos de regiones que completaron los rivales, que se ven un momento.
+  final List<_Reclamo> _reclamos = [];
+  int _siguienteReclamo = 0;
+
   EstadoSala get _estado => widget.estado;
 
   @override
@@ -58,10 +65,30 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     if (_estado.fase == 'ronda' && _estado.ronda != antes.ronda) {
       _sonidos.tirarDados();
     }
-    if (antes.fase == 'ronda' &&
-        _estado.fase != 'ronda' &&
-        _estado.yo?.ultimoReclamo != null) {
+    final terminoLaRonda = antes.fase == 'ronda' && _estado.fase != 'ronda';
+    if (terminoLaRonda && _estado.yo?.ultimoReclamo != null) {
       _sonidos.puntuarRegion();
+    }
+    // Al terminar la ronda, un aviso por cada rival que completo una region.
+    final mapa = _mapaLeido;
+    if (terminoLaRonda && mapa != null) {
+      for (final jugador in _estado.jugadores) {
+        final reclamo = jugador.ultimoReclamo;
+        if (reclamo == null || jugador.usuario == _estado.usuario) {
+          continue;
+        }
+        final region = mapa.regiones
+            .where((region) => region.id == reclamo.region)
+            .firstOrNull;
+        _reclamos.add(
+          _Reclamo(
+            id: _siguienteReclamo++,
+            usuario: jugador.usuario,
+            region: region,
+            puntos: reclamo.puntos,
+          ),
+        );
+      }
     }
   }
 
@@ -91,6 +118,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   }
 
   Widget _partida(BuildContext context, Mapa mapa) {
+    _mapaLeido = mapa;
     final colores = Theme.of(context).colorScheme;
     final yo = _estado.yo;
     final eligiendoValores =
@@ -152,6 +180,26 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                   _controles(context, yo, eligiendoValores),
                   const SizedBox(height: 12),
                 ],
+              ),
+            ),
+            // Avisos de las regiones que completaron los rivales: entran por
+            // la izquierda, debajo de los rivales, y se regresan solos.
+            Positioned(
+              top: 200,
+              left: 0,
+              child: IgnorePointer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final reclamo in _reclamos)
+                      _AvisoDeReclamo(
+                        key: ValueKey('aviso-reclamo-${reclamo.id}'),
+                        reclamo: reclamo,
+                        alTerminar: () =>
+                            setState(() => _reclamos.remove(reclamo)),
+                      ),
+                  ],
+                ),
               ),
             ),
             // Codigo de colores con los puntos que le quedan a cada region.
@@ -743,6 +791,139 @@ class _Resultados extends StatelessWidget {
           child: const Text('Volver al menú'),
         ),
       ],
+    );
+  }
+}
+
+// Una region que completo un rival, para avisarlo.
+class _Reclamo {
+  final int id;
+  final String usuario;
+  // null si la region no esta en el mapa (no deberia pasar).
+  final Region? region;
+  final int puntos;
+
+  const _Reclamo({
+    required this.id,
+    required this.usuario,
+    required this.region,
+    required this.puntos,
+  });
+}
+
+// Aviso pequeño de que un rival completo una region: entra deslizandose
+// desde la izquierda, se queda un momento y se regresa por donde vino. Al
+// terminar se quita.
+class _AvisoDeReclamo extends StatefulWidget {
+  final _Reclamo reclamo;
+  final VoidCallback alTerminar;
+
+  const _AvisoDeReclamo({
+    super.key,
+    required this.reclamo,
+    required this.alTerminar,
+  });
+
+  @override
+  State<_AvisoDeReclamo> createState() => _AvisoDeReclamoState();
+}
+
+class _AvisoDeReclamoState extends State<_AvisoDeReclamo>
+    with SingleTickerProviderStateMixin {
+  // Todo el aviso dura 3.5 segundos: entra en el primer 10% del tiempo, se
+  // queda, y en el ultimo 15% se regresa a la izquierda por donde vino.
+  late final AnimationController _tiempo = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3500),
+  )..forward().whenComplete(widget.alTerminar);
+
+  late final Animation<Offset> _posicion = TweenSequence<Offset>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: const Offset(-1.2, 0),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 10,
+    ),
+    TweenSequenceItem(tween: ConstantTween(Offset.zero), weight: 75),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: Offset.zero,
+        end: const Offset(-1.2, 0),
+      ).chain(CurveTween(curve: Curves.easeInCubic)),
+      weight: 15,
+    ),
+  ]).animate(_tiempo);
+
+  @override
+  void dispose() {
+    _tiempo.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final reclamo = widget.reclamo;
+    final region = reclamo.region;
+    final color = region == null ? naranjaLogo : colorDeRegion(region.tipo);
+    final premio = reclamo.puntos > 0 ? '+${reclamo.puntos}' : 'sin puntos';
+
+    return SlideTransition(
+      position: _posicion,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        constraints: const BoxConstraints(maxWidth: 250),
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+        decoration: BoxDecoration(
+          color: tema.colorScheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.horizontal(
+            right: Radius.circular(12),
+          ),
+          border: Border(left: BorderSide(color: color, width: 4)),
+          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: reclamo.usuario,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(
+                      text:
+                          ' completó una región '
+                          '${region?.tipo.nombre ?? ''} · ',
+                    ),
+                    TextSpan(
+                      text: premio,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: reclamo.puntos > 0 ? naranjaLogo : null,
+                      ),
+                    ),
+                  ],
+                ),
+                key: const ValueKey('texto-aviso-reclamo'),
+                style: tema.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
