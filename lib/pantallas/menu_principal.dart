@@ -205,7 +205,7 @@ class MenuPrincipal extends StatelessWidget {
                             ),
                           ),
                           icon: const Icon(Icons.wifi_off_rounded),
-                          label: const Text('Jugar offline'),
+                          label: const Text('Jugar solo'),
                         ),
                       ),
                     ],
