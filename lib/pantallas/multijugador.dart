@@ -7,6 +7,7 @@ import '../constantes.dart';
 import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../multijugador/servicio_sala.dart';
+import '../sonidos.dart';
 import 'partida_en_linea.dart';
 import 'seleccion_mapa.dart';
 
@@ -25,6 +26,8 @@ class PantallaMultijugador extends StatefulWidget {
 
 class _PantallaMultijugadorState extends State<PantallaMultijugador> {
   late final StreamSubscription<String> _avisos;
+  // Musica de fondo mientras se elige o se espera en la sala.
+  final Sonidos _sonidos = Sonidos();
 
   @override
   void initState() {
@@ -39,7 +42,19 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
         ..showSnackBar(SnackBar(content: Text(texto)));
     });
     widget.sala.cuenta.addListener(_alCambiarLaSesion);
+    widget.sala.addListener(_actualizarMusica);
     widget.sala.conectar();
+    _actualizarMusica();
+  }
+
+  // La musica de las salas suena antes de la partida (al crear o unirse a una
+  // sala y en la sala de espera) y se detiene cuando empieza la partida.
+  void _actualizarMusica() {
+    if (_enLaPartida) {
+      _sonidos.pararMusica();
+    } else {
+      _sonidos.tocarMusica(Sonidos.musicaDeSalas);
+    }
   }
 
   // Si se cerro la sesion (se abrio la cuenta en otro dispositivo), se quita
@@ -54,6 +69,11 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
   void dispose() {
     _avisos.cancel();
     widget.sala.cuenta.removeListener(_alCambiarLaSesion);
+    // Primero se deja de escuchar, para que desconectar no vuelva a poner la
+    // musica.
+    widget.sala.removeListener(_actualizarMusica);
+    _sonidos.pararMusica();
+    _sonidos.dispose();
     // Salir de la pantalla es salir de la sala a proposito: en el lobby se
     // sale, y en la partida se rinde (ya lo confirmo al presionar atras). Asi
     // los demas no esperan los 15 segundos de reconexion, y al volver a entrar
