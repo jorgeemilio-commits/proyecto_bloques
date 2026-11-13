@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
 import 'package:proyecto_bloques/multijugador/servicio_sala.dart';
 import 'package:proyecto_bloques/pantallas/multijugador.dart';
+import 'package:proyecto_bloques/widgets/fondo_animado_widget.dart';
 import 'ayudantes.dart';
 import 'consola.dart';
 
@@ -225,7 +226,11 @@ void main() {
       expect(botonDelAnfitrion, isTrue);
       expect(sigueAlCancelar, isTrue);
       expect(porLlave('pantalla-multijugador'), findsNothing);
-      expect(servidor.recibidos.last, {'tipo': 'rendirse'});
+      // Se rinde y sale de la sala (si no, se quedaria viendo la partida).
+      expect(servidor.recibidos.sublist(servidor.recibidos.length - 2), [
+        {'tipo': 'rendirse'},
+        {'tipo': 'salir'},
+      ]);
       mostrar('Atras en la partida: Cancelar sigue; Rendirme manda rendirse.');
     },
   );
@@ -289,6 +294,7 @@ void main() {
       mandarPartida('ronda', misIniciales: [6, 5, 4, 3, 2, 1]);
       await tester.pumpAndSettle();
       final veAlRival = porLlave('rival-Luis').evaluate().isNotEmpty;
+      final fondoEnRonda = porLlave('fondo-$fondoJuego').evaluate().isNotEmpty;
       await tester.tap(porLlave('boton-pasar'));
       await tester.pump();
       final paso = servidor.recibidos.last;
@@ -302,6 +308,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       final gano = find.text('¡Ganaste!').evaluate().isNotEmpty;
+      final fondoAlGanar = porLlave(
+        'fondo-$fondoResultados',
+      ).evaluate().isNotEmpty;
       await cerrar(tester);
 
       expect(valores['tipo'], 'valoresIniciales');
@@ -310,6 +319,8 @@ void main() {
       expect(paso, {'tipo': 'pasar', 'ronda': 1});
       expect(esperando, isTrue);
       expect(gano, isTrue);
+      // El fondo del juego en la ronda cambia al de resultados al ganar.
+      expect((fondoEnRonda, fondoAlGanar), (true, true));
       mostrar(
         'Valores ${valores['valores']} -> ronda 1: pasa y espera -> ¡Ganaste!',
       );
@@ -372,6 +383,65 @@ void main() {
       mostrar('Aviso: "$texto" y luego se quita solo.');
     },
   );
+
+  testWidgets('al rendirse ve los resultados y sigue viendo a los demas', (
+    tester,
+  ) async {
+    await abrir(tester);
+    // Ana ya se rindio (con 4 puntos); Luis sigue jugando.
+    servidor.mandar({
+      'tipo': 'estado',
+      'fase': 'ronda',
+      'usuario': 'Ana',
+      'codigo': 'K7MQ2P',
+      'anfitrion': 'Ana',
+      'mapa': 'clasico',
+      'meta': 26,
+      'ronda': 3,
+      'dados': [3, 5],
+      'ganadores': <String>[],
+      'reclamos': <String, int>{},
+      'jugadores': [
+        {
+          'usuario': 'Ana',
+          'conectado': true,
+          'situacion': 'rendido',
+          'puntos': 4,
+          'iniciales': [1, 2, 3, 4, 5, 6],
+        },
+        {
+          'usuario': 'Luis',
+          'conectado': true,
+          'puntos': 9,
+          'iniciales': [6, 5, 4, 3, 2, 1],
+          'casillas': [
+            [3, 0, 4],
+          ],
+        },
+      ],
+    });
+    await tester.pumpAndSettle();
+    final titulo = tester.widget<Text>(porLlave('titulo-resultados')).data;
+    final veAlRival = porLlave('rival-Luis').evaluate().isNotEmpty;
+    final boton = find
+        .descendant(
+          of: porLlave('boton-volver-menu'),
+          matching: find.text('Salir de la partida'),
+        )
+        .evaluate()
+        .isNotEmpty;
+    // Ya no puede jugar: no hay dados para arrastrar ni boton de pasar.
+    final sinPasar = porLlave('boton-pasar').evaluate().isEmpty;
+    // Tocar el tablero de Luis lo muestra en grande.
+    await tester.tap(porLlave('rival-Luis'));
+    await tester.pumpAndSettle();
+    final enGrande = find.text('Luis · 9 pts').evaluate().isNotEmpty;
+    await cerrar(tester);
+
+    expect(titulo, 'Te rendiste');
+    expect((veAlRival, boton, sinPasar, enGrande), (true, true, true, true));
+    mostrar('Rendido: "$titulo", ve y amplia el tablero de Luis, puede salir.');
+  });
 
   testWidgets('el anfitrion elige el tiempo por ronda; los demas solo lo ven', (
     tester,

@@ -279,7 +279,7 @@ void main() {
   });
 
   test(
-    'en la partida: rendirse, o no volver a tiempo, deja la partida',
+    'rendirse deja ver la partida hasta salir; no volver a tiempo saca',
     () async {
       final ana = conectar('Ana');
       final luis = conectar('Luis');
@@ -291,8 +291,16 @@ void main() {
       todosListos([ana, luis, eva]);
       mandar(ana, {'tipo': 'iniciar'});
 
+      // Luis se rinde: sigue en la sala viendo la partida, como rendido.
       mandar(luis, {'tipo': 'rendirse'});
       final faseDeLuis = luis.estado['fase'];
+      final luisSeVe = luis.situaciones['Luis'];
+      // Un jugador que sigue jugando no puede solo salir.
+      mandar(ana, {'tipo': 'salir'});
+      final errorDeAna = ana.ultimoError;
+      // Con "salir", Luis deja la sala.
+      mandar(luis, {'tipo': 'salir'});
+      final faseTrasSalir = luis.estado['fase'];
       // Eva se cae: al volver a tiempo sigue en la partida.
       salas.desconectar(eva);
       final evaVuelve = conectar('Eva');
@@ -303,7 +311,9 @@ void main() {
       // Ya sin partida, Eva puede entrar a otra sala.
       final evaDespues = conectar('Eva');
 
-      expect(faseDeLuis, 'sinSala');
+      expect((faseDeLuis, luisSeVe), ('valoresIniciales', 'rendido'));
+      expect(errorDeAna, 'mensajeInvalido');
+      expect(faseTrasSalir, 'sinSala');
       expect(faseAlVolver, 'valoresIniciales');
       expect(evaDespues.estado['fase'], 'sinSala');
       // Los que se rindieron siguen en la lista; Ana quedo sola y gano.

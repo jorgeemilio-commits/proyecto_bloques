@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../constantes.dart';
+import 'fondo_animado_widget.dart';
 
 // Piezas con el estilo de las pantallas de iniciar sesion y crear cuenta.
 
-// Fondo con el resplandor de los colores del logo, como el del menu.
+// Fondo de iniciar sesion y crear cuenta: la imagen del login bajando
+// despacio, con el resplandor de los colores del logo encima, como en el menu.
 class FondoDelLogo extends StatelessWidget {
   final Widget child;
 
@@ -12,6 +14,10 @@ class FondoDelLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return FondoAnimado(imagen: fondoLogin, child: _resplandor(child));
+  }
+
+  Widget _resplandor(Widget child) {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(

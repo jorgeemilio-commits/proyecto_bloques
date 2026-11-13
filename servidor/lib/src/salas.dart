@@ -175,6 +175,9 @@ class Salas {
         _salirDelLobby(jugador, sala);
       } else {
         _rendirse(jugador, sala);
+        if (jugador.sala == sala) {
+          _salirDeLaPartida(jugador, sala);
+        }
       }
     });
   }
@@ -301,11 +304,21 @@ class Salas {
         _entrar(jugador, sala);
       case 'salir':
         final sala = jugador.sala;
-        // En la partida no se sale: se rinde.
-        if (sala == null || !sala.enLobby) {
+        if (sala == null) {
           throw _mensajeInvalido;
         }
-        _salirDelLobby(jugador, sala);
+        if (sala.enLobby) {
+          _salirDelLobby(jugador, sala);
+        } else {
+          // En la partida solo sale quien ya no juega (se rindio, llego a la
+          // meta o ya termino); quien sigue jugando primero se rinde.
+          final partida = sala.partida!;
+          final sigueJugando = partida.de(jugador.nombre)?.jugando ?? false;
+          if (sigueJugando && partida.fase != 'terminada') {
+            throw _mensajeInvalido;
+          }
+          _salirDeLaPartida(jugador, sala);
+        }
       case 'rendirse':
         final sala = jugador.sala;
         if (sala == null || sala.enLobby) {
@@ -587,25 +600,22 @@ class Salas {
     _enviarEstado(sala);
   }
 
-  // El jugador deja la partida (con "rendirse" o por no volver a tiempo):
-  // queda libre para entrar a otra sala, pero sigue en la partida como
-  // rendido, con su tablero y sus puntos, y los demas siguen jugando. Si ya
-  // habia llegado a la meta (o la partida termino), solo sale.
+  // El jugador se rinde (con "rendirse" o por no volver a tiempo): ya no
+  // juega, pero se queda en la sala viendo la partida (los tableros y los
+  // puntos de los demas) hasta que sale con "salir". Los demas siguen
+  // jugando. Si ya no jugaba (ya se habia rendido, llego a la meta o la
+  // partida termino), "rendirse" solo lo saca de la sala.
   void _rendirse(Jugador jugador, Sala sala) {
     final partida = sala.partida!;
     final participante = partida.de(jugador.nombre);
-    final seguiaJugando = participante?.jugando ?? false;
-    if (participante != null) {
-      partida.rendir(participante);
-    }
-    _sacarDeLaSala(jugador, sala);
-    _enviarEstadoA(jugador);
-    if (!_salas.containsKey(sala.codigo)) {
+    if (participante == null ||
+        !participante.jugando ||
+        partida.fase == 'terminada') {
+      _salirDeLaPartida(jugador, sala);
       return;
     }
-    if (seguiaJugando) {
-      _avisar(sala, '${jugador.nombre} se rindió.');
-    }
+    partida.rendir(participante);
+    _avisar(sala, '${jugador.nombre} se rindió.', excepto: jugador);
     if (partida.fase == 'terminada') {
       _terminar(sala);
     } else if (partida.fase == 'valoresIniciales' &&
@@ -613,6 +623,16 @@ class Salas {
       _empezarRonda(sala);
     } else {
       _revisarRonda(sala);
+    }
+  }
+
+  // Quien ya no juega sale de la sala de la partida: queda libre para entrar
+  // a otra, y en la partida sigue apareciendo con su tablero y sus puntos.
+  void _salirDeLaPartida(Jugador jugador, Sala sala) {
+    _sacarDeLaSala(jugador, sala);
+    _enviarEstadoA(jugador);
+    if (_salas.containsKey(sala.codigo)) {
+      _enviarEstado(sala);
     }
   }
 

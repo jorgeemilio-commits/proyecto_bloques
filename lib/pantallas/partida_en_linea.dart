@@ -68,14 +68,17 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     }
     // Al terminar la partida: sonido de victoria si gane, o el de perder si
     // quede en ultimo lugar (con los menos puntos, contando a los rendidos).
+    final ganeAntes = antes.ganadores.contains(antes.usuario);
+    final ganeAhora = _estado.ganadores.contains(_estado.usuario);
+    if (!ganeAntes && ganeAhora) {
+      _sonidos.ganar();
+    }
     if (antes.fase != 'terminada' && _estado.fase == 'terminada') {
       final yo = _estado.yo;
       final menosPuntos = _estado.jugadores
           .map((jugador) => jugador.puntos)
           .fold<int?>(null, (menor, puntos) => min(menor ?? puntos, puntos));
-      if (_estado.ganadores.contains(_estado.usuario)) {
-        _sonidos.ganar();
-      } else if (yo != null && yo.puntos == menosPuntos) {
+      if (!ganeAhora && yo != null && yo.puntos == menosPuntos) {
         _sonidos.quedarUltimo();
       }
     }
@@ -314,29 +317,8 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
       color: tema.colorScheme.onSurfaceVariant,
     );
 
-    if (_estado.fase == 'terminada') {
+    if (_estado.fase == 'terminada' || yo == null || !yo.jugando) {
       return _Resultados(estado: _estado);
-    }
-    if (yo == null || !yo.jugando) {
-      // Ya llegue a la meta: puedo seguir viendo o salir.
-      return Column(
-        children: [
-          Text(
-            '¡Llegaste a la meta! Los demás siguen jugando.',
-            textAlign: TextAlign.center,
-            style: tema.textTheme.titleMedium?.copyWith(
-              color: naranjaLogo,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const ValueKey('boton-salir-partida'),
-            onPressed: () => Navigator.of(context).maybePop(),
-            child: const Text('Salir de la partida'),
-          ),
-        ],
-      );
     }
     if (eligiendoValores) {
       final valores = _valoresBloc?.estado;
@@ -753,6 +735,10 @@ class _Rival extends StatelessWidget {
 }
 
 // Al terminar: los ganadores y la tabla de puntos.
+//
+// Tambien sale cuando la partida se acabo solo para mi (me rendi o llegue a
+// la meta) mientras los demas siguen: entonces lo dice, y arriba se siguen
+// viendo los tableros de los demas, que se actualizan cada ronda.
 class _Resultados extends StatelessWidget {
   final EstadoSala estado;
 
@@ -762,6 +748,8 @@ class _Resultados extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final gane = estado.ganadores.contains(estado.usuario);
+    final termino = estado.fase == 'terminada';
+    final situacion = estado.yo?.situacion;
     final tabla = [...estado.jugadores]
       ..sort((a, b) => b.puntos.compareTo(a.puntos));
 
@@ -772,15 +760,28 @@ class _Resultados extends StatelessWidget {
         Text(
           gane
               ? '¡Ganaste!'
+              : situacion == 'rendido'
+              ? 'Te rendiste'
+              : !termino
+              ? 'Llegaste a la meta'
               : estado.ganadores.isEmpty
               ? 'Nadie ganó'
               : 'Ganó ${estado.ganadores.join(' y ')}',
+          key: const ValueKey('titulo-resultados'),
           textAlign: TextAlign.center,
           style: tema.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
             color: gane ? naranjaLogo : null,
           ),
         ),
+        if (!termino)
+          Text(
+            'Los demás siguen jugando: arriba puedes ver sus tableros.',
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
         const SizedBox(height: 8),
         for (final jugador in tabla)
           Row(
@@ -808,7 +809,7 @@ class _Resultados extends StatelessWidget {
         FilledButton(
           key: const ValueKey('boton-volver-menu'),
           onPressed: () => Navigator.of(context).maybePop(),
-          child: const Text('Volver al menú'),
+          child: Text(termino ? 'Volver al menú' : 'Salir de la partida'),
         ),
       ],
     );

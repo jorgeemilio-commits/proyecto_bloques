@@ -8,6 +8,7 @@ import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../multijugador/servicio_sala.dart';
 import '../sonidos.dart';
+import '../widgets/fondo_animado_widget.dart';
 import 'partida_en_linea.dart';
 import 'seleccion_mapa.dart';
 
@@ -80,7 +81,10 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     // no regresa a la partida. Esos 15 segundos son solo para cuando se cae
     // la red.
     if (_enLaPartida) {
-      widget.sala.rendirse();
+      if (_saliresRendirse) {
+        widget.sala.rendirse();
+      }
+      widget.sala.salir();
     } else if (widget.sala.estado?.fase == 'lobby') {
       widget.sala.salir();
     }
@@ -101,6 +105,18 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
     return _enLaPartida &&
         estado?.fase != 'terminada' &&
         (estado?.yo?.jugando ?? false);
+  }
+
+  // Fondo segun la fase: dados al elegir o esperar sala, el del juego en la
+  // partida, y el de resultados en cuanto gane.
+  String _fondoPara(EstadoSala? estado) {
+    if (estado == null || !estado.enLaPartida) {
+      return fondoDados;
+    }
+    if (estado.ganadores.contains(estado.usuario)) {
+      return fondoResultados;
+    }
+    return fondoJuego;
   }
 
   // Atras durante la partida: salir es rendirse, asi que primero pregunta. En
@@ -176,29 +192,32 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
             contenido = PartidaEnLinea(sala: sala, estado: estado);
           }
 
-          return SafeArea(
-            child: Column(
-              children: [
-                if (sala.conexion == EstadoConexion.reconectando)
-                  const _BarraReconectando(),
-                Expanded(
-                  // La partida ocupa toda la pantalla; lo demas va centrado y
-                  // con scroll.
-                  child: estado != null && estado.enLaPartida
-                      ? Center(child: contenido)
-                      : Center(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: anchoMaximoTelefono,
+          return FondoAnimado(
+            imagen: _fondoPara(estado),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  if (sala.conexion == EstadoConexion.reconectando)
+                    const _BarraReconectando(),
+                  Expanded(
+                    // La partida ocupa toda la pantalla; lo demas va centrado y
+                    // con scroll.
+                    child: estado != null && estado.enLaPartida
+                        ? Center(child: contenido)
+                        : Center(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(24),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: anchoMaximoTelefono,
+                                ),
+                                child: contenido,
                               ),
-                              child: contenido,
                             ),
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           );
         },

@@ -49,7 +49,7 @@ invitación, partida con rondas simultáneas, desconexiones y rendirse.
 | `hola` | `token` | todos | Primer mensaje: identifica al jugador. |
 | `crearSala` | — | todos | Crea una sala nueva; quien la crea es el anfitrión. |
 | `unirse` | `codigo` | todos | Entra a la sala con ese código. |
-| `salir` | — | todos | Sale de la sala en el lobby. |
+| `salir` | — | todos | Sale de la sala: en el lobby, o en la partida si ya no juega (se rindió, llegó a la meta o terminó). |
 | `elegirMapa` | `mapa` | anfitrión | Cambia el mapa (nombre del archivo sin `.txt`, por ejemplo `clasico`). |
 | `elegirTiempo` | `segundos` | anfitrión | Tiempo por ronda: 20, 30, 40, 60 o 90, o `null` para sin límite (al crear la sala es sin límite). |
 | `listo` | `listo` (true o false) | todos | Marca o desmarca que el jugador está listo para empezar. |
@@ -62,7 +62,7 @@ invitación, partida con rondas simultáneas, desconexiones y rendirse.
 | `valoresIniciales` | `valores` | Los 6 valores iniciales del jugador; equivale a presionar "Listo". |
 | `colocar` | `ronda`, `x`, `y`, `numero`, `reclamo` | La jugada de la ronda. `reclamo` es `null` o la región que completó. |
 | `pasar` | `ronda` | El jugador pasa en esta ronda. |
-| `rendirse` | — | Se rinde: sale de la partida y los demás siguen. |
+| `rendirse` | — | Se rinde: ya no juega, pero sigue viendo la partida hasta mandar `salir`. Los demás siguen. |
 
 - `valores` son los 6 números (1 a 6, sin repetir) en el orden de las casillas
   iniciales del mapa, por ejemplo `[4, 2, 5, 1, 6, 3]`. Van sin coordenadas
@@ -222,10 +222,13 @@ En la partida (además de lo del lobby):
     completo y sigue en la ronda en curso.
   - Si no vuelve, cuenta como **rendido**.
 - **Rendirse:** el jugador manda `rendirse` (la app pide confirmación). Pasa a
-  `rendido`, ya no juega, y los demás reciben un `aviso`. Su tablero y puntos
-  se siguen viendo, y él queda libre (`sinSala`) para entrar a otra sala.
-  Quien ya llegó a la meta (o con la partida terminada) también manda
-  `rendirse` para salir: solo sale, sin cambiar su situación.
+  `rendido`, ya no juega, y los demás reciben un `aviso`. **Se queda en la sala
+  como espectador**: sigue recibiendo el `estado` (los tableros y puntos de
+  todos) hasta que manda `salir`, y entonces queda libre (`sinSala`) para
+  entrar a otra sala. Su tablero y puntos se siguen viendo en la partida.
+- **Quien ya no juega** (se rindió, llegó a la meta o la partida terminó)
+  también puede seguir viendo la partida y sale con `salir`. Si se desconecta y
+  no vuelve en 15 segundos, sale de la sala.
 - **Se cae el servidor:** la app no puede reconectarse; después de intentarlo
   durante 15 segundos muestra un mensaje y vuelve al menú.
 - Una sala en `terminada` se borra cuando todos salen, o a los 5 minutos.

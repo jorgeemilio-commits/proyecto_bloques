@@ -11,6 +11,7 @@ import '../turno_bloc.dart';
 import '../valores_iniciales_bloc.dart';
 import '../widgets/celda_widget.dart';
 import '../widgets/dados_widget.dart';
+import '../widgets/fondo_animado_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
 import '../widgets/tablero_widget.dart';
@@ -71,119 +72,129 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
       ),
       // Suena al tirar los dados (cada turno nuevo) y al completar una region
       // (un reclamo nuevo; la tirada siguiente conserva el mismo reclamo).
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<TurnoBloc, TurnoEstado>(
-            bloc: _turnoBloc,
-            listenWhen: (anterior, actual) => anterior.turno != actual.turno,
-            listener: (context, _) => _sonidos.tirarDados(),
-          ),
-          BlocListener<TurnoBloc, TurnoEstado>(
-            bloc: _turnoBloc,
-            listenWhen: (anterior, actual) =>
-                actual.ultimoReclamo != null &&
-                !identical(anterior.ultimoReclamo, actual.ultimoReclamo),
-            listener: (context, _) => _sonidos.puntuarRegion(),
-          ),
-        ],
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: anchoMaximoTelefono),
-              // El panel de regiones se desliza encima del juego; ClipRect
-              // evita que se asome fuera del ancho del telefono.
-              child: ClipRect(
-                child: Stack(
-                  children: [
-                    AnimatedBuilder(
-                      animation: _valoresInicialesBloc,
-                      builder: (context, _) => BlocBuilder<TurnoBloc, TurnoEstado>(
-                        bloc: _turnoBloc,
-                        builder: (context, turno) {
-                          final estado = _valoresInicialesBloc.estado;
-                          // Mientras se arrastra un dado se resaltan sus destinos.
-                          final destinos = turno.dadoArrastrado == null
-                              ? const <Celda>{}
-                              : _turnoBloc.destinosPara(turno.dadoArrastrado!);
+      body: FondoAnimado(
+        imagen: fondoJuego,
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<TurnoBloc, TurnoEstado>(
+              bloc: _turnoBloc,
+              listenWhen: (anterior, actual) => anterior.turno != actual.turno,
+              listener: (context, _) => _sonidos.tirarDados(),
+            ),
+            BlocListener<TurnoBloc, TurnoEstado>(
+              bloc: _turnoBloc,
+              listenWhen: (anterior, actual) =>
+                  actual.ultimoReclamo != null &&
+                  !identical(anterior.ultimoReclamo, actual.ultimoReclamo),
+              listener: (context, _) => _sonidos.puntuarRegion(),
+            ),
+          ],
+          child: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: anchoMaximoTelefono,
+                ),
+                // El panel de regiones se desliza encima del juego; ClipRect
+                // evita que se asome fuera del ancho del telefono.
+                child: ClipRect(
+                  child: Stack(
+                    children: [
+                      AnimatedBuilder(
+                        animation: _valoresInicialesBloc,
+                        builder: (context, _) => BlocBuilder<TurnoBloc, TurnoEstado>(
+                          bloc: _turnoBloc,
+                          builder: (context, turno) {
+                            final estado = _valoresInicialesBloc.estado;
+                            // Mientras se arrastra un dado se resaltan sus destinos.
+                            final destinos = turno.dadoArrastrado == null
+                                ? const <Celda>{}
+                                : _turnoBloc.destinosPara(
+                                    turno.dadoArrastrado!,
+                                  );
 
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                            child: Column(
-                              children: [
-                                _EncabezadoFase(estado: estado, turno: turno),
-                                const SizedBox(height: 12),
-                                Expanded(
-                                  child: Center(
-                                    child: Card(
-                                      key: const ValueKey('tarjeta-tablero'),
-                                      elevation: 0,
-                                      color: colores.surface,
-                                      margin: EdgeInsets.zero,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: TableroWidget(
-                                          key: const ValueKey('tablero'),
-                                          tablero: _tablero,
-                                          onNumeroCambiado:
-                                              _valoresInicialesBloc
-                                                  .notificarCambio,
-                                          destinosValidos: destinos,
-                                          // Las regiones reclamadas se ven mas
-                                          // apagadas.
-                                          vecesReclamada: _turnoBloc
-                                              .reclamos
-                                              .vecesReclamada,
-                                          // Solo las casillas validas aceptan el
-                                          // dado, asi que aqui siempre se coloca.
-                                          onDadoSoltado: (celda, indiceDado) {
-                                            _sonidos.colocar();
-                                            _turnoBloc.add(
-                                              DadoColocado(indiceDado, celda),
-                                            );
-                                          },
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                              child: Column(
+                                children: [
+                                  _EncabezadoFase(estado: estado, turno: turno),
+                                  const SizedBox(height: 12),
+                                  Expanded(
+                                    child: Center(
+                                      child: Card(
+                                        key: const ValueKey('tarjeta-tablero'),
+                                        elevation: 0,
+                                        color: colores.surface,
+                                        margin: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: TableroWidget(
+                                            key: const ValueKey('tablero'),
+                                            tablero: _tablero,
+                                            onNumeroCambiado:
+                                                _valoresInicialesBloc
+                                                    .notificarCambio,
+                                            destinosValidos: destinos,
+                                            // Las regiones reclamadas se ven mas
+                                            // apagadas.
+                                            vecesReclamada: _turnoBloc
+                                                .reclamos
+                                                .vecesReclamada,
+                                            // Solo las casillas validas aceptan el
+                                            // dado, asi que aqui siempre se coloca.
+                                            onDadoSoltado: (celda, indiceDado) {
+                                              _sonidos.colocar();
+                                              _turnoBloc.add(
+                                                DadoColocado(indiceDado, celda),
+                                              );
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                const _LeyendaRegiones(),
-                                const SizedBox(height: 16),
-                                // Al confirmar los valores iniciales inicia la partida
-                                // y el boton Listo se cambia por los dados.
-                                estado.confirmado
-                                    ? DadosWidget(
-                                        key: const ValueKey('dados'),
-                                        bloc: _turnoBloc,
-                                      )
-                                    : _botonListo(estado),
-                                // Espacio extra abajo para que los controles no queden
-                                // pegados al borde de la pantalla.
-                                const SizedBox(height: 24),
-                              ],
-                            ),
-                          );
-                        },
+                                  const SizedBox(height: 12),
+                                  const _LeyendaRegiones(),
+                                  const SizedBox(height: 16),
+                                  // Al confirmar los valores iniciales inicia la partida
+                                  // y el boton Listo se cambia por los dados.
+                                  estado.confirmado
+                                      ? DadosWidget(
+                                          key: const ValueKey('dados'),
+                                          bloc: _turnoBloc,
+                                        )
+                                      : _botonListo(estado),
+                                  // Espacio extra abajo para que los controles no queden
+                                  // pegados al borde de la pantalla.
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    // Codigo de colores con los puntos de cada region; se
-                    // actualiza con cada cambio del turno (reclamos).
-                    Positioned.fill(
-                      child: PanelLateral(
-                        key: const ValueKey('panel-lateral'),
-                        child: BlocBuilder<TurnoBloc, TurnoEstado>(
-                          bloc: _turnoBloc,
-                          builder: (context, _) => MenuRegionesWidget(
-                            regiones: _tablero.regiones,
-                            vecesReclamada: _turnoBloc.reclamos.vecesReclamada,
+                      // Codigo de colores con los puntos de cada region; se
+                      // actualiza con cada cambio del turno (reclamos).
+                      Positioned.fill(
+                        child: PanelLateral(
+                          key: const ValueKey('panel-lateral'),
+                          child: BlocBuilder<TurnoBloc, TurnoEstado>(
+                            bloc: _turnoBloc,
+                            builder: (context, _) => MenuRegionesWidget(
+                              regiones: _tablero.regiones,
+                              vecesReclamada:
+                                  _turnoBloc.reclamos.vecesReclamada,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

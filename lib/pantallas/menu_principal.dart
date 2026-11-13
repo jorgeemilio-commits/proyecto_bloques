@@ -6,7 +6,7 @@ import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../region.dart';
 import '../widgets/celda_widget.dart';
-import '../widgets/fondo_dados_widget.dart';
+import '../widgets/fondo_animado_widget.dart';
 import '../multijugador/servicio_sala.dart';
 import 'cuenta.dart';
 import 'multijugador.dart';
@@ -41,7 +41,8 @@ class MenuPrincipal extends StatelessWidget {
       key: const ValueKey('menu-principal'),
       backgroundColor: tema.colorScheme.surfaceContainerLow,
       // Dados bajando despacio detras de todo.
-      body: FondoDeDados(
+      body: FondoAnimado(
+        imagen: fondoDados,
         child: DecoratedBox(
           // Resplandor suave con los colores del logo detras del titulo.
           decoration: BoxDecoration(
