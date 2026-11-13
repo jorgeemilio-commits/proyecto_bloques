@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -65,6 +66,19 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     if (_estado.fase == 'ronda' && _estado.ronda != antes.ronda) {
       _sonidos.tirarDados();
     }
+    // Al terminar la partida: sonido de victoria si gane, o el de perder si
+    // quede en ultimo lugar (con los menos puntos, contando a los rendidos).
+    if (antes.fase != 'terminada' && _estado.fase == 'terminada') {
+      final yo = _estado.yo;
+      final menosPuntos = _estado.jugadores
+          .map((jugador) => jugador.puntos)
+          .fold<int?>(null, (menor, puntos) => min(menor ?? puntos, puntos));
+      if (_estado.ganadores.contains(_estado.usuario)) {
+        _sonidos.ganar();
+      } else if (yo != null && yo.puntos == menosPuntos) {
+        _sonidos.quedarUltimo();
+      }
+    }
     final terminoLaRonda = antes.fase == 'ronda' && _estado.fase != 'ronda';
     if (terminoLaRonda && _estado.yo?.ultimoReclamo != null) {
       _sonidos.puntuarRegion();
@@ -72,6 +86,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     // Al terminar la ronda, un aviso por cada rival que completo una region.
     final mapa = _mapaLeido;
     if (terminoLaRonda && mapa != null) {
+      var rivalReclamo = false;
       for (final jugador in _estado.jugadores) {
         final reclamo = jugador.ultimoReclamo;
         if (reclamo == null || jugador.usuario == _estado.usuario) {
@@ -88,6 +103,11 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
             puntos: reclamo.puntos,
           ),
         );
+        rivalReclamo = true;
+      }
+      // Un solo "ohh" aunque varios rivales hayan completado regiones.
+      if (rivalReclamo) {
+        _sonidos.decepcion();
       }
     }
   }
