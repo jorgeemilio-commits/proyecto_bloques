@@ -56,10 +56,22 @@ void main() {
         )
         .evaluate()
         .isNotEmpty;
-    final puedeIniciar =
+    bool puedeIniciar() =>
         tester.widget<FilledButton>(porLlave('boton-iniciar')).onPressed !=
         null;
+    // Sin que todos esten listos, no se puede iniciar.
+    final puedeSinListos = puedeIniciar();
+    await tester.ensureVisible(porLlave('boton-listo-sala'));
+    await tester.pump();
+    await tester.tap(porLlave('boton-listo-sala'));
+    await tester.pump();
+    final pidioListo = servidor.recibidos.last;
+    servidor.mandarLobby(todosListos: true);
+    await tester.pump();
+    final puedeConListos = puedeIniciar();
 
+    await tester.ensureVisible(porLlave('boton-iniciar'));
+    await tester.pump();
     await tester.tap(porLlave('boton-iniciar'));
     await tester.pump();
     final pidioIniciar = servidor.recibidos.last;
@@ -93,13 +105,16 @@ void main() {
     expect(pidio, {'tipo': 'crearSala'});
     expect(codigo, 'K7MQ2P');
     expect(luisDesconectado, isTrue);
-    expect(puedeIniciar, isTrue);
+    expect(puedeSinListos, isFalse);
+    expect(pidioListo, {'tipo': 'listo', 'listo': true});
+    expect(puedeConListos, isTrue);
     expect(pidioIniciar, {'tipo': 'iniciar'});
     expect(partida, isTrue);
     expect(antesDeConfirmar, {'tipo': 'iniciar'});
     expect(rendido, {'tipo': 'rendirse'});
     mostrar(
-      'Crear sala -> sala $codigo con Luis desconectado -> iniciar -> '
+      'Crear sala -> sala $codigo con Luis desconectado -> listos -> '
+      'iniciar -> '
       'rendirse (con confirmacion).',
     );
   });
@@ -357,6 +372,36 @@ void main() {
       mostrar('Aviso: "$texto" y luego se quita solo.');
     },
   );
+
+  testWidgets('el anfitrion elige el tiempo por ronda; los demas solo lo ven', (
+    tester,
+  ) async {
+    await abrir(tester);
+    servidor.mandarLobby();
+    await tester.pumpAndSettle();
+    // Al crear la sala no hay limite.
+    final sinLimite = tester
+        .widget<ChoiceChip>(porLlave('tiempo-sin-limite'))
+        .selected;
+    await tester.ensureVisible(porLlave('tiempo-30'));
+    await tester.pump();
+    await tester.tap(porLlave('tiempo-30'));
+    await tester.pump();
+    final pidio = servidor.recibidos.last;
+
+    // Si el anfitrion es Luis, Ana solo ve el tiempo, sin poder cambiarlo.
+    servidor.mandarLobby(anfitrion: 'Luis');
+    await tester.pumpAndSettle();
+    final soloVe =
+        porLlave('tiempo-de-la-sala').evaluate().isNotEmpty &&
+        porLlave('tiempo-30').evaluate().isEmpty;
+    await cerrar(tester);
+
+    expect(sinLimite, isTrue);
+    expect(pidio, {'tipo': 'elegirTiempo', 'segundos': 30});
+    expect(soloVe, isTrue);
+    mostrar('Tiempo: sin limite al crear -> 30 s; el otro jugador solo lo ve.');
+  });
 
   testWidgets('el anfitrion elige el mapa con las tarjetas, como en offline', (
     tester,

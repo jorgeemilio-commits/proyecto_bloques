@@ -39,6 +39,9 @@ const _letrasDelCodigo = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const int largoDelCodigo = 6;
 const int maximoDeJugadores = 6;
 const int minimoDeJugadores = 2;
+// Tiempos por ronda que puede elegir el anfitrion, en segundos. Sin elegir
+// ninguno (null), las rondas no tienen limite.
+const List<int> tiemposPorRonda = [20, 30, 40, 60, 90];
 
 // Un jugador que se identifico con "hola": su conexion actual, la sala en la
 // que esta y, si se desconecto estando en una sala, el tiempo que le queda
@@ -63,6 +66,8 @@ class Sala {
   // partida, quien se rinde sale de esta lista (pero sigue en la partida).
   final List<Jugador> jugadores = [];
   String mapa = 'clasico';
+  // Segundos por ronda que eligio el anfitrion, o null si no hay limite.
+  int? segundosPorRonda;
   // null mientras se esta en el lobby.
   Partida? partida;
   // Tiempo de la fase actual de la partida (valores iniciales, ronda o entre
@@ -71,6 +76,11 @@ class Sala {
   DateTime? limite;
   // Si la partida ya se guardo en el historial (se guarda una sola vez).
   bool guardada = false;
+  // Jugadores del lobby que marcaron "Listo". La partida solo se puede
+  // iniciar cuando todos lo estan.
+  final Set<Jugador> listos = {};
+
+  bool get todosListos => jugadores.every(listos.contains);
 
   Sala(this.codigo);
 
@@ -89,11 +99,14 @@ class Salas {
   final Duration esperaHola;
   // Tiempo que un jugador desconectado sigue en la sala esperando volver.
   final Duration esperaReconexion;
-  // Tiempos de la partida: para poner los valores iniciales, para cada
-  // ronda y para ver los resultados antes de la siguiente.
+  // Tiempos de la partida: para poner los valores iniciales y para ver los
+  // resultados antes de la siguiente ronda. El de cada ronda lo elige el
+  // anfitrion (segundosPorRonda).
   final Duration esperaValoresIniciales;
-  final Duration esperaRonda;
   final Duration esperaEntreRondas;
+  // Cuanto dura "un segundo" del tiempo por ronda. Es un segundo de verdad;
+  // las pruebas lo acortan para no tener que esperar.
+  final Duration segundo;
   // Tiempo que se guarda una sala con la partida terminada.
   final Duration esperaSalaTerminada;
   // Codigos de invitacion, dados y valores iniciales al azar.
@@ -115,7 +128,7 @@ class Salas {
     this.esperaHola = const Duration(seconds: 10),
     this.esperaReconexion = const Duration(seconds: 15),
     this.esperaValoresIniciales = const Duration(minutes: 1),
-    this.esperaRonda = const Duration(seconds: 40),
+    this.segundo = const Duration(seconds: 1),
     this.esperaEntreRondas = const Duration(seconds: 1),
     this.esperaSalaTerminada = const Duration(minutes: 5),
     Random? azar,
@@ -299,13 +312,42 @@ class Salas {
           throw _mensajeInvalido;
         }
         _rendirse(jugador, sala);
+      case 'listo':
+        final sala = jugador.sala;
+        final listo = mensaje['listo'];
+        if (sala == null || !sala.enLobby || listo is! bool) {
+          throw _mensajeInvalido;
+        }
+        if (listo) {
+          sala.listos.add(jugador);
+        } else {
+          sala.listos.remove(jugador);
+        }
+        _enviarEstado(sala);
       case 'elegirMapa':
         final sala = _salaDelAnfitrion(jugador);
         final mapa = mensaje['mapa'];
         if (mapa is! String || !RegExp(r'^[a-z0-9_]+$').hasMatch(mapa)) {
           throw _mensajeInvalido;
         }
+        // Con otro mapa, todos vuelven a confirmar que estan listos.
+        if (mapa != sala.mapa) {
+          sala.listos.clear();
+        }
         sala.mapa = mapa;
+        _enviarEstado(sala);
+      case 'elegirTiempo':
+        final sala = _salaDelAnfitrion(jugador);
+        final segundos = mensaje['segundos'];
+        if (segundos != null &&
+            (segundos is! int || !tiemposPorRonda.contains(segundos))) {
+          throw _mensajeInvalido;
+        }
+        // Con otro tiempo, todos vuelven a confirmar que estan listos.
+        if (segundos != sala.segundosPorRonda) {
+          sala.listos.clear();
+        }
+        sala.segundosPorRonda = segundos as int?;
         _enviarEstado(sala);
       case 'iniciar':
         final sala = _salaDelAnfitrion(jugador);
@@ -313,6 +355,12 @@ class Salas {
           throw const _ErrorDeSala(
             'faltanJugadores',
             'Se necesitan al menos $minimoDeJugadores jugadores para empezar.',
+          );
+        }
+        if (!sala.todosListos) {
+          throw const _ErrorDeSala(
+            'faltanListos',
+            'Todos los jugadores deben estar listos para empezar.',
           );
         }
         // Empieza la partida: la sala se cierra a nuevos jugadores, la meta
@@ -412,11 +460,20 @@ class Salas {
     sala.temporizador = Timer(espera, alAcabarse);
   }
 
-  // Tira los dados y empieza la siguiente ronda, con su tiempo.
+  // Tira los dados y empieza la siguiente ronda, con su tiempo si el
+  // anfitrion eligio uno. Sin limite, la ronda termina cuando juegan todos
+  // los conectados.
   void _empezarRonda(Sala sala) {
     final partida = sala.partida!;
     partida.empezarRonda(_azar);
-    _programar(sala, esperaRonda, () => _terminarRonda(sala));
+    final segundos = sala.segundosPorRonda;
+    if (segundos == null) {
+      sala.temporizador?.cancel();
+      sala.temporizador = null;
+      sala.limite = null;
+    } else {
+      _programar(sala, segundo * segundos, () => _terminarRonda(sala));
+    }
     _enviarEstado(sala);
   }
 
@@ -561,6 +618,7 @@ class Salas {
 
   // Saca al jugador de la sala; si ya no queda nadie, la sala se borra.
   void _sacarDeLaSala(Jugador jugador, Sala sala) {
+    sala.listos.remove(jugador);
     sala.jugadores.remove(jugador);
     jugador.sala = null;
     jugador.esperaReconexion?.cancel();
@@ -613,11 +671,16 @@ class Salas {
         'codigo': sala.codigo,
         'anfitrion': sala.anfitrion.nombre,
         'mapa': sala.mapa,
+        'segundosPorRonda': sala.segundosPorRonda,
         'maximo': maximoDeJugadores,
         if (partida == null)
           'jugadores': [
             for (final otro in sala.jugadores)
-              {'usuario': otro.nombre, 'conectado': otro.conectado},
+              {
+                'usuario': otro.nombre,
+                'conectado': otro.conectado,
+                'listo': sala.listos.contains(otro),
+              },
           ]
         else ...{
           'meta': partida.meta,

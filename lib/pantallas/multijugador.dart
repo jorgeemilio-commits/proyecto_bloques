@@ -398,7 +398,10 @@ class _SalaDeEspera extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final codigo = estado.codigo ?? '';
-    final puedeIniciar = estado.jugadores.length >= 2;
+    final hayJugadores = estado.jugadores.length >= 2;
+    // Para iniciar hacen falta 2 jugadores o mas y que todos esten listos.
+    final puedeIniciar = hayJugadores && estado.todosListos;
+    final estoyListo = estado.yo?.listo ?? false;
 
     return Column(
       key: const ValueKey('sala-de-espera'),
@@ -464,9 +467,28 @@ class _SalaDeEspera extends StatelessWidget {
                   subtitle: jugador.conectado
                       ? null
                       : const Text('Desconectado, esperando que vuelva…'),
-                  trailing: jugador.usuario == estado.anfitrion
-                      ? const Chip(label: Text('Anfitrión'))
-                      : null,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (jugador.usuario == estado.anfitrion) ...[
+                        const Chip(label: Text('Anfitrión')),
+                        const SizedBox(width: 6),
+                      ],
+                      // Si ya marco que esta listo.
+                      Tooltip(
+                        message: jugador.listo ? 'Listo' : 'No está listo',
+                        child: Icon(
+                          jugador.listo
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          key: ValueKey('listo-${jugador.usuario}'),
+                          color: jugador.listo
+                              ? Colors.green
+                              : tema.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -479,7 +501,33 @@ class _SalaDeEspera extends StatelessWidget {
           // Solo el anfitrion lo cambia; los demas solo lo ven.
           onElegir: estado.soyAnfitrion ? sala.elegirMapa : null,
         ),
+        const SizedBox(height: 20),
+        Text('Tiempo por ronda', style: tema.textTheme.titleMedium),
+        const SizedBox(height: 8),
+        _TiempoPorRonda(
+          segundos: estado.segundosPorRonda,
+          // Solo el anfitrion lo cambia; los demas solo lo ven.
+          onElegir: estado.soyAnfitrion ? sala.elegirTiempo : null,
+        ),
         const SizedBox(height: 28),
+        // Cada jugador (tambien el anfitrion) marca que esta listo.
+        SizedBox(
+          height: 52,
+          child: estoyListo
+              ? OutlinedButton.icon(
+                  key: const ValueKey('boton-listo-sala'),
+                  onPressed: () => sala.marcarListo(false),
+                  icon: const Icon(Icons.check_circle, color: Colors.green),
+                  label: const Text('Listo · toca para cancelar'),
+                )
+              : FilledButton.tonalIcon(
+                  key: const ValueKey('boton-listo-sala'),
+                  onPressed: () => sala.marcarListo(true),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Estoy listo'),
+                ),
+        ),
+        const SizedBox(height: 12),
         if (estado.soyAnfitrion)
           SizedBox(
             height: 52,
@@ -488,7 +536,11 @@ class _SalaDeEspera extends StatelessWidget {
               onPressed: puedeIniciar ? sala.iniciar : null,
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(
-                puedeIniciar ? 'Iniciar partida' : 'Esperando jugadores…',
+                puedeIniciar
+                    ? 'Iniciar partida'
+                    : !hayJugadores
+                    ? 'Esperando jugadores…'
+                    : 'Esperando que todos estén listos…',
               ),
             ),
           )
@@ -592,6 +644,54 @@ class _MapaDeLaSalaState extends State<_MapaDeLaSala> {
           detalle: onElegir == null ? null : 'Toca para cambiar el mapa',
         );
       },
+    );
+  }
+}
+
+// Tiempo por ronda de la sala. El anfitrion elige entre "Sin limite" y
+// varios tiempos; los demas solo ven el elegido.
+class _TiempoPorRonda extends StatelessWidget {
+  // Los mismos que acepta el servidor; null = sin limite.
+  static const List<int?> _opciones = [null, 20, 30, 40, 60, 90];
+
+  final int? segundos;
+  final ValueChanged<int?>? onElegir;
+
+  const _TiempoPorRonda({required this.segundos, this.onElegir});
+
+  static String _texto(int? segundos) =>
+      segundos == null ? 'Sin límite' : '$segundos s';
+
+  @override
+  Widget build(BuildContext context) {
+    final onElegir = this.onElegir;
+    if (onElegir == null) {
+      return InputDecorator(
+        decoration: const InputDecoration(border: OutlineInputBorder()),
+        child: Text(
+          segundos == null
+              ? 'Sin límite: la ronda espera a que todos jueguen'
+              : '${_texto(segundos)} por ronda',
+          key: const ValueKey('tiempo-de-la-sala'),
+        ),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final opcion in _opciones)
+          ChoiceChip(
+            key: ValueKey('tiempo-${opcion ?? 'sin-limite'}'),
+            label: Text(_texto(opcion)),
+            selected: opcion == segundos,
+            onSelected: (_) {
+              if (opcion != segundos) {
+                onElegir(opcion);
+              }
+            },
+          ),
+      ],
     );
   }
 }

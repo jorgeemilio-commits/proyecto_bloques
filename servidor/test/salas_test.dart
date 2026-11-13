@@ -65,6 +65,13 @@ void main() {
   void mandar(ConexionFalsa conexion, Map<String, Object?> mensaje) =>
       salas.recibir(conexion, jsonEncode(mensaje));
 
+  // Todos los indicados marcan "Listo" en la sala.
+  void todosListos(List<ConexionFalsa> quienes) {
+    for (final quien in quienes) {
+      mandar(quien, {'tipo': 'listo', 'listo': true});
+    }
+  }
+
   // Conecta al usuario y manda "hola".
   ConexionFalsa conectar(String usuario) {
     final conexion = ConexionFalsa();
@@ -130,11 +137,21 @@ void main() {
 
     mandar(luis, {'tipo': 'iniciar'});
     final errorDeLuis = luis.ultimoError;
+    // Sin que todos esten listos no se puede iniciar.
+    mandar(luis, {'tipo': 'listo', 'listo': true});
+    mandar(ana, {'tipo': 'iniciar'});
+    final errorSinListos = ana.ultimoError;
+    final luisListo = (luis.estado['jugadores'] as List)[1]['listo'];
+    // Cambiar el mapa quita el "listo" a todos.
     mandar(ana, {'tipo': 'elegirMapa', 'mapa': 'borde'});
+    final luisTrasCambiar = (luis.estado['jugadores'] as List)[1]['listo'];
+    todosListos([ana, luis]);
     mandar(ana, {'tipo': 'iniciar'});
     mandar(tarde, {'tipo': 'unirse', 'codigo': codigo});
 
     expect(errorDeLuis, 'soloAnfitrion');
+    expect(errorSinListos, 'faltanListos');
+    expect((luisListo, luisTrasCambiar), (true, false));
     expect(luis.estado['mapa'], 'borde');
     expect(luis.estado['fase'], 'valoresIniciales');
     // Con 2 jugadores la meta es 26.
@@ -205,7 +222,11 @@ void main() {
       salas.desconectar(luis);
       await Future<void>.delayed(_esperaCorta * 2);
 
-      expect(conectadoAlCaer, {'usuario': 'Luis', 'conectado': false});
+      expect(conectadoAlCaer, {
+        'usuario': 'Luis',
+        'conectado': false,
+        'listo': false,
+      });
       expect(sigueTrasVolver, ['Ana', 'Luis']);
       expect(luis.estado['fase'], 'lobby');
       expect(ana.jugadores, ['Ana']);
@@ -243,8 +264,8 @@ void main() {
     expect(luis.cerrada, isTrue);
     // Para los demas es como si se le cayera la red: sigue en la sala.
     expect(ana.estado['jugadores'], [
-      {'usuario': 'Ana', 'conectado': true},
-      {'usuario': 'Luis', 'conectado': false},
+      {'usuario': 'Ana', 'conectado': true, 'listo': false},
+      {'usuario': 'Luis', 'conectado': false, 'listo': false},
     ]);
   });
 
@@ -267,6 +288,7 @@ void main() {
       final codigo = ana.estado['codigo'] as String;
       mandar(luis, {'tipo': 'unirse', 'codigo': codigo});
       mandar(eva, {'tipo': 'unirse', 'codigo': codigo});
+      todosListos([ana, luis, eva]);
       mandar(ana, {'tipo': 'iniciar'});
 
       mandar(luis, {'tipo': 'rendirse'});
@@ -311,18 +333,24 @@ void main() {
             token.startsWith('token-') ? token.substring(6) : null,
         esperaReconexion: const Duration(seconds: 5),
         esperaValoresIniciales: const Duration(milliseconds: 60),
-        esperaRonda: const Duration(milliseconds: 100),
+        // Un "segundo" de 5 ms: 20 segundos por ronda son 100 ms.
+        segundo: const Duration(milliseconds: 5),
         esperaEntreRondas: const Duration(milliseconds: 20),
         esperaSalaTerminada: const Duration(milliseconds: 50),
       );
     });
 
-    // Ana y Luis en una sala con la partida ya iniciada.
-    (ConexionFalsa, ConexionFalsa) iniciada() {
+    // Ana y Luis en una sala con la partida ya iniciada; con [segundos],
+    // el anfitrion eligio ese tiempo por ronda (si no, sin limite).
+    (ConexionFalsa, ConexionFalsa) iniciada({int? segundos}) {
       final ana = conectar('Ana');
       final luis = conectar('Luis');
       mandar(ana, {'tipo': 'crearSala'});
       mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+      if (segundos != null) {
+        mandar(ana, {'tipo': 'elegirTiempo', 'segundos': segundos});
+      }
+      todosListos([ana, luis]);
       mandar(ana, {'tipo': 'iniciar'});
       return (ana, luis);
     }
@@ -406,7 +434,7 @@ void main() {
     test(
       'ronda: quien no juega a tiempo pasa; el desconectado no se espera',
       () async {
-        final (ana, luis) = iniciada();
+        final (ana, luis) = iniciada(segundos: 20);
         for (final quien in [ana, luis]) {
           mandar(quien, {
             'tipo': 'valoresIniciales',
@@ -428,6 +456,61 @@ void main() {
     );
   });
 
+  test('el tiempo por ronda lo elige el anfitrion y no es obligatorio', () {
+    final ana = conectar('Ana');
+    final luis = conectar('Luis');
+    mandar(ana, {'tipo': 'crearSala'});
+    mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+    final alCrear = ana.estado['segundosPorRonda'];
+
+    mandar(luis, {'tipo': 'elegirTiempo', 'segundos': 30});
+    final errorDeLuis = luis.ultimoError;
+    mandar(ana, {'tipo': 'elegirTiempo', 'segundos': 7});
+    final errorRaro = ana.ultimoError;
+    // Elegir un tiempo quita el "listo" a todos.
+    todosListos([ana, luis]);
+    mandar(ana, {'tipo': 'elegirTiempo', 'segundos': 30});
+    final conTiempo = luis.estado['segundosPorRonda'];
+    final listosTrasCambiar = [
+      for (final jugador in luis.estado['jugadores'] as List) jugador['listo'],
+    ];
+    // Y se puede volver a quitar.
+    mandar(ana, {'tipo': 'elegirTiempo', 'segundos': null});
+
+    expect(alCrear, isNull);
+    expect(errorDeLuis, 'soloAnfitrion');
+    expect(errorRaro, 'mensajeInvalido');
+    expect(conTiempo, 30);
+    expect(listosTrasCambiar, [false, false]);
+    expect(luis.estado['segundosPorRonda'], isNull);
+  });
+
+  test('sin limite, la ronda no tiene tiempo y espera a que jueguen', () async {
+    final ana = conectar('Ana');
+    final luis = conectar('Luis');
+    mandar(ana, {'tipo': 'crearSala'});
+    mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+    todosListos([ana, luis]);
+    mandar(ana, {'tipo': 'iniciar'});
+    for (final quien in [ana, luis]) {
+      mandar(quien, {
+        'tipo': 'valoresIniciales',
+        'valores': [1, 2, 3, 4, 5, 6],
+      });
+    }
+
+    final enRonda = ana.estado;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final faseTrasEsperar = ana.estado['fase'];
+    mandar(ana, {'tipo': 'pasar', 'ronda': 1});
+    mandar(luis, {'tipo': 'pasar', 'ronda': 1});
+
+    expect(enRonda['fase'], 'ronda');
+    expect(enRonda.containsKey('restanteMs'), isFalse);
+    expect(faseTrasEsperar, 'ronda');
+    expect(ana.estado['fase'], 'entreRondas');
+  });
+
   test('una sala con la partida terminada se borra al rato', () async {
     salas.cerrar();
     salas = Salas(
@@ -440,6 +523,7 @@ void main() {
     mandar(ana, {'tipo': 'crearSala'});
     final codigo = ana.estado['codigo'] as String;
     mandar(luis, {'tipo': 'unirse', 'codigo': codigo});
+    todosListos([ana, luis]);
     mandar(ana, {'tipo': 'iniciar'});
 
     // Luis se rinde: Ana gana y la partida termina.
@@ -469,6 +553,7 @@ void main() {
       for (final quien in [luis, eva]) {
         mandar(quien, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
       }
+      todosListos([ana, luis, eva]);
       mandar(ana, {'tipo': 'iniciar'});
       for (final quien in [ana, luis, eva]) {
         mandar(quien, {
@@ -522,7 +607,7 @@ void main() {
     expect(alEntrar['usuario'], 'Ana');
     expect(conSala['fase'], 'lobby');
     expect(conSala['jugadores'], [
-      {'usuario': 'Ana', 'conectado': true},
+      {'usuario': 'Ana', 'conectado': true, 'listo': false},
     ]);
   });
 }

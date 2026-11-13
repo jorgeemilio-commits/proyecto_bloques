@@ -51,7 +51,9 @@ invitación, partida con rondas simultáneas, desconexiones y rendirse.
 | `unirse` | `codigo` | todos | Entra a la sala con ese código. |
 | `salir` | — | todos | Sale de la sala en el lobby. |
 | `elegirMapa` | `mapa` | anfitrión | Cambia el mapa (nombre del archivo sin `.txt`, por ejemplo `clasico`). |
-| `iniciar` | — | anfitrión | Empieza la partida (mínimo 2 jugadores). |
+| `elegirTiempo` | `segundos` | anfitrión | Tiempo por ronda: 20, 30, 40, 60 o 90, o `null` para sin límite (al crear la sala es sin límite). |
+| `listo` | `listo` (true o false) | todos | Marca o desmarca que el jugador está listo para empezar. |
+| `iniciar` | — | anfitrión | Empieza la partida (mínimo 2 jugadores, todos listos). |
 
 ### Partida
 
@@ -100,10 +102,11 @@ En el lobby:
   "codigo": "K7MQ2P",
   "anfitrion": "Ana",
   "mapa": "clasico",
+  "segundosPorRonda": null,
   "maximo": 6,
   "jugadores": [
-    {"usuario": "Ana", "conectado": true},
-    {"usuario": "Luis", "conectado": false}
+    {"usuario": "Ana", "conectado": true, "listo": true},
+    {"usuario": "Luis", "conectado": false, "listo": false}
   ]
 }
 ```
@@ -160,7 +163,13 @@ En la partida (además de lo del lobby):
 - **Código:** 6 caracteres de `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (sin 0, O, 1,
   I ni L, que se confunden al dictarlos). La app lo pasa a mayúsculas.
 - **Jugadores:** de 2 a 6.
-- **Mapa:** lo elige el anfitrión; al crear la sala es `clasico`.
+- **Mapa:** lo elige el anfitrión; al crear la sala es `clasico`. Si lo cambia,
+  todos dejan de estar listos.
+- **Tiempo por ronda:** opcional; lo elige el anfitrión (`elegirTiempo`). Al
+  crear la sala no hay límite. Si lo cambia, todos dejan de estar listos.
+- **Listo:** cada jugador (también el anfitrión) marca o desmarca `listo`. El
+  anfitrión solo puede iniciar cuando hay al menos 2 jugadores y todos están
+  listos.
 - **Si el anfitrión sale** en el lobby, **la sala se deshace**: todos quedan
   sin sala (`sinSala`) y reciben el aviso "El anfitrión cerró la sala.". Si
   sale otro jugador, la sala sigue. Si ya no queda nadie, la sala se borra.
@@ -179,10 +188,11 @@ En la partida (además de lo del lobby):
    desconectado), el servidor le pone valores al azar (1 a 6 sin repetir) y su
    app los adopta en lugar de lo que llevaba. La ronda 1 empieza cuando todos
    tienen valores, ya sea porque los mandaron o al acabarse el minuto.
-3. **Ronda:** el servidor tira los 2 dados, pasa a `ronda` y espera hasta
-   **40 segundos**. Termina antes si todos los jugadores que siguen jugando y
-   están conectados ya mandaron su jugada (a los desconectados no se les
-   espera). Quien no jugó a tiempo, pasa.
+3. **Ronda:** el servidor tira los 2 dados y pasa a `ronda`. Termina cuando
+   todos los jugadores que siguen jugando y están conectados ya mandaron su
+   jugada (a los desconectados no se les espera). Si el anfitrión eligió un
+   **tiempo por ronda**, también termina al acabarse ese tiempo, y quien no
+   jugó, pasa; sin límite no hay `restanteMs`.
 4. **Resolver la ronda:**
    - Se agrupan los reclamos por región. Si varios completaron la misma región
      en la misma ronda, **todos ganan el mismo premio** (el siguiente que toca)
@@ -232,5 +242,6 @@ En la partida (además de lo del lobby):
 | `yaEnSala` | Ya estás en una sala. |
 | `soloAnfitrion` | Solo el anfitrión puede hacer eso. |
 | `faltanJugadores` | Se necesitan al menos 2 jugadores para empezar. |
+| `faltanListos` | Todos los jugadores deben estar listos para empezar. |
 | `mensajeInvalido` | Mensaje no válido. |
 

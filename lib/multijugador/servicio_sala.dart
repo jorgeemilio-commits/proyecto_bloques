@@ -15,6 +15,8 @@ enum EstadoConexion { desconectado, conectando, conectado, reconectando }
 class JugadorEnSala {
   final String usuario;
   final bool conectado;
+  // En el lobby: si marco que esta listo para empezar.
+  final bool listo;
   // 'jugando', 'llegoALaMeta' o 'rendido'.
   final String situacion;
   // Si ya mando su jugada de esta ronda (o sus valores iniciales).
@@ -31,6 +33,7 @@ class JugadorEnSala {
   const JugadorEnSala(
     this.usuario, {
     required this.conectado,
+    this.listo = false,
     this.situacion = 'jugando',
     this.yaJugo = false,
     this.puntos = 0,
@@ -44,6 +47,7 @@ class JugadorEnSala {
     return JugadorEnSala(
       datos['usuario'] as String,
       conectado: datos['conectado'] as bool,
+      listo: datos['listo'] as bool? ?? false,
       situacion: datos['situacion'] as String? ?? 'jugando',
       yaJugo: datos['yaJugo'] as bool? ?? false,
       puntos: datos['puntos'] as int? ?? 0,
@@ -74,6 +78,8 @@ class EstadoSala {
   final String? codigo;
   final String? anfitrion;
   final String? mapa;
+  // Segundos por ronda que eligio el anfitrion, o null si no hay limite.
+  final int? segundosPorRonda;
   final int maximo;
   final int? meta;
   final List<JugadorEnSala> jugadores;
@@ -92,6 +98,7 @@ class EstadoSala {
     this.codigo,
     this.anfitrion,
     this.mapa,
+    this.segundosPorRonda,
     this.maximo = 6,
     this.meta,
     this.jugadores = const [],
@@ -110,6 +117,7 @@ class EstadoSala {
       codigo: datos['codigo'] as String?,
       anfitrion: datos['anfitrion'] as String?,
       mapa: datos['mapa'] as String?,
+      segundosPorRonda: datos['segundosPorRonda'] as int?,
       maximo: datos['maximo'] as int? ?? 6,
       meta: datos['meta'] as int?,
       jugadores: [
@@ -131,6 +139,9 @@ class EstadoSala {
   bool get enSala => fase != 'sinSala';
   bool get soyAnfitrion => anfitrion == usuario;
   bool get enLaPartida => enSala && fase != 'lobby';
+
+  // En el lobby: si todos los jugadores marcaron que estan listos.
+  bool get todosListos => jugadores.every((jugador) => jugador.listo);
 
   // Los datos de este jugador en la sala.
   JugadorEnSala? get yo {
@@ -206,6 +217,13 @@ class ServicioDeSala extends ChangeNotifier {
   void elegirMapa(String mapa) => _mandar({'tipo': 'elegirMapa', 'mapa': mapa});
 
   void iniciar() => _mandar({'tipo': 'iniciar'});
+
+  // Tiempo por ronda (solo el anfitrion); null = sin limite.
+  void elegirTiempo(int? segundos) =>
+      _mandar({'tipo': 'elegirTiempo', 'segundos': segundos});
+
+  // Marca o desmarca que este jugador esta listo para empezar.
+  void marcarListo(bool listo) => _mandar({'tipo': 'listo', 'listo': listo});
 
   // Deja la partida; los demas siguen jugando.
   void rendirse() => _mandar({'tipo': 'rendirse'});

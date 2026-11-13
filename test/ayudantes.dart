@@ -161,22 +161,25 @@ class ServidorDeSalasFalso {
   void mandarSinSala() =>
       mandar({'tipo': 'estado', 'fase': 'sinSala', 'usuario': 'Ana'});
 
-  void mandarLobby({String anfitrion = 'Ana'}) => mandar({
-    'tipo': 'estado',
-    'fase': 'lobby',
-    'usuario': 'Ana',
-    'codigo': 'K7MQ2P',
-    'anfitrion': anfitrion,
-    'mapa': 'clasico',
-    'maximo': 6,
-    'jugadores': [
-      {'usuario': anfitrion, 'conectado': true},
-      {
-        'usuario': anfitrion == 'Ana' ? 'Luis' : 'Ana',
-        'conectado': anfitrion != 'Ana',
-      },
-    ],
-  });
+  // Sala de Ana y Luis; con [todosListos] los dos marcaron "Listo".
+  void mandarLobby({String anfitrion = 'Ana', bool todosListos = false}) =>
+      mandar({
+        'tipo': 'estado',
+        'fase': 'lobby',
+        'usuario': 'Ana',
+        'codigo': 'K7MQ2P',
+        'anfitrion': anfitrion,
+        'mapa': 'clasico',
+        'maximo': 6,
+        'jugadores': [
+          {'usuario': anfitrion, 'conectado': true, 'listo': todosListos},
+          {
+            'usuario': anfitrion == 'Ana' ? 'Luis' : 'Ana',
+            'conectado': anfitrion != 'Ana',
+            'listo': todosListos,
+          },
+        ],
+      });
 
   // Simula que se cae la conexion actual.
   void cortar() => canales.last.local.sink.close();
