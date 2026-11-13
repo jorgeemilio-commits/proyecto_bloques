@@ -8,6 +8,35 @@ import 'ayudantes.dart';
 import 'consola.dart';
 
 void main() {
+  // Va primero: la ayuda solo sale mientras nadie ha abierto el panel.
+  testWidgets('al empezar, un globo dice que ahi estan las regiones', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    final seVe = find
+        .byKey(const ValueKey('ayuda-panel'))
+        .evaluate()
+        .isNotEmpty;
+    final dice = find
+        .text('Toca aquí para ver los puntos de cada región')
+        .evaluate()
+        .isNotEmpty;
+    // Pasados unos segundos se quita solo.
+    await tester.pump(const Duration(seconds: 7));
+    final sigue = find
+        .byKey(const ValueKey('ayuda-panel'))
+        .evaluate()
+        .isNotEmpty;
+
+    expect((seVe, dice), (true, true));
+    expect(sigue, isFalse);
+    expect(find.text('REGIONES'), findsOneWidget);
+    mostrar('Globo de ayuda al empezar; a los 8 s ya no esta.');
+  });
+
   testWidgets('la pestaña abre y cierra el panel de regiones', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
