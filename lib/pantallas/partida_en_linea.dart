@@ -12,6 +12,7 @@ import '../sonidos.dart';
 import '../tablero.dart';
 import '../valores_iniciales_bloc.dart';
 import '../widgets/celda_widget.dart';
+import '../widgets/celebracion_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
@@ -55,6 +56,10 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   // Avisos de regiones que completaron los rivales, que se ven un momento.
   final List<_Reclamo> _reclamos = [];
   int _siguienteReclamo = 0;
+  // Ultima region que complete yo, para que brille en mi tablero.
+  Destello? _destello;
+  // Se pone en true al ganar para que caiga el confeti.
+  bool _confeti = false;
 
   EstadoSala get _estado => widget.estado;
 
@@ -72,6 +77,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     final ganeAhora = _estado.ganadores.contains(_estado.usuario);
     if (!ganeAntes && ganeAhora) {
       _sonidos.ganar();
+      _confeti = true;
     }
     if (antes.fase != 'terminada' && _estado.fase == 'terminada') {
       final yo = _estado.yo;
@@ -83,8 +89,14 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
       }
     }
     final terminoLaRonda = antes.fase == 'ronda' && _estado.fase != 'ronda';
-    if (terminoLaRonda && _estado.yo?.ultimoReclamo != null) {
+    final miReclamo = _estado.yo?.ultimoReclamo;
+    if (terminoLaRonda && miReclamo != null) {
       _sonidos.puntuarRegion();
+      _destello = Destello(
+        id: _siguienteReclamo++,
+        regionId: miReclamo.region,
+        puntos: miReclamo.puntos,
+      );
     }
     // Al terminar la ronda, un aviso por cada rival que completo una region.
     final mapa = _mapaLeido;
@@ -192,6 +204,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                             onNumeroCambiado: _valoresBloc?.notificarCambio,
                             destinosValidos: destinos,
                             vecesReclamada: vecesReclamada,
+                            destello: _destello,
                             onDadoSoltado: (celda, indice) =>
                                 _colocar(tablero, celda, indice),
                           ),
@@ -234,6 +247,8 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                 ),
               ),
             ),
+            // Confeti encima de todo al ganar (no bloquea los toques).
+            if (_confeti) const Positioned.fill(child: Confeti()),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../region.dart';
 import '../tablero.dart';
 import 'celda_widget.dart';
+import 'celebracion_widget.dart';
 
 class TableroWidget extends StatelessWidget {
   final Tablero tablero;
@@ -14,6 +15,8 @@ class TableroWidget extends StatelessWidget {
   final void Function(Celda celda, int indiceDado)? onDadoSoltado;
   // Cuantas veces se ha reclamado cada region; si es null, ninguna se apaga.
   final int Function(Region region)? vecesReclamada;
+  // Region recien completada: sus casillas brillan y salen los puntos.
+  final Destello? destello;
 
   const TableroWidget({
     super.key,
@@ -23,10 +26,35 @@ class TableroWidget extends StatelessWidget {
     this.destinosValidos = const {},
     this.onDadoSoltado,
     this.vecesReclamada,
+    this.destello,
   });
 
   @override
   Widget build(BuildContext context) {
+    final destello = this.destello;
+
+    // Siempre es un Stack (aunque no haya destello) para que las casillas no
+    // se vuelvan a crear al aparecer o quitarse la celebracion.
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _cuadricula(),
+        if (destello != null && destello.puntos > 0)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(
+                child: PuntosFlotantes(
+                  key: ValueKey('puntos-${destello.id}'),
+                  puntos: destello.puntos,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _cuadricula() {
     return AspectRatio(
       aspectRatio: tablero.columnas / tablero.filas,
       child: GridView.builder(
@@ -44,8 +72,12 @@ class TableroWidget extends StatelessWidget {
           final celda = tablero.celdas[fila][columna];
           final esInicial = tablero.celdasIniciales.contains(celda);
           final region = tablero.obtenerRegion(celda.coordenada);
+          final brilla =
+              destello != null &&
+              region != null &&
+              region.id == destello!.regionId;
 
-          return CeldaWidget(
+          final casilla = CeldaWidget(
             key: ValueKey('celda-${celda.coordenada.x}-${celda.coordenada.y}'),
             celda: celda,
             region: region,
@@ -73,6 +105,19 @@ class TableroWidget extends StatelessWidget {
             onDadoSoltado: onDadoSoltado == null
                 ? null
                 : (indiceDado) => onDadoSoltado!(celda, indiceDado),
+          );
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              casilla,
+              if (brilla)
+                IgnorePointer(
+                  child: DestelloCelda(
+                    key: ValueKey('destello-${destello!.id}'),
+                  ),
+                ),
+            ],
           );
         },
       ),

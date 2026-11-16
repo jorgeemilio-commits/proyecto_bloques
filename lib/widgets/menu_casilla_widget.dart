@@ -39,10 +39,7 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
               _mostrarMenu();
             }
           : null,
-      child: KeyedSubtree(
-        key: _anclaKey,
-        child: widget.child,
-      ),
+      child: KeyedSubtree(key: _anclaKey, child: widget.child),
     );
   }
 
@@ -197,13 +194,17 @@ class _BotonNumeroState extends State<_BotonNumero>
   // Crece hasta 1.25 y regresa a su tamaño normal.
   late final Animation<double> _escala = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(begin: 1.0, end: 1.25)
-          .chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(
+        begin: 1.0,
+        end: 1.25,
+      ).chain(CurveTween(curve: Curves.easeOut)),
       weight: 1,
     ),
     TweenSequenceItem(
-      tween: Tween(begin: 1.25, end: 1.0)
-          .chain(CurveTween(curve: Curves.easeIn)),
+      tween: Tween(
+        begin: 1.25,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeIn)),
       weight: 1,
     ),
   ]).animate(_pulso);

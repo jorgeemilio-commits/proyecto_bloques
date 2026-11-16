@@ -10,6 +10,7 @@ import '../tipo.dart';
 import '../turno_bloc.dart';
 import '../valores_iniciales_bloc.dart';
 import '../widgets/celda_widget.dart';
+import '../widgets/celebracion_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
@@ -33,6 +34,9 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
   late final ValoresInicialesBloc _valoresInicialesBloc;
   late final TurnoBloc _turnoBloc;
   final Sonidos _sonidos = Sonidos();
+  // Ultima region completada, para que brille en el tablero.
+  Destello? _destello;
+  int _siguienteDestello = 0;
 
   @override
   void initState() {
@@ -86,7 +90,17 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
               listenWhen: (anterior, actual) =>
                   actual.ultimoReclamo != null &&
                   !identical(anterior.ultimoReclamo, actual.ultimoReclamo),
-              listener: (context, _) => _sonidos.puntuarRegion(),
+              listener: (context, turno) {
+                _sonidos.puntuarRegion();
+                final reclamo = turno.ultimoReclamo!;
+                setState(
+                  () => _destello = Destello(
+                    id: _siguienteDestello++,
+                    regionId: reclamo.region.id,
+                    puntos: reclamo.puntos,
+                  ),
+                );
+              },
             ),
           ],
           child: SafeArea(
@@ -145,6 +159,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                                             vecesReclamada: _turnoBloc
                                                 .reclamos
                                                 .vecesReclamada,
+                                            destello: _destello,
                                             // Solo las casillas validas aceptan el
                                             // dado, asi que aqui siempre se coloca.
                                             onDadoSoltado: (celda, indiceDado) {
