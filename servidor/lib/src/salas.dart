@@ -376,17 +376,24 @@ class Salas {
             'Todos los jugadores deben estar listos para empezar.',
           );
         }
-        // Empieza la partida: la sala se cierra a nuevos jugadores, la meta
-        // queda fija y hay un tiempo para poner los valores iniciales; al
-        // acabarse, quien no los puso los recibe al azar.
+        // Empieza la partida: la sala se cierra a nuevos jugadores y la meta
+        // queda fija. Si el anfitrion eligio tiempo por ronda, tambien hay un
+        // tiempo para poner los valores iniciales; al acabarse, quien no los
+        // puso los recibe al azar. Sin limite se espera a que todos los
+        // pongan (quien se desconecta y no vuelve se rinde y ya no se le
+        // espera).
         final partida = Partida([
           for (final otro in sala.jugadores) otro.nombre,
         ]);
         sala.partida = partida;
-        _programar(sala, esperaValoresIniciales, () {
-          partida.valoresAlAzar(_azar);
-          _empezarRonda(sala);
-        });
+        if (sala.segundosPorRonda != null) {
+          _programar(sala, esperaValoresIniciales, () {
+            partida.valoresAlAzar(_azar);
+            _empezarRonda(sala);
+          });
+        } else {
+          _sinTiempo(sala);
+        }
         _enviarEstado(sala);
       case 'valoresIniciales':
         final (sala, partida, participante) = _enLaPartida(jugador);
@@ -466,11 +473,24 @@ class Salas {
     );
   }
 
-  // Cambia el tiempo de la fase actual de la partida.
-  void _programar(Sala sala, Duration espera, void Function() alAcabarse) {
+  // Cambia el tiempo de la fase actual de la partida. Con [visible] en
+  // false, los jugadores no ven la cuenta regresiva (es solo una pausa).
+  void _programar(
+    Sala sala,
+    Duration espera,
+    void Function() alAcabarse, {
+    bool visible = true,
+  }) {
     sala.temporizador?.cancel();
-    sala.limite = DateTime.now().add(espera);
+    sala.limite = visible ? DateTime.now().add(espera) : null;
     sala.temporizador = Timer(espera, alAcabarse);
+  }
+
+  // La fase actual no tiene tiempo.
+  void _sinTiempo(Sala sala) {
+    sala.temporizador?.cancel();
+    sala.temporizador = null;
+    sala.limite = null;
   }
 
   // Tira los dados y empieza la siguiente ronda, con su tiempo si el
@@ -481,9 +501,7 @@ class Salas {
     partida.empezarRonda(_azar);
     final segundos = sala.segundosPorRonda;
     if (segundos == null) {
-      sala.temporizador?.cancel();
-      sala.temporizador = null;
-      sala.limite = null;
+      _sinTiempo(sala);
     } else {
       _programar(sala, segundo * segundos, () => _terminarRonda(sala));
     }
@@ -519,7 +537,14 @@ class Salas {
       _terminar(sala);
       return;
     }
-    _programar(sala, esperaEntreRondas, () => _empezarRonda(sala));
+    // Pausa corta para ver los resultados; no se muestra como cuenta
+    // regresiva.
+    _programar(
+      sala,
+      esperaEntreRondas,
+      () => _empezarRonda(sala),
+      visible: false,
+    );
     _enviarEstado(sala);
   }
 

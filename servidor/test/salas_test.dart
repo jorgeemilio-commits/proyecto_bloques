@@ -368,7 +368,8 @@ void main() {
     test(
       'valores iniciales: ocultos para los demas; al azar si no llegan',
       () async {
-        final (ana, luis) = iniciada();
+        // Con tiempo por ronda tambien hay tiempo para los valores.
+        final (ana, luis) = iniciada(segundos: 20);
 
         mandar(ana, {
           'tipo': 'valoresIniciales',
@@ -519,7 +520,43 @@ void main() {
     expect(enRonda.containsKey('restanteMs'), isFalse);
     expect(faseTrasEsperar, 'ronda');
     expect(ana.estado['fase'], 'entreRondas');
+    // La pausa entre rondas tampoco se muestra como cuenta regresiva.
+    expect(ana.estado.containsKey('restanteMs'), isFalse);
   });
+
+  test(
+    'sin limite, los valores iniciales esperan a todos sin tiempo',
+    () async {
+      salas.cerrar();
+      salas = Salas(
+        usuarioDelToken: (token) =>
+            token.startsWith('token-') ? token.substring(6) : null,
+        esperaValoresIniciales: const Duration(milliseconds: 30),
+      );
+      final ana = conectar('Ana');
+      final luis = conectar('Luis');
+      mandar(ana, {'tipo': 'crearSala'});
+      mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+      todosListos([ana, luis]);
+      mandar(ana, {'tipo': 'iniciar'});
+
+      final alEmpezar = ana.estado;
+      // Aunque pase mas que la espera de los valores, nadie los recibe al azar.
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final faseTrasEsperar = ana.estado['fase'];
+      for (final quien in [ana, luis]) {
+        mandar(quien, {
+          'tipo': 'valoresIniciales',
+          'valores': [1, 2, 3, 4, 5, 6],
+        });
+      }
+
+      expect(alEmpezar['fase'], 'valoresIniciales');
+      expect(alEmpezar.containsKey('restanteMs'), isFalse);
+      expect(faseTrasEsperar, 'valoresIniciales');
+      expect(ana.estado['fase'], 'ronda');
+    },
+  );
 
   test('una sala con la partida terminada se borra al rato', () async {
     salas.cerrar();
