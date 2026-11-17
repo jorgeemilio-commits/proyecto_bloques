@@ -45,6 +45,8 @@ void main() {
     mostrar('Numero elegido en el menu radial: ${celda.numero}.');
   });
 
+  // El toque si se avisa (en el modo "tocar el ancla" sirve para elegir
+  // donde va el dado), pero no se abre la rueda para cambiar el numero.
   testWidgets('no permite editar una celda que no es inicial', (tester) async {
     var fuePulsada = false;
     final celda = Celda(coordenada: const Coordenada(1, 1));
@@ -64,7 +66,7 @@ void main() {
     await tester.tap(find.byType(CeldaWidget));
     await tester.pumpAndSettle();
 
-    expect(fuePulsada, isFalse);
+    expect(fuePulsada, isTrue);
     expect(find.text('1'), findsNothing);
     expect(find.byTooltip('Borrar'), findsNothing);
     expect(celda.numero, isNull);

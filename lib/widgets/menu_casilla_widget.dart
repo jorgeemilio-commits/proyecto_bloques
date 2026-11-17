@@ -38,7 +38,7 @@ class _MenuCasillaWidgetState extends State<MenuCasillaWidget> {
               widget.onTap?.call();
               _mostrarMenu();
             }
-          : null,
+          : widget.onTap,
       child: KeyedSubtree(key: _anclaKey, child: widget.child),
     );
   }

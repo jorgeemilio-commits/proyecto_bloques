@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../configuracion.dart';
+import '../constantes.dart';
 import '../turno_bloc.dart';
 
 // Muestra los dos dados del turno y el boton para pasar. Cada dado se puede
@@ -12,47 +14,68 @@ class DadosWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TurnoBloc, TurnoEstado>(
-      bloc: bloc,
-      builder: (context, estado) {
-        return Row(
-          children: [
-            _dadoArrastrable(estado, 0),
-            const SizedBox(width: 10),
-            _dadoArrastrable(estado, 1),
-            const SizedBox(width: 16),
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: FilledButton.tonalIcon(
-                  key: const ValueKey('boton-pasar'),
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+    // Se redibuja si cambia el modo de control (arrastrar o tocar).
+    return ValueListenableBuilder<ModoDeControl>(
+      valueListenable: Configuracion.modoDeControl,
+      builder: (context, _, _) => BlocBuilder<TurnoBloc, TurnoEstado>(
+        bloc: bloc,
+        builder: (context, estado) {
+          return Row(
+            children: [
+              _dadoArrastrable(estado, 0),
+              const SizedBox(width: 10),
+              _dadoArrastrable(estado, 1),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: FilledButton.tonalIcon(
+                    key: const ValueKey('boton-pasar'),
+                    style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    // Desactivado mientras se espera la siguiente tirada.
+                    onPressed: estado.dadosTirados
+                        ? () => bloc.add(const TurnoPasado())
+                        : null,
+                    icon: const Icon(Icons.skip_next_rounded),
+                    label: const Text('Pasar'),
                   ),
-                  // Desactivado mientras se espera la siguiente tirada.
-                  onPressed: estado.dadosTirados
-                      ? () => bloc.add(const TurnoPasado())
-                      : null,
-                  icon: const Icon(Icons.skip_next_rounded),
-                  label: const Text('Pasar'),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
   Widget _dadoArrastrable(TurnoEstado estado, int indice) {
     final valor = estado.valorDado(indice);
     final dado = DadoWidget(valor: valor, tirada: estado.turno);
+
+    // Tocando: se toca el dado ancla y el otro queda como el numero (el
+    // bloc guarda cual es el numero, igual que al arrastrarlo). Otra vez lo
+    // suelta.
+    if (Configuracion.modoDeControl.value == ModoDeControl.tocarAncla) {
+      final numero = 1 - indice;
+      return DadoParaTocar(
+        key: ValueKey('dado-$indice'),
+        dado: dado,
+        elegido: estado.dadoArrastrado == numero,
+        onTap: valor == null
+            ? () {}
+            : () => bloc.add(
+                DadoArrastrado(estado.dadoArrastrado == numero ? null : numero),
+              ),
+      );
+    }
 
     return Draggable<int>(
       key: ValueKey('dado-$indice'),
@@ -214,6 +237,55 @@ class _DadoAgitandoseState extends State<_DadoAgitandose>
       builder: (context, child) =>
           Transform.rotate(angle: _angulo.value, child: child),
       child: widget.child,
+    );
+  }
+}
+
+// Dado para el modo "tocar el ancla": se toca para elegirlo como ancla. El
+// elegido se marca con un borde naranja y un ancla en la esquina.
+class DadoParaTocar extends StatelessWidget {
+  final Widget dado;
+  final bool elegido;
+  final VoidCallback onTap;
+
+  const DadoParaTocar({
+    super.key,
+    required this.dado,
+    required this.elegido,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: elegido ? naranjaLogo : Colors.transparent,
+                width: 3,
+              ),
+            ),
+            child: dado,
+          ),
+          if (elegido)
+            const Positioned(
+              top: -8,
+              right: -8,
+              child: CircleAvatar(
+                radius: 11,
+                backgroundColor: naranjaLogo,
+                child: Icon(Icons.anchor, size: 14, color: Colors.white),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

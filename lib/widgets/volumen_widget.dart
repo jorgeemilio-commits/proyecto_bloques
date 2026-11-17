@@ -1,66 +1,55 @@
 import 'package:flutter/material.dart';
 
+import '../configuracion.dart';
 import '../sonidos.dart';
 
-// Boton con una bocina que abre la ventana del volumen. El icono cambia
-// cuando la musica y los efectos estan apagados.
-class BotonVolumen extends StatelessWidget {
+// Boton con un engrane que abre la configuracion: el volumen (musica y
+// efectos) y el modo de control de la partida.
+class BotonConfiguracion extends StatelessWidget {
   // En el menu principal va relleno como el boton de la cuenta; en las barras
   // de arriba va simple.
   final bool relleno;
 
-  const BotonVolumen({super.key, this.relleno = false});
+  const BotonConfiguracion({super.key, this.relleno = false});
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        Sonidos.volumenMusica,
-        Sonidos.volumenEfectos,
-      ]),
-      builder: (context, _) {
-        final silencio =
-            Sonidos.volumenMusica.value == 0 &&
-            Sonidos.volumenEfectos.value == 0;
-        final icono = Icon(
-          silencio ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-        );
-        void abrir() => mostrarVolumen(context);
+    void abrir() => mostrarConfiguracion(context);
+    const icono = Icon(Icons.settings_rounded);
 
-        return relleno
-            ? IconButton.filledTonal(
-                key: const ValueKey('boton-volumen'),
-                tooltip: 'Volumen',
-                onPressed: abrir,
-                icon: icono,
-              )
-            : IconButton(
-                key: const ValueKey('boton-volumen'),
-                tooltip: 'Volumen',
-                onPressed: abrir,
-                icon: icono,
-              );
-      },
-    );
+    return relleno
+        ? IconButton.filledTonal(
+            key: const ValueKey('boton-configuracion'),
+            tooltip: 'Configuración',
+            onPressed: abrir,
+            icon: icono,
+          )
+        : IconButton(
+            key: const ValueKey('boton-configuracion'),
+            tooltip: 'Configuración',
+            onPressed: abrir,
+            icon: icono,
+          );
   }
 }
 
-// Ventana con una barra para la musica y otra para los efectos.
-Future<void> mostrarVolumen(BuildContext context) {
+// Ventana de configuracion: el volumen de la musica y de los efectos, y el
+// modo de control de la partida.
+Future<void> mostrarConfiguracion(BuildContext context) {
   return showDialog<void>(
     context: context,
-    builder: (context) => const _VentanaVolumen(),
+    builder: (context) => const _VentanaConfiguracion(),
   );
 }
 
-class _VentanaVolumen extends StatefulWidget {
-  const _VentanaVolumen();
+class _VentanaConfiguracion extends StatefulWidget {
+  const _VentanaConfiguracion();
 
   @override
-  State<_VentanaVolumen> createState() => _VentanaVolumenState();
+  State<_VentanaConfiguracion> createState() => _VentanaConfiguracionState();
 }
 
-class _VentanaVolumenState extends State<_VentanaVolumen> {
+class _VentanaConfiguracionState extends State<_VentanaConfiguracion> {
   // Para tocar un efecto de ejemplo al soltar la barra de los efectos.
   final Sonidos _sonidos = Sonidos();
 
@@ -72,12 +61,17 @@ class _VentanaVolumenState extends State<_VentanaVolumen> {
 
   @override
   Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+
     return AlertDialog(
-      key: const ValueKey('ventana-volumen'),
-      title: const Text('Volumen'),
+      key: const ValueKey('ventana-configuracion'),
+      title: const Text('Configuración'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text('Sonido', style: tema.textTheme.titleMedium),
+          const SizedBox(height: 4),
           _FilaVolumen(
             clave: 'musica',
             nombre: 'Música',
@@ -92,15 +86,68 @@ class _VentanaVolumenState extends State<_VentanaVolumen> {
             volumen: Sonidos.volumenEfectos,
             alCambiar: _sonidos.colocar,
           ),
+          const SizedBox(height: 16),
+          Text('Controles', style: tema.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const _ModoDeControl(),
         ],
       ),
       actions: [
         TextButton(
-          key: const ValueKey('boton-cerrar-volumen'),
+          key: const ValueKey('boton-cerrar-configuracion'),
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Listo'),
         ),
       ],
+    );
+  }
+}
+
+// Como se coloca el numero en la partida: tocando el ancla y luego la
+// casilla, o arrastrando el dado. Se guarda en el telefono.
+class _ModoDeControl extends StatelessWidget {
+  const _ModoDeControl();
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+
+    return ValueListenableBuilder<ModoDeControl>(
+      valueListenable: Configuracion.modoDeControl,
+      builder: (context, modo, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<ModoDeControl>(
+            key: const ValueKey('modo-de-control'),
+            segments: const [
+              ButtonSegment(
+                value: ModoDeControl.tocarAncla,
+                icon: Icon(Icons.touch_app_rounded),
+                label: Text('Tocar'),
+              ),
+              ButtonSegment(
+                value: ModoDeControl.arrastrar,
+                icon: Icon(Icons.pan_tool_alt_rounded),
+                label: Text('Arrastrar'),
+              ),
+            ],
+            selected: {modo},
+            onSelectionChanged: (elegidos) =>
+                Configuracion.elegirModo(elegidos.single),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            modo == ModoDeControl.tocarAncla
+                ? 'Toca el dado que será el ancla y luego la casilla donde va '
+                      'el otro dado.'
+                : 'Arrastra un dado a una casilla junto al número del otro '
+                      'dado.',
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

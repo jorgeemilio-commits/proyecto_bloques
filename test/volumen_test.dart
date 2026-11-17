@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/configuracion.dart';
 import 'package:proyecto_bloques/sonidos.dart';
 import 'package:proyecto_bloques/widgets/volumen_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,17 +16,17 @@ void main() {
   Future<void> abrirVentana(WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(body: Center(child: BotonVolumen())),
+        home: Scaffold(body: Center(child: BotonConfiguracion())),
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('boton-volumen')));
+    await tester.tap(find.byKey(const ValueKey('boton-configuracion')));
     await tester.pumpAndSettle();
   }
 
   testWidgets('el boton abre la ventana con las dos barras', (tester) async {
     await abrirVentana(tester);
 
-    expect(find.byKey(const ValueKey('ventana-volumen')), findsOneWidget);
+    expect(find.byKey(const ValueKey('ventana-configuracion')), findsOneWidget);
     expect(find.byKey(const ValueKey('barra-musica')), findsOneWidget);
     expect(find.byKey(const ValueKey('barra-efectos')), findsOneWidget);
     expect(find.text('100%'), findsNWidgets(2));
@@ -51,17 +52,25 @@ void main() {
     mostrar('Silenciar pone la musica en 0, se guarda y se puede regresar.');
   });
 
-  testWidgets('con todo en silencio el boton muestra la bocina tachada', (
+  testWidgets('el modo de control: tocar el ancla por defecto, y se guarda', (
     tester,
   ) async {
-    Sonidos.volumenMusica.value = 0;
-    Sonidos.volumenEfectos.value = 0;
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: BotonVolumen())),
-    );
+    Configuracion.modoDeControl.value = ModoDeControl.tocarAncla;
+    await abrirVentana(tester);
+    final porDefecto = Configuracion.modoDeControl.value;
 
-    expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
-    mostrar('Todo en silencio: el boton muestra la bocina tachada.');
+    await tester.tap(find.text('Arrastrar'));
+    await tester.pump();
+    final preferencias = await SharedPreferences.getInstance();
+
+    expect(porDefecto, ModoDeControl.tocarAncla);
+    expect(Configuracion.modoDeControl.value, ModoDeControl.arrastrar);
+    expect(preferencias.getString('modoDeControl'), 'arrastrar');
+    // Al abrir la app otra vez se lee lo guardado.
+    Configuracion.modoDeControl.value = ModoDeControl.tocarAncla;
+    await Configuracion.cargar();
+    expect(Configuracion.modoDeControl.value, ModoDeControl.arrastrar);
+    mostrar('Modo de control: tocar por defecto; elegir arrastrar se guarda.');
   });
 
   test('cargarVolumen lee lo guardado', () async {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/configuracion.dart';
+import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
 import 'package:proyecto_bloques/multijugador/servicio_sala.dart';
 import 'package:proyecto_bloques/pantallas/multijugador.dart';
@@ -441,6 +443,71 @@ void main() {
     expect(titulo, 'Te rendiste');
     expect((veAlRival, boton, sinPasar, enGrande), (true, true, true, true));
     mostrar('Rendido: "$titulo", ve y amplia el tablero de Luis, puede salir.');
+  });
+
+  testWidgets('modo tocar: el dado ancla y la casilla mandan la jugada', (
+    tester,
+  ) async {
+    Configuracion.modoDeControl.value = ModoDeControl.tocarAncla;
+    await abrir(tester);
+    // Ronda 1 con dados 3 y 5: el 3 sera el ancla y se pone el 5.
+    servidor.mandar({
+      'tipo': 'estado',
+      'fase': 'ronda',
+      'usuario': 'Ana',
+      'codigo': 'K7MQ2P',
+      'anfitrion': 'Ana',
+      'mapa': 'clasico',
+      'meta': 26,
+      'ronda': 1,
+      'dados': [3, 5],
+      'ganadores': <String>[],
+      'reclamos': <String, int>{},
+      'jugadores': [
+        {
+          'usuario': 'Ana',
+          'conectado': true,
+          'iniciales': [1, 2, 3, 4, 5, 6],
+        },
+        {
+          'usuario': 'Luis',
+          'conectado': true,
+          'iniciales': [6, 5, 4, 3, 2, 1],
+        },
+      ],
+    });
+    await tester.pumpAndSettle();
+    List<CeldaWidget> resaltadas() => tester
+        .widgetList<CeldaWidget>(
+          find.descendant(
+            of: porLlave('mi-tablero'),
+            matching: find.byType(CeldaWidget),
+          ),
+        )
+        .where((celda) => celda.esDestinoValido)
+        .toList();
+    final antes = resaltadas().length;
+
+    await tester.tap(porLlave('dado-0'));
+    await tester.pump();
+    final destinos = resaltadas();
+    final destino = destinos.first.celda.coordenada;
+    await tester.tap(porLlave('celda-${destino.x}-${destino.y}').first);
+    await tester.pump();
+    final jugada = servidor.recibidos.last;
+    await cerrar(tester);
+
+    expect(antes, 0);
+    expect(destinos, isNotEmpty);
+    expect(jugada['tipo'], 'colocar');
+    expect(
+      (jugada['x'], jugada['y'], jugada['numero']),
+      (destino.x, destino.y, 5),
+    );
+    mostrar(
+      'Tocar: ancla 3 -> ${destinos.length} casillas resaltadas -> el 5 en '
+      '(${destino.x},${destino.y}).',
+    );
   });
 
   testWidgets('el anfitrion elige el tiempo por ronda; los demas solo lo ven', (

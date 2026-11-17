@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../configuracion.dart';
 import '../constantes.dart';
 import '../mapa.dart';
 import '../reclamos.dart';
@@ -53,10 +54,19 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
     }
     _valoresInicialesBloc = ValoresInicialesBloc(_tablero);
     _turnoBloc = TurnoBloc(_tablero);
+    Configuracion.modoDeControl.addListener(_alCambiarModo);
+  }
+
+  // Si se cambia el modo de control a media partida, se suelta el ancla y se
+  // actualiza el mensaje de que hacer.
+  void _alCambiarModo() {
+    _turnoBloc.add(const DadoArrastrado(null));
+    setState(() {});
   }
 
   @override
   void dispose() {
+    Configuracion.modoDeControl.removeListener(_alCambiarModo);
     _valoresInicialesBloc.dispose();
     _turnoBloc.close();
     _sonidos.dispose();
@@ -73,7 +83,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
       appBar: AppBar(
         title: const Text('Bloques'),
         centerTitle: true,
-        actions: const [BotonVolumen()],
+        actions: const [BotonConfiguracion()],
         backgroundColor: colores.surfaceContainerLow,
       ),
       // Suena al tirar los dados (cada turno nuevo) y al completar una region
@@ -168,6 +178,33 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                                               destello: _destello,
                                               // Solo las casillas validas aceptan el
                                               // dado, asi que aqui siempre se coloca.
+                                              // Tocando: con el ancla
+                                              // elegida, tocar una casilla
+                                              // resaltada pone ahi el otro
+                                              // dado.
+                                              onCeldaTap:
+                                                  Configuracion
+                                                              .modoDeControl
+                                                              .value ==
+                                                          ModoDeControl
+                                                              .tocarAncla &&
+                                                      turno.dadoArrastrado !=
+                                                          null
+                                                  ? (celda) {
+                                                      if (destinos.contains(
+                                                        celda,
+                                                      )) {
+                                                        _sonidos.colocar();
+                                                        _turnoBloc.add(
+                                                          DadoColocado(
+                                                            turno
+                                                                .dadoArrastrado!,
+                                                            celda,
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  : null,
                                               onDadoSoltado:
                                                   (celda, indiceDado) {
                                                     _sonidos.colocar();
@@ -302,7 +339,10 @@ class _EncabezadoFase extends StatelessWidget {
     final mensaje = reclamo != null
         ? _mensajeDeReclamo(reclamo)
         : estado.confirmado
-        ? 'Arrastra un dado a una casilla vacía junto al número del otro dado.'
+        ? Configuracion.modoDeControl.value == ModoDeControl.tocarAncla
+              ? 'Toca el dado ancla y luego la casilla donde va el otro dado.'
+              : 'Arrastra un dado a una casilla vacía junto al número del otro '
+                    'dado.'
         : !estado.estanCompletos
         ? 'Completa las seis casillas iniciales con números distintos del 1 al 6.'
         : !estado.noHayRepetidos

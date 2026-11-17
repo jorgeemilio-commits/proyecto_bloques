@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../configuracion.dart';
 import '../constantes.dart';
 import '../lector_mapas.dart';
 import '../mapa.dart';
@@ -52,6 +53,8 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   int? _rondaJugada;
   // Dado que se esta arrastrando (0 o 1).
   int? _dadoArrastrado;
+  // En el modo "tocar el ancla": el dado que se eligio como ancla (0 o 1).
+  int? _ancla;
 
   // El mapa ya leido, para saber el color de las regiones en los avisos.
   Mapa? _mapaLeido;
@@ -66,8 +69,24 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   EstadoSala get _estado => widget.estado;
 
   @override
+  void initState() {
+    super.initState();
+    Configuracion.modoDeControl.addListener(_alCambiarModo);
+  }
+
+  // Si se cambia el modo de control a media partida, se olvida el ancla.
+  void _alCambiarModo() => setState(() => _ancla = null);
+
+  bool get _tocandoAncla =>
+      Configuracion.modoDeControl.value == ModoDeControl.tocarAncla;
+
+  @override
   void didUpdateWidget(PartidaEnLinea anterior) {
     super.didUpdateWidget(anterior);
+    // Cada ronda empieza sin ancla elegida.
+    if (widget.estado.ronda != anterior.estado.ronda) {
+      _ancla = null;
+    }
     final antes = anterior.estado;
     // Suena al tirar los dados de una ronda nueva y al ganar una region.
     if (_estado.fase == 'ronda' && _estado.ronda != antes.ronda) {
@@ -131,6 +150,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
 
   @override
   void dispose() {
+    Configuracion.modoDeControl.removeListener(_alCambiarModo);
     _valoresBloc?.dispose();
     _sonidos.dispose();
     super.dispose();
@@ -165,13 +185,17 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
         : _tableroDelServidor(mapa, yo);
     int vecesReclamada(Region region) => _estado.reclamos[region.id] ?? 0;
 
-    // Mientras se arrastra un dado se resaltan las casillas donde cabe.
+    // Se resaltan las casillas donde cabe el numero: mientras se arrastra
+    // un dado, o (tocando) despues de elegir el ancla, donde va el otro.
     final dados = _estado.dados;
     final puedoJugar = _puedoJugar(yo);
-    final destinos = puedoJugar && dados != null && _dadoArrastrado != null
+    final indiceNumero = _tocandoAncla
+        ? (_ancla == null ? null : 1 - _ancla!)
+        : _dadoArrastrado;
+    final destinos = puedoJugar && dados != null && indiceNumero != null
         ? tablero.destinosValidos(
-            numero: dados[_dadoArrastrado!],
-            ancla: dados[1 - _dadoArrastrado!],
+            numero: dados[indiceNumero],
+            ancla: dados[1 - indiceNumero],
           )
         : const <Celda>{};
 
@@ -213,6 +237,23 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                                     destello: _destello,
                                     onDadoSoltado: (celda, indice) =>
                                         _colocar(tablero, celda, indice),
+                                    // Tocando: con el ancla elegida, tocar
+                                    // una casilla resaltada pone ahi el otro
+                                    // dado.
+                                    onCeldaTap:
+                                        _tocandoAncla &&
+                                            puedoJugar &&
+                                            indiceNumero != null
+                                        ? (celda) {
+                                            if (destinos.contains(celda)) {
+                                              _colocar(
+                                                tablero,
+                                                celda,
+                                                indiceNumero,
+                                              );
+                                            }
+                                          }
+                                        : null,
                                   ),
                                 ),
                               ),
@@ -333,6 +374,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
         numero: numero,
       );
       _dadoArrastrado = null;
+      _ancla = null;
     });
   }
 
@@ -428,6 +470,15 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     if (!puedoJugar || valor == null) {
       return Opacity(opacity: 0.45, child: dado);
     }
+    // Tocando: se toca el dado ancla (y otra vez para soltarlo).
+    if (_tocandoAncla) {
+      return DadoParaTocar(
+        key: ValueKey('dado-$indice'),
+        dado: dado,
+        elegido: _ancla == indice,
+        onTap: () => setState(() => _ancla = _ancla == indice ? null : indice),
+      );
+    }
     return Draggable<int>(
       key: ValueKey('dado-$indice'),
       data: indice,
@@ -520,7 +571,9 @@ class _Encabezado extends StatelessWidget {
     } else if (estado.fase == 'valoresIniciales' && yo?.iniciales == null) {
       aviso = 'Pon tus seis valores iniciales (1 a 6, sin repetir).';
     } else if (estado.fase == 'ronda' && (yo?.jugando ?? false)) {
-      aviso = 'Arrastra un dado junto al número del otro dado, o pasa.';
+      aviso = Configuracion.modoDeControl.value == ModoDeControl.tocarAncla
+          ? 'Toca el dado ancla y luego la casilla donde va el otro, o pasa.'
+          : 'Arrastra un dado junto al número del otro dado, o pasa.';
     }
 
     return Column(

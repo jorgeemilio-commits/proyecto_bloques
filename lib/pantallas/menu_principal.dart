@@ -92,7 +92,7 @@ class MenuPrincipal extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const BotonVolumen(relleno: true),
+                          const BotonConfiguracion(relleno: true),
                           const SizedBox(width: 8),
                           IconButton.filledTonal(
                             key: const ValueKey('boton-cuenta'),

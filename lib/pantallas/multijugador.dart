@@ -164,7 +164,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
         centerTitle: true,
         backgroundColor: colores.surfaceContainerLow,
         actions: [
-          const BotonVolumen(),
+          const BotonConfiguracion(),
           if (_saliresRendirse)
             IconButton(
               key: const ValueKey('boton-rendirse'),

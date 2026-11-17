@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proyecto_bloques/configuracion.dart';
 import 'package:proyecto_bloques/pantallas/partida.dart';
 import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/widgets/dados_widget.dart';
@@ -87,6 +88,11 @@ void main() {
   testWidgets('golden path: de abrir la app a completar una region', (
     tester,
   ) async {
+    // Este recorrido arrastra los dados.
+    Configuracion.modoDeControl.value = ModoDeControl.arrastrar;
+    addTearDown(
+      () => Configuracion.modoDeControl.value = ModoDeControl.tocarAncla,
+    );
     await tester.pumpWidget(
       MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
     );
@@ -202,5 +208,54 @@ void main() {
       'jugadas y $pases pases; marcador "$marcador", mensaje "$mensaje", '
       '${apagadas.length} casillas apagadas.',
     );
+  });
+
+  testWidgets('modo tocar: el dado ancla y luego la casilla del otro dado', (
+    tester,
+  ) async {
+    Configuracion.modoDeControl.value = ModoDeControl.tocarAncla;
+    await tester.pumpWidget(
+      MaterialApp(home: VistaPreviaTablero(mapa: mapaClasico)),
+    );
+    await tester.tap(find.byKey(const ValueKey('boton-aleatorio')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('boton-listo')));
+    await tester.pumpAndSettle();
+
+    // Hasta que haya una jugada posible: se toca un dado como ancla, se ven
+    // las casillas resaltadas y se toca una; ahi queda el numero del otro.
+    for (var turno = 0; turno < maximoDeTurnos; turno++) {
+      for (final ancla in [0, 1]) {
+        final numero = valorDelDado(tester, 1 - ancla)!;
+        await tester.tap(find.byKey(ValueKey('dado-$ancla')));
+        await tester.pump();
+        final destinos = celdasDibujadas(
+          tester,
+        ).where((celda) => celda.esDestinoValido).toList();
+        if (destinos.isEmpty) {
+          // Otra vez el mismo dado lo suelta.
+          await tester.tap(find.byKey(ValueKey('dado-$ancla')));
+          await tester.pump();
+          continue;
+        }
+
+        final destino = destinos.first.celda;
+        final x = destino.coordenada.x;
+        final y = destino.coordenada.y;
+        await tester.ensureVisible(celdaEn(x, y));
+        await tester.tap(celdaEn(x, y));
+        await tester.pumpAndSettle();
+
+        expect(destino.numero, numero);
+        mostrar(
+          'Tocar: ancla dado-$ancla, el $numero quedo en ($x,$y) en el '
+          'turno ${turno + 1}.',
+        );
+        return;
+      }
+      await tester.tap(find.byKey(const ValueKey('boton-pasar')));
+      await tester.pumpAndSettle();
+    }
+    fail('No hubo ninguna jugada posible.');
   });
 }
