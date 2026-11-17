@@ -283,6 +283,12 @@ class ServicioDeSala extends ChangeNotifier {
       return;
     }
     _canal = canal;
+    // Si la conexion falla, el error llega por el stream (onError y onDone,
+    // abajo) y tambien por "ready". Si nadie escucha "ready", queda como un
+    // error no atendido, y el depurador pausa la app (la ventana se congela).
+    if (canal is WebSocketChannel) {
+      canal.ready.ignore();
+    }
     _suscripcion = canal.stream.listen(
       _recibir,
       onError: (_) {},
