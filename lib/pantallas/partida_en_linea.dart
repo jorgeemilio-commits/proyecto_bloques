@@ -15,6 +15,7 @@ import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
+import '../widgets/leyenda_regiones_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
 import '../widgets/tablero_widget.dart';
@@ -180,50 +181,60 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
       child: ClipRect(
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Column(
-                children: [
-                  _Encabezado(estado: _estado, mapa: mapa),
-                  const SizedBox(height: 10),
-                  _Rivales(estado: _estado, mapa: mapa),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: Center(
-                      child: BrilloDeRonda(
-                        ronda: _estado.ronda,
-                        child: Card(
-                          elevation: 0,
-                          color: colores.surface,
-                          margin: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: TableroWidget(
-                              key: const ValueKey('mi-tablero'),
-                              tablero: tablero,
-                              onNumeroCambiado: _valoresBloc?.notificarCambio,
-                              destinosValidos: destinos,
-                              vecesReclamada: vecesReclamada,
-                              destello: _destello,
-                              onDadoSoltado: (celda, indice) =>
-                                  _colocar(tablero, celda, indice),
+            Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                    child: Column(
+                      children: [
+                        _Encabezado(estado: _estado, mapa: mapa),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: Center(
+                            child: BrilloDeRonda(
+                              ronda: _estado.ronda,
+                              child: Card(
+                                elevation: 0,
+                                color: colores.surface,
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: TableroWidget(
+                                    key: const ValueKey('mi-tablero'),
+                                    tablero: tablero,
+                                    onNumeroCambiado:
+                                        _valoresBloc?.notificarCambio,
+                                    destinosValidos: destinos,
+                                    vecesReclamada: vecesReclamada,
+                                    destello: _destello,
+                                    onDadoSoltado: (celda, indice) =>
+                                        _colocar(tablero, celda, indice),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        const LeyendaRegiones(),
+                        const SizedBox(height: 10),
+                        // Los tableros de los demas, debajo del mio.
+                        _Rivales(estado: _estado, mapa: mapa),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  _controles(context, yo, eligiendoValores),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                ),
+                // Los dados y "Pasar" (o los resultados) en una barra fija
+                // abajo, para que siempre se vean.
+                _BarraDeJuego(child: _controles(context, yo, eligiendoValores)),
+              ],
             ),
             // Avisos de las regiones que completaron los rivales: entran por
-            // la izquierda, debajo de los rivales, y se regresan solos.
+            // la izquierda, sobre el tablero, y se regresan solos.
             Positioned(
               top: 200,
               left: 0,
@@ -613,6 +624,35 @@ class _CuentaRegresivaState extends State<_CuentaRegresiva> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// Barra fija abajo de la partida, con los controles: los dados y "Pasar", o
+// los valores iniciales, o los resultados.
+class _BarraDeJuego extends StatelessWidget {
+  final Widget child;
+
+  const _BarraDeJuego({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      key: const ValueKey('barra-juego'),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black38,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: child,
+      ),
     );
   }
 }

@@ -203,7 +203,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
                     const _BarraReconectando(),
                   Expanded(
                     // La partida ocupa toda la pantalla; lo demas va centrado y
-                    // con scroll.
+                    // con scroll (en la sala, con la barra de botones abajo).
                     child: estado != null && estado.enLaPartida
                         ? Center(child: contenido)
                         : Center(
@@ -218,6 +218,8 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
                             ),
                           ),
                   ),
+                  if (estado != null && estado.fase == 'lobby')
+                    _BarraDeLaSala(sala: sala, estado: estado),
                 ],
               ),
             ),
@@ -419,10 +421,6 @@ class _SalaDeEspera extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final codigo = estado.codigo ?? '';
-    final hayJugadores = estado.jugadores.length >= 2;
-    // Para iniciar hacen falta 2 jugadores o mas y que todos esten listos.
-    final puedeIniciar = hayJugadores && estado.todosListos;
-    final estoyListo = estado.yo?.listo ?? false;
 
     return Column(
       key: const ValueKey('sala-de-espera'),
@@ -531,49 +529,6 @@ class _SalaDeEspera extends StatelessWidget {
           onElegir: estado.soyAnfitrion ? sala.elegirTiempo : null,
         ),
         const SizedBox(height: 28),
-        // Cada jugador (tambien el anfitrion) marca que esta listo.
-        SizedBox(
-          height: 52,
-          child: estoyListo
-              ? OutlinedButton.icon(
-                  key: const ValueKey('boton-listo-sala'),
-                  onPressed: () => sala.marcarListo(false),
-                  icon: const Icon(Icons.check_circle, color: Colors.green),
-                  label: const Text('Listo · toca para cancelar'),
-                )
-              : FilledButton.tonalIcon(
-                  key: const ValueKey('boton-listo-sala'),
-                  onPressed: () => sala.marcarListo(true),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Estoy listo'),
-                ),
-        ),
-        const SizedBox(height: 12),
-        if (estado.soyAnfitrion)
-          SizedBox(
-            height: 52,
-            child: FilledButton.icon(
-              key: const ValueKey('boton-iniciar'),
-              onPressed: puedeIniciar ? sala.iniciar : null,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(
-                puedeIniciar
-                    ? 'Iniciar partida'
-                    : !hayJugadores
-                    ? 'Esperando jugadores…'
-                    : 'Esperando que todos estén listos…',
-              ),
-            ),
-          )
-        else
-          Text(
-            'Esperando a que el anfitrión inicie la partida…',
-            textAlign: TextAlign.center,
-            style: tema.textTheme.bodyMedium?.copyWith(
-              color: tema.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        const SizedBox(height: 12),
         // La unica forma de salir de la sala: el anfitrion la borra (salen
         // todos) y los demas solo salen ellos.
         SizedBox(
@@ -594,6 +549,98 @@ class _SalaDeEspera extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// Barra fija abajo de la sala de espera, para que siempre se vean: el boton
+// de "Listo" y, para el anfitrion, el de iniciar (los demas ven que se espera
+// al anfitrion). Lo demas de la sala hace scroll por encima.
+class _BarraDeLaSala extends StatelessWidget {
+  final ServicioDeSala sala;
+  final EstadoSala estado;
+
+  const _BarraDeLaSala({required this.sala, required this.estado});
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final hayJugadores = estado.jugadores.length >= 2;
+    // Para iniciar hacen falta 2 jugadores o mas y que todos esten listos.
+    final puedeIniciar = hayJugadores && estado.todosListos;
+    final estoyListo = estado.yo?.listo ?? false;
+
+    return DecoratedBox(
+      key: const ValueKey('barra-sala'),
+      decoration: BoxDecoration(
+        color: tema.colorScheme.surfaceContainerLow,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black38,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: anchoMaximoTelefono),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Cada jugador (tambien el anfitrion) marca que esta listo.
+                SizedBox(
+                  height: 52,
+                  child: estoyListo
+                      ? OutlinedButton.icon(
+                          key: const ValueKey('boton-listo-sala'),
+                          onPressed: () => sala.marcarListo(false),
+                          icon: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                          ),
+                          label: const Text('Listo · toca para cancelar'),
+                        )
+                      : FilledButton.tonalIcon(
+                          key: const ValueKey('boton-listo-sala'),
+                          onPressed: () => sala.marcarListo(true),
+                          icon: const Icon(Icons.check),
+                          label: const Text('Estoy listo'),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                if (estado.soyAnfitrion)
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton.icon(
+                      key: const ValueKey('boton-iniciar'),
+                      onPressed: puedeIniciar ? sala.iniciar : null,
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(
+                        puedeIniciar
+                            ? 'Iniciar partida'
+                            : !hayJugadores
+                            ? 'Esperando jugadores…'
+                            : 'Esperando que todos estén listos…',
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    'Esperando a que el anfitrión inicie la partida…',
+                    textAlign: TextAlign.center,
+                    style: tema.textTheme.bodyMedium?.copyWith(
+                      color: tema.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

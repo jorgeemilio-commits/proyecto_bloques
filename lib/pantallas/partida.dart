@@ -6,14 +6,13 @@ import '../mapa.dart';
 import '../reclamos.dart';
 import '../sonidos.dart';
 import '../tablero.dart';
-import '../tipo.dart';
 import '../turno_bloc.dart';
 import '../valores_iniciales_bloc.dart';
-import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
+import '../widgets/leyenda_regiones_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
 import '../widgets/tablero_widget.dart';
@@ -186,7 +185,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  const _LeyendaRegiones(),
+                                  const LeyendaRegiones(),
                                   const SizedBox(height: 16),
                                   // Al confirmar los valores iniciales inicia la partida
                                   // y el boton Listo se cambia por los dados.
@@ -372,51 +371,5 @@ class _EncabezadoFase extends StatelessWidget {
     return reclamo.puntos > 0
         ? '¡Completaste una región $nombre! +${reclamo.puntos} puntos.'
         : 'Completaste una región $nombre, pero ya no da puntos.';
-  }
-}
-
-// Leyenda compacta con el color y la regla de cada tipo de region.
-class _LeyendaRegiones extends StatelessWidget {
-  const _LeyendaRegiones();
-
-  static const List<(TipoRegion, String)> _entradas = [
-    (TipoRegion.azul, 'Iguales'),
-    (TipoRegion.rojo, 'Distintos'),
-    (TipoRegion.amarillo, 'Distintos'),
-    (TipoRegion.lila, 'Máx. 2 valores'),
-    (TipoRegion.verde, 'Libre'),
-    (TipoRegion.blanco, 'Iguales'),
-    (TipoRegion.naranjaBaja, '1–3 · rayada 4–6'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final estiloTexto = Theme.of(context).textTheme.labelMedium;
-
-    return Wrap(
-      key: const ValueKey('leyenda'),
-      alignment: WrapAlignment.center,
-      spacing: 14,
-      runSpacing: 6,
-      children: [
-        for (final (tipo, regla) in _entradas)
-          Row(
-            key: ValueKey('leyenda-${tipo.nombre}'),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: colorDeRegion(tipo),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(width: 5),
-              Text(regla, style: estiloTexto),
-            ],
-          ),
-      ],
-    );
   }
 }
