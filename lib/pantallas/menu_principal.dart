@@ -7,6 +7,7 @@ import '../mapa.dart';
 import '../region.dart';
 import '../widgets/celda_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
+import '../widgets/volumen_widget.dart';
 import '../multijugador/servicio_sala.dart';
 import 'cuenta.dart';
 import 'multijugador.dart';
@@ -91,6 +92,8 @@ class MenuPrincipal extends StatelessWidget {
                               ],
                             ),
                           ),
+                          const BotonVolumen(relleno: true),
+                          const SizedBox(width: 8),
                           IconButton.filledTonal(
                             key: const ValueKey('boton-cuenta'),
                             tooltip: 'Mi cuenta',

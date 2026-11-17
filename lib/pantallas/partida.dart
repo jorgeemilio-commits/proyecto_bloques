@@ -16,6 +16,7 @@ import '../widgets/fondo_animado_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
 import '../widgets/tablero_widget.dart';
+import '../widgets/volumen_widget.dart';
 
 // Pantalla de la partida: encabezado, tablero, leyenda, dados y panel de
 // regiones. Recibe el mapa elegido en la seleccion de mapa.
@@ -72,6 +73,7 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
       appBar: AppBar(
         title: const Text('Bloques'),
         centerTitle: true,
+        actions: const [BotonVolumen()],
         backgroundColor: colores.surfaceContainerLow,
       ),
       // Suena al tirar los dados (cada turno nuevo) y al completar una region

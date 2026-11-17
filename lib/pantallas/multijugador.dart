@@ -9,6 +9,7 @@ import '../mapa.dart';
 import '../multijugador/servicio_sala.dart';
 import '../sonidos.dart';
 import '../widgets/fondo_animado_widget.dart';
+import '../widgets/volumen_widget.dart';
 import 'partida_en_linea.dart';
 import 'seleccion_mapa.dart';
 
@@ -163,6 +164,7 @@ class _PantallaMultijugadorState extends State<PantallaMultijugador> {
         centerTitle: true,
         backgroundColor: colores.surfaceContainerLow,
         actions: [
+          const BotonVolumen(),
           if (_saliresRendirse)
             IconButton(
               key: const ValueKey('boton-rendirse'),

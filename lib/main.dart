@@ -4,6 +4,7 @@ import 'cuenta/servicio_cuenta.dart';
 import 'lector_mapas.dart';
 import 'pantallas/inicio_sesion.dart';
 import 'pantallas/menu_principal.dart';
+import 'sonidos.dart';
 
 // Punto de entrada de la app: configura el tema y abre el inicio de sesion
 // (o el menu principal si ya hay sesion). La partida vive en
@@ -12,6 +13,8 @@ Future<void> main() async {
   // Los mapas se leen al arrancar y quedan en memoria (ver precargarMapas).
   WidgetsFlutterBinding.ensureInitialized();
   await precargarMapas();
+  // El volumen que el jugador eligio la ultima vez.
+  await Sonidos.cargarVolumen();
   runApp(const ProyectoBloquesApp());
 }
 
