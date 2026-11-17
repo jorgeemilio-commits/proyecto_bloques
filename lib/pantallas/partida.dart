@@ -11,6 +11,7 @@ import '../turno_bloc.dart';
 import '../valores_iniciales_bloc.dart';
 import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
+import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
@@ -137,39 +138,48 @@ class _VistaPreviaTableroState extends State<VistaPreviaTablero> {
                                   const SizedBox(height: 12),
                                   Expanded(
                                     child: Center(
-                                      child: Card(
-                                        key: const ValueKey('tarjeta-tablero'),
-                                        elevation: 0,
-                                        color: colores.surface,
-                                        margin: EdgeInsets.zero,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
+                                      child: BrilloDeRonda(
+                                        ronda: turno.turno,
+                                        child: Card(
+                                          key: const ValueKey(
+                                            'tarjeta-tablero',
                                           ),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: TableroWidget(
-                                            key: const ValueKey('tablero'),
-                                            tablero: _tablero,
-                                            onNumeroCambiado:
-                                                _valoresInicialesBloc
-                                                    .notificarCambio,
-                                            destinosValidos: destinos,
-                                            // Las regiones reclamadas se ven mas
-                                            // apagadas.
-                                            vecesReclamada: _turnoBloc
-                                                .reclamos
-                                                .vecesReclamada,
-                                            destello: _destello,
-                                            // Solo las casillas validas aceptan el
-                                            // dado, asi que aqui siempre se coloca.
-                                            onDadoSoltado: (celda, indiceDado) {
-                                              _sonidos.colocar();
-                                              _turnoBloc.add(
-                                                DadoColocado(indiceDado, celda),
-                                              );
-                                            },
+                                          elevation: 0,
+                                          color: colores.surface,
+                                          margin: EdgeInsets.zero,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8),
+                                            child: TableroWidget(
+                                              key: const ValueKey('tablero'),
+                                              tablero: _tablero,
+                                              onNumeroCambiado:
+                                                  _valoresInicialesBloc
+                                                      .notificarCambio,
+                                              destinosValidos: destinos,
+                                              // Las regiones reclamadas se ven mas
+                                              // apagadas.
+                                              vecesReclamada: _turnoBloc
+                                                  .reclamos
+                                                  .vecesReclamada,
+                                              destello: _destello,
+                                              // Solo las casillas validas aceptan el
+                                              // dado, asi que aqui siempre se coloca.
+                                              onDadoSoltado:
+                                                  (celda, indiceDado) {
+                                                    _sonidos.colocar();
+                                                    _turnoBloc.add(
+                                                      DadoColocado(
+                                                        indiceDado,
+                                                        celda,
+                                                      ),
+                                                    );
+                                                  },
+                                            ),
                                           ),
                                         ),
                                       ),

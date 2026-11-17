@@ -13,6 +13,7 @@ import '../tablero.dart';
 import '../valores_iniciales_bloc.dart';
 import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
+import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
@@ -189,24 +190,27 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                   const SizedBox(height: 10),
                   Expanded(
                     child: Center(
-                      child: Card(
-                        elevation: 0,
-                        color: colores.surface,
-                        margin: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: TableroWidget(
-                            key: const ValueKey('mi-tablero'),
-                            tablero: tablero,
-                            onNumeroCambiado: _valoresBloc?.notificarCambio,
-                            destinosValidos: destinos,
-                            vecesReclamada: vecesReclamada,
-                            destello: _destello,
-                            onDadoSoltado: (celda, indice) =>
-                                _colocar(tablero, celda, indice),
+                      child: BrilloDeRonda(
+                        ronda: _estado.ronda,
+                        child: Card(
+                          elevation: 0,
+                          color: colores.surface,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: TableroWidget(
+                              key: const ValueKey('mi-tablero'),
+                              tablero: tablero,
+                              onNumeroCambiado: _valoresBloc?.notificarCambio,
+                              destinosValidos: destinos,
+                              vecesReclamada: vecesReclamada,
+                              destello: _destello,
+                              onDadoSoltado: (celda, indice) =>
+                                  _colocar(tablero, celda, indice),
+                            ),
                           ),
                         ),
                       ),
