@@ -4,16 +4,29 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Efectos de sonido del juego (archivos en assets/sonidos/). Cada efecto tiene
-// su propio reproductor para que puedan sonar al mismo tiempo.
+// Efectos de sonido y musica del juego (archivos en assets/sonidos/). Cada
+// efecto tiene su propio reproductor para que puedan sonar al mismo tiempo.
+//
+// Cuidado en Windows: el plugin de audio deja esperando a la interfaz en cada
+// orden (play, stop, volumen, dispose) y carga los archivos en otro hilo. Si
+// se cruzan dos ordenes sobre el mismo reproductor (sobre todo un dispose
+// mientras se carga un archivo) la app se congela y Windows la cierra. Para
+// evitarlo:
+// - Los reproductores son de toda la app (static): se crean la primera vez
+//   que se usan y nunca se desechan, aunque se cierre la pantalla.
+// - Cada archivo se carga una sola vez; para repetirlo se regresa al inicio y
+//   se reanuda, sin volver a cargarlo (ReleaseMode.stop).
+// - Las ordenes de cada reproductor van en fila, una despues de otra.
 class Sonidos {
   // En las pruebas no hay audio: test/flutter_test_config.dart lo apaga.
   static bool activos = true;
 
   // Volumen elegido por el jugador (0 a 1) para la musica y los efectos. Se
   // multiplica por el volumen propio de cada sonido, asi que 1 es como sonaba
-  // antes. Se guardan en el dispositivo para la proxima vez.
-  static final ValueNotifier<double> volumenMusica = ValueNotifier(1);
+  // antes. Se guardan en el dispositivo para la proxima vez. La musica que ya
+  // esta sonando cambia de volumen al mover la barra.
+  static final ValueNotifier<double> volumenMusica = ValueNotifier<double>(1)
+    ..addListener(_ajustarMusica);
   static final ValueNotifier<double> volumenEfectos = ValueNotifier(1);
 
   static const String _claveMusica = 'volumenMusica';
@@ -41,24 +54,41 @@ class Sonidos {
     }
   }
 
-  // Volumen propio de la musica de las salas, antes del volumen del jugador.
-  static const double _volumenBaseMusica = 0.15;
+  // --- Reproductores compartidos ---------------------------------------
 
-  final Map<String, AudioPlayer> _reproductores = {};
+  // Un reproductor por archivo de efecto, ya con su archivo cargado.
+  static final Map<String, AudioPlayer> _efectos = {};
 
-  // La musica que ya esta sonando cambia de volumen al mover la barra.
-  Sonidos() {
-    volumenMusica.addListener(_ajustarMusica);
+  // Ultima orden pendiente de cada reproductor; la siguiente espera a que
+  // termine esta.
+  static final Map<String, Future<void>> _filas = {};
+
+  // Pone [orden] en la fila de [clave]. Si falla, la fila sigue.
+  static Future<void> _enFila(String clave, Future<void> Function() orden) {
+    final anterior = _filas[clave] ?? Future<void>.value();
+    final siguiente = anterior.then((_) => orden()).catchError((_) {
+      // Un sonido que falla no debe detener el juego.
+    });
+    _filas[clave] = siguiente;
+    return siguiente;
   }
 
-  void _ajustarMusica() {
-    if (_cancion == null) {
-      return;
+  // Reproductor del efecto [archivo], creandolo y cargandolo la primera vez.
+  // Solo se llama dentro de su fila.
+  static Future<AudioPlayer> _reproductorDe(String archivo) async {
+    final existente = _efectos[archivo];
+    if (existente != null) {
+      return existente;
     }
-    _musica
-        ?.setVolume(_volumenBaseMusica * volumenMusica.value)
-        .catchError((_) {});
+    final reproductor = AudioPlayer();
+    // Al terminar o al parar se queda con el archivo cargado.
+    await reproductor.setReleaseMode(ReleaseMode.stop);
+    await reproductor.setSource(AssetSource('sonidos/$archivo'));
+    _efectos[archivo] = reproductor;
+    return reproductor;
   }
+
+  // --- Efectos ---------------------------------------------------------
 
   // Al tirar los dados (al empezar cada turno).
   void tirarDados() => _tocar('dice_roll_3.wav');
@@ -78,39 +108,52 @@ class Sonidos {
     volumen: 0.3,
   );
 
+  // Toca el efecto desde el principio (si ya estaba sonando, empieza de
+  // nuevo).
+  Future<void> _tocar(String archivo, {double volumen = 0.06}) {
+    if (!activos) {
+      return Future<void>.value();
+    }
+    return _enFila(archivo, () async {
+      final reproductor = await _reproductorDe(archivo);
+      await reproductor.setVolume(volumen * volumenEfectos.value);
+      await reproductor.seek(Duration.zero);
+      await reproductor.resume();
+    });
+  }
+
   // Cuando un rival completa una region. El archivo tiene unos 2.8 segundos
   // de silencio al principio y el "ohh" dura hasta los 4 segundos, asi que
-  // se toca solo ese pedazo. Tiene su propio reproductor y nunca suena dos
-  // veces al mismo tiempo: si ya esta sonando, no se vuelve a tocar.
+  // se toca solo ese pedazo. Nunca suena dos veces al mismo tiempo: si ya
+  // esta sonando, no se vuelve a tocar.
   static const String _archivoDecepcion =
       'Crowd Ohh Disappointed Sound Effect.mp3';
   static const Duration _inicioDecepcion = Duration(milliseconds: 2750);
   static const Duration _duracionDecepcion = Duration(milliseconds: 1400);
 
-  AudioPlayer? _decepcion;
-  Timer? _finDecepcion;
+  static Timer? _finDecepcion;
 
-  Future<void> decepcion() async {
+  Future<void> decepcion() {
     if (!activos || _finDecepcion != null) {
-      return;
+      return Future<void>.value();
     }
     // Se marca como sonando antes de esperar nada, para que dos llamadas
     // seguidas no lo toquen dos veces.
     _finDecepcion = Timer(_duracionDecepcion, () {
       _finDecepcion = null;
-      _decepcion?.stop();
+      _enFila(_archivoDecepcion, () async {
+        await _efectos[_archivoDecepcion]?.pause();
+      });
     });
-    try {
-      final reproductor = _decepcion ??= AudioPlayer();
-      await reproductor.stop();
+    return _enFila(_archivoDecepcion, () async {
+      final reproductor = await _reproductorDe(_archivoDecepcion);
       await reproductor.setVolume(0.5 * volumenEfectos.value);
-      await reproductor.setSource(AssetSource('sonidos/$_archivoDecepcion'));
       await reproductor.seek(_inicioDecepcion);
       await reproductor.resume();
-    } catch (_) {
-      // Un sonido que falla no debe detener el juego.
-    }
+    });
   }
+
+  // --- Musica ----------------------------------------------------------
 
   // Musica de las salas en linea (antes de la partida). Suena en bucle hasta
   // pararMusica.
@@ -118,67 +161,68 @@ class Sonidos {
       '14. Welcome to the Green Room (DELTARUNE Chapter 3+4 Soundtrack) - '
       'Toby Fox.mp3';
 
-  AudioPlayer? _musica;
-  String? _cancion;
+  // Volumen propio de la musica, antes del volumen del jugador.
+  static const double _volumenBaseMusica = 0.15;
+  static const String _filaMusica = '__musica__';
+
+  static AudioPlayer? _musica;
+  // Archivo cargado en el reproductor de la musica.
+  static String? _archivoMusica;
+  // Cancion que deberia estar sonando (null = ninguna).
+  static String? _cancion;
+  // Hay un cambio de volumen esperando en la fila (para no encolar uno por
+  // cada movimiento de la barra).
+  static bool _ajustePendiente = false;
+
+  static void _ajustarMusica() {
+    if (_musica == null || _ajustePendiente) {
+      return;
+    }
+    _ajustePendiente = true;
+    _enFila(_filaMusica, () async {
+      _ajustePendiente = false;
+      await _musica?.setVolume(_volumenBaseMusica * volumenMusica.value);
+    });
+  }
 
   // Toca [archivo] en bucle; si ya estaba sonando, no la reinicia.
-  Future<void> tocarMusica(String archivo) async {
+  Future<void> tocarMusica(String archivo) {
     if (!activos || _cancion == archivo) {
-      return;
+      return Future<void>.value();
     }
     _cancion = archivo;
-    try {
+    return _enFila(_filaMusica, () async {
+      // Si mientras esperaba en la fila se pidio parar, ya no se toca.
+      if (_cancion != archivo) {
+        return;
+      }
       final musica = _musica ??= AudioPlayer();
-      await musica.stop();
-      await musica.setReleaseMode(ReleaseMode.loop);
-      await musica.play(
-        AssetSource('sonidos/$archivo'),
-        volume: _volumenBaseMusica * volumenMusica.value,
-      );
-    } catch (_) {
-      // Si la musica falla, el juego sigue sin ella.
-    }
+      if (_archivoMusica != archivo) {
+        await musica.setReleaseMode(ReleaseMode.loop);
+        await musica.setSource(AssetSource('sonidos/$archivo'));
+        _archivoMusica = archivo;
+      }
+      await musica.setVolume(_volumenBaseMusica * volumenMusica.value);
+      await musica.seek(Duration.zero);
+      await musica.resume();
+    });
   }
 
-  Future<void> pararMusica() async {
+  Future<void> pararMusica() {
     _cancion = null;
-    try {
-      await _musica?.stop();
-    } catch (_) {
-      // Nada que hacer: solo era la musica.
+    if (_musica == null) {
+      return Future<void>.value();
     }
+    return _enFila(_filaMusica, () async {
+      // Si mientras esperaba se pidio otra cancion, no se para.
+      if (_cancion != null) {
+        return;
+      }
+      await _musica?.pause();
+    });
   }
 
-  Future<void> _tocar(String archivo, {double volumen = 0.06}) async {
-    if (!activos) {
-      return;
-    }
-
-    try {
-      final reproductor = _reproductores.putIfAbsent(archivo, AudioPlayer.new);
-      // Si el sonido ya estaba sonando, empieza de nuevo.
-      await reproductor.stop();
-      await reproductor.play(
-        AssetSource('sonidos/$archivo'),
-        volume: volumen * volumenEfectos.value,
-      );
-    } catch (_) {
-      // Un sonido que falla no debe detener el juego.
-    }
-  }
-
-  void dispose() {
-    volumenMusica.removeListener(_ajustarMusica);
-    for (final reproductor in _reproductores.values) {
-      reproductor.dispose();
-    }
-    _reproductores.clear();
-    _musica?.dispose();
-    _musica = null;
-    _cancion = null;
-    _finDecepcion?.cancel();
-    _finDecepcion = null;
-    _decepcion?.dispose();
-    _decepcion = null;
-  }
+  // Los reproductores son de toda la app y no se desechan (ver arriba), asi
+  // que al cerrar una pantalla no hay nada que liberar.
+  void dispose() {}
 }

@@ -10,8 +10,7 @@ import '../constantes.dart';
 //
 // Para que los jugadores sepan que existe, la pestaña es llamativa (con el
 // degradado del logo y el texto "REGIONES") y, hasta que alguien abre el
-// panel por primera vez, al empezar se asoma un par de veces y muestra un
-// globo de ayuda que desaparece solo.
+// panel por primera vez, al empezar se asoma un par de veces.
 class PanelLateral extends StatefulWidget {
   final Widget child;
   final double ancho;
@@ -37,11 +36,10 @@ class _PanelLateralState extends State<PanelLateral>
     duration: const Duration(milliseconds: 280),
   );
 
-  // Ayuda del principio: la pestaña se asoma y el globo aparece, se queda y
-  // se va. Dura 7 segundos en total.
+  // Ayuda del principio: la pestaña se asoma dos veces en 2 segundos.
   late final AnimationController _ayuda = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 7),
+    duration: const Duration(seconds: 2),
   );
 
   @override
@@ -86,30 +84,12 @@ class _PanelLateralState extends State<PanelLateral>
     }
   }
 
-  // Cuanto se asoma la pestaña hacia la izquierda: dos saltitos en los
-  // primeros 2 segundos de la ayuda.
+  // Cuanto se asoma la pestaña hacia la izquierda: dos saltitos.
   double get _asomo {
-    final t = _ayuda.value * 7;
-    if (!_ayuda.isAnimating || t > 2) {
-      return 0;
-    }
-    return 10 * sin(t * pi).abs();
-  }
-
-  // Opacidad del globo de ayuda: aparece en medio segundo, se queda y se va
-  // en el ultimo segundo.
-  double get _opacidadGlobo {
-    final t = _ayuda.value * 7;
     if (!_ayuda.isAnimating) {
       return 0;
     }
-    if (t < 0.5) {
-      return t / 0.5;
-    }
-    if (t > 6) {
-      return 7 - t;
-    }
-    return 1;
+    return 10 * sin(_ayuda.value * 2 * pi).abs();
   }
 
   @override
@@ -120,7 +100,6 @@ class _PanelLateralState extends State<PanelLateral>
       animation: Listenable.merge([_apertura, _ayuda]),
       builder: (context, panel) {
         final apertura = _apertura.value;
-        final globo = _opacidadGlobo;
 
         return Stack(
           children: [
@@ -131,21 +110,6 @@ class _PanelLateralState extends State<PanelLateral>
                   onTap: _cerrar,
                   child: ColoredBox(
                     color: Colors.black.withValues(alpha: 0.35 * apertura),
-                  ),
-                ),
-              ),
-            // Globo de ayuda a la izquierda de la pestaña.
-            if (globo > 0 && apertura == 0)
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: _anchoPestana + 6,
-                child: IgnorePointer(
-                  child: Center(
-                    child: Opacity(
-                      opacity: globo,
-                      child: const _GloboDeAyuda(),
-                    ),
                   ),
                 ),
               ),
@@ -237,46 +201,6 @@ class _PanelLateralState extends State<PanelLateral>
           ],
         ),
       ),
-    );
-  }
-}
-
-// Globo que apunta a la pestaña: dice que ahi estan los puntos de las
-// regiones.
-class _GloboDeAyuda extends StatelessWidget {
-  const _GloboDeAyuda();
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-
-    return Row(
-      key: const ValueKey('ayuda-panel'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          constraints: const BoxConstraints(maxWidth: 170),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: tema.colorScheme.inverseSurface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-          ),
-          child: Text(
-            'Toca aquí para ver los puntos de cada región',
-            style: tema.textTheme.bodySmall?.copyWith(
-              color: tema.colorScheme.onInverseSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        // Flechita hacia la pestaña.
-        Icon(
-          Icons.arrow_right_rounded,
-          size: 28,
-          color: tema.colorScheme.inverseSurface,
-        ),
-      ],
     );
   }
 }
