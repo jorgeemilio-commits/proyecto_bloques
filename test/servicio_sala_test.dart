@@ -32,6 +32,9 @@ void main() {
   test(
     'se identifica, recibe la sala y manda los mensajes del lobby',
     () async {
+      // Los errores al unirse llegan aparte, para mostrarlos junto al codigo.
+      final erroresAlUnirse = <String>[];
+      sala.erroresAlUnirse.listen(erroresAlUnirse.add);
       sala.conectar();
       await esperar();
       final hola = servidor.recibidos.first;
@@ -56,7 +59,8 @@ void main() {
         ('Luis', false),
       ]);
       expect(servidor.recibidos.last, {'tipo': 'unirse', 'codigo': 'K7MQ2P'});
-      expect(avisos, ['Luis se desconectó.', 'La sala ya tiene 6 jugadores.']);
+      expect(avisos, ['Luis se desconectó.']);
+      expect(erroresAlUnirse, ['La sala ya tiene 6 jugadores.']);
       mostrar(
         'hola con el token, sala ${sala.estado!.codigo}, avisos: $avisos',
       );

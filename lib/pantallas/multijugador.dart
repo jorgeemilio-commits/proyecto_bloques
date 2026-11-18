@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import '../lector_mapas.dart';
 import '../mapa.dart';
 import '../multijugador/servicio_sala.dart';
 import '../sonidos.dart';
+import '../widgets/estilo_cuenta.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/volumen_widget.dart';
 import 'partida_en_linea.dart';
@@ -316,11 +318,35 @@ class _Entrada extends StatefulWidget {
   State<_Entrada> createState() => _EntradaState();
 }
 
-class _EntradaState extends State<_Entrada> {
+class _EntradaState extends State<_Entrada>
+    with SingleTickerProviderStateMixin {
   final _codigo = TextEditingController();
+  // Error al unirse (por ejemplo, "Esa partida ya empezó."): se muestra
+  // debajo del codigo hasta que se escribe otro.
+  String? _error;
+  late final StreamSubscription<String> _errores;
+  // Sacudida del campo del codigo cuando hay un error.
+  late final AnimationController _sacudida = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _errores = widget.sala.erroresAlUnirse.listen((mensaje) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _error = mensaje);
+      _sacudida.forward(from: 0);
+    });
+  }
 
   @override
   void dispose() {
+    _errores.cancel();
+    _sacudida.dispose();
     _codigo.dispose();
     super.dispose();
   }
@@ -381,20 +407,61 @@ class _EntradaState extends State<_Entrada> {
           ],
         ),
         const SizedBox(height: 20),
-        TextField(
-          key: const ValueKey('campo-codigo'),
-          controller: _codigo,
-          textCapitalization: TextCapitalization.characters,
-          textAlign: TextAlign.center,
-          maxLength: 6,
-          style: tema.textTheme.headlineSmall?.copyWith(letterSpacing: 6),
-          onSubmitted: (_) => _unirse(),
-          decoration: const InputDecoration(
-            labelText: 'Código de la sala',
-            border: OutlineInputBorder(),
-            counterText: '',
+        // El campo se sacude de lado a lado cuando hay un error.
+        AnimatedBuilder(
+          animation: _sacudida,
+          builder: (context, campo) {
+            final t = _sacudida.value;
+            final desplazamiento = _sacudida.isAnimating
+                ? sin(t * pi * 6) * 10 * (1 - t)
+                : 0.0;
+            return Transform.translate(
+              offset: Offset(desplazamiento, 0),
+              child: campo,
+            );
+          },
+          child: TextField(
+            key: const ValueKey('campo-codigo'),
+            controller: _codigo,
+            textCapitalization: TextCapitalization.characters,
+            textAlign: TextAlign.center,
+            maxLength: 6,
+            style: tema.textTheme.headlineSmall?.copyWith(letterSpacing: 6),
+            onSubmitted: (_) => _unirse(),
+            // Al escribir otro codigo se quita el error.
+            onChanged: (_) {
+              if (_error != null) {
+                setState(() => _error = null);
+              }
+            },
+            decoration: InputDecoration(
+              labelText: 'Código de la sala',
+              border: const OutlineInputBorder(),
+              counterText: '',
+              // Borde rojo mientras hay un error.
+              enabledBorder: _error == null
+                  ? null
+                  : OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: tema.colorScheme.error,
+                        width: 2,
+                      ),
+                    ),
+              focusedBorder: _error == null
+                  ? null
+                  : OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: tema.colorScheme.error,
+                        width: 2,
+                      ),
+                    ),
+            ),
           ),
         ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          RecuadroDeError(mensaje: _error!),
+        ],
         const SizedBox(height: 12),
         SizedBox(
           height: 52,

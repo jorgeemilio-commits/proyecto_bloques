@@ -5,6 +5,7 @@ import 'package:proyecto_bloques/widgets/celda_widget.dart';
 import 'package:proyecto_bloques/cuenta/servicio_cuenta.dart';
 import 'package:proyecto_bloques/multijugador/servicio_sala.dart';
 import 'package:proyecto_bloques/pantallas/multijugador.dart';
+import 'package:proyecto_bloques/widgets/estilo_cuenta.dart';
 import 'package:proyecto_bloques/widgets/fondo_animado_widget.dart';
 import 'ayudantes.dart';
 import 'consola.dart';
@@ -133,14 +134,24 @@ void main() {
     final pidio = servidor.recibidos.last;
     servidor.mandar({
       'tipo': 'error',
-      'codigo': 'salaNoExiste',
-      'mensaje': 'No existe una sala con ese código.',
+      'codigo': 'partidaEmpezada',
+      'mensaje': 'Esa partida ya empezó.',
     });
     await tester.pump();
+    // El error sale en el recuadro rojo debajo del codigo, no abajo.
     final error = find
-        .text('No existe una sala con ese código.')
+        .descendant(
+          of: find.byType(RecuadroDeError),
+          matching: find.text('Esa partida ya empezó.'),
+        )
         .evaluate()
         .isNotEmpty;
+    final abajo = find.byType(SnackBar).evaluate().isNotEmpty;
+    // Al escribir otro codigo se quita.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.enterText(porLlave('campo-codigo'), 'abcdef');
+    await tester.pump();
+    final sigue = find.byType(RecuadroDeError).evaluate().isNotEmpty;
 
     servidor.cortar();
     await tester.pump();
@@ -148,9 +159,12 @@ void main() {
     await cerrar(tester);
 
     expect(pidio, {'tipo': 'unirse', 'codigo': 'k7mq2p'});
-    expect(error, isTrue);
+    expect((error, abajo, sigue), (true, false, false));
     expect(reconectando, isTrue);
-    mostrar('Unirse con k7mq2p -> error en pantalla; al caer, "Reconectando".');
+    mostrar(
+      'Unirse con k7mq2p -> "Esa partida ya empezo" junto al codigo; se '
+      'quita al escribir otro; al caer, "Reconectando".',
+    );
   });
 
   testWidgets(

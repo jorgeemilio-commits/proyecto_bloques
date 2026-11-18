@@ -16,6 +16,7 @@ import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
+import '../widgets/estilo_cuenta.dart';
 import '../widgets/leyenda_regiones_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
@@ -895,33 +896,45 @@ class _Resultados extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 8),
-        for (final jugador in tabla)
-          Row(
-            children: [
-              Icon(
-                estado.ganadores.contains(jugador.usuario)
-                    ? Icons.emoji_events
-                    : jugador.situacion == 'rendido'
-                    ? Icons.flag
-                    : Icons.person,
-                size: 18,
-                color: estado.ganadores.contains(jugador.usuario)
-                    ? Colors.amber
-                    : tema.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Expanded(child: Text(jugador.usuario)),
-              Text(
-                '${jugador.puntos} pts',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
+        // La tabla hace scroll si son muchos; el boton queda fijo abajo.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 150),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                for (final jugador in tabla)
+                  Row(
+                    children: [
+                      Icon(
+                        estado.ganadores.contains(jugador.usuario)
+                            ? Icons.emoji_events
+                            : jugador.situacion == 'rendido'
+                            ? Icons.flag
+                            : Icons.person,
+                        size: 18,
+                        color: estado.ganadores.contains(jugador.usuario)
+                            ? Colors.amber
+                            : tema.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(jugador.usuario)),
+                      Text(
+                        '${jugador.puntos} pts',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
-        const SizedBox(height: 10),
-        FilledButton(
+        ),
+        const SizedBox(height: 12),
+        // Grande y con el degradado del logo, como "Jugar" en el menu.
+        BotonDegradado(
           key: const ValueKey('boton-volver-menu'),
+          texto: termino ? 'Volver al menú' : 'Salir de la partida',
+          cargando: false,
           onPressed: () => Navigator.of(context).maybePop(),
-          child: Text(termino ? 'Volver al menú' : 'Salir de la partida'),
         ),
       ],
     );

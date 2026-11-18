@@ -175,6 +175,15 @@ class ServicioDeSala extends ChangeNotifier {
   EstadoConexion _conexion = EstadoConexion.desconectado;
   EstadoSala? _estado;
   final _avisos = StreamController<String>.broadcast();
+  final _erroresAlUnirse = StreamController<String>.broadcast();
+
+  // Errores al unirse con un codigo (no existe, llena o ya empezo): la
+  // pantalla los muestra junto al campo del codigo en lugar de abajo.
+  static const Set<String> _codigosAlUnirse = {
+    'salaNoExiste',
+    'salaLlena',
+    'partidaEmpezada',
+  };
 
   ServicioDeSala({
     required this.cuenta,
@@ -191,6 +200,9 @@ class ServicioDeSala extends ChangeNotifier {
   // Mensajes para mostrar un momento: avisos del servidor ("Ana se
   // desconectó") y errores ("No existe una sala con ese código.").
   Stream<String> get avisos => _avisos.stream;
+
+  // Mensajes de los errores al unirse a una sala con un codigo.
+  Stream<String> get erroresAlUnirse => _erroresAlUnirse.stream;
 
   // Direccion del WebSocket: la del servidor de cuentas con ws/wss y /sala.
   Uri get direccion => cuenta.servidor.replace(
@@ -265,6 +277,7 @@ class ServicioDeSala extends ChangeNotifier {
     _sinReintentos = true;
     _cerrarCanal();
     _avisos.close();
+    _erroresAlUnirse.close();
     super.dispose();
   }
 
@@ -325,6 +338,8 @@ class ServicioDeSala extends ChangeNotifier {
           // de sesion.
           _rendirse(mensaje['mensaje'] as String);
           cuenta.cerrarSesion();
+        } else if (_codigosAlUnirse.contains(codigo)) {
+          _erroresAlUnirse.add(mensaje['mensaje'] as String);
         } else {
           _avisos.add(mensaje['mensaje'] as String);
         }
