@@ -102,12 +102,6 @@ class ValoresInicialesBloc extends ChangeNotifier {
   bool avanzar() {
     final estadoActual = estado;
 
-    // Muestra en la terminal lo que el BLoC esta leyendo del tablero.
-    debugPrint('Valores iniciales: ${estadoActual.valores}');
-    debugPrint('Estan completos: ${estadoActual.estanCompletos}');
-    debugPrint('No hay repetidos: ${estadoActual.noHayRepetidos}');
-    debugPrint('Puede avanzar: ${estadoActual.puedeAvanzar}');
-
     if (estadoActual.puedeAvanzar) {
       _mensajeError = null;
       _confirmado = true;
