@@ -5,7 +5,7 @@
          corre en la red local del hotspot de la computadora. Al pasar a ngrok
          (https://) ya no hace falta. -->
     <application
-        android:label="proyecto_bloques"
+        android:label="Brilliant"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

@@ -44,7 +44,7 @@ class _ProyectoBloquesAppState extends State<ProyectoBloquesApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Proyecto Bloques',
+      title: 'Brilliant',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme:

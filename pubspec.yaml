@@ -18,6 +18,7 @@ dependencies:
   web_socket_channel: ^3.0.3
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
   lints: ^6.0.0
@@ -28,3 +29,18 @@ flutter:
     - assets/sonidos/
     - assets/imagenes/
     - assets/mapas/
+
+# Iconos de la app (se generan con: dart run flutter_launcher_icons). La
+# imagen esta fuera de assets/imagenes/ para que no se empaquete dos veces.
+flutter_launcher_icons:
+  image_path: "assets/icono/icono_app.png"
+  android: "ic_launcher"
+  # Android 8+: la imagen se recorta con la forma del telefono (circulo o
+  # cuadrado redondeado), sobre el color crema del icono.
+  adaptive_icon_background: "#F5F0E5"
+  adaptive_icon_foreground: "assets/icono/icono_app.png"
+  ios: false
+  windows:
+    generate: true
+    image_path: "assets/icono/icono_app.png"
+    icon_size: 48
