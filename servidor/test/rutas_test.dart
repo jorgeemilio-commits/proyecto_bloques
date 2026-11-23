@@ -210,7 +210,13 @@ void main() {
       rondas: 9,
       terminada: DateTime.now(),
       resultados: [
-        (usuarioId: ana.id, puntos: 26, situacion: 'llegoALaMeta', gano: true),
+        (
+          usuarioId: ana.id,
+          puntos: 26,
+          situacion: 'llegoALaMeta',
+          gano: true,
+          cambioElo: 20,
+        ),
       ],
     );
 
@@ -220,6 +226,8 @@ void main() {
     expect(sinToken, 401);
     expect(estado, 200);
     expect((datos!['jugadas'], datos['ganadas']), (1, 1));
+    // Empezo con 1000 y gano 20.
+    expect(datos['elo'], 1020);
     final partida = (datos['partidas'] as List).single as Map;
     expect(partida['mapa'], 'clasico');
     expect(partida['jugadores'], [
@@ -228,6 +236,7 @@ void main() {
         'puntos': 26,
         'situacion': 'llegoALaMeta',
         'gano': true,
+        'cambioElo': 20,
       },
     ]);
   });

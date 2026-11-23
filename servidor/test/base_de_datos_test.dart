@@ -108,12 +108,14 @@ void main() {
             puntos: ganaAna ? 27 : 10,
             situacion: ganaAna ? 'llegoALaMeta' : 'rendido',
             gano: ganaAna,
+            cambioElo: ganaAna ? 20 : -15,
           ),
           (
             usuarioId: luis.id,
             puntos: ganaAna ? 15 : 26,
             situacion: ganaAna ? 'jugando' : 'llegoALaMeta',
             gano: !ganaAna,
+            cambioElo: ganaAna ? -15 : 20,
           ),
         ],
       );

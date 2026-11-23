@@ -6,6 +6,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'base_de_datos.dart';
+import 'elo.dart';
 import 'salas.dart';
 import 'seguridad.dart';
 
@@ -122,6 +123,7 @@ Handler crearManejador({
     return _json(200, {
       'usuario': usuario.nombre,
       'creado': usuario.creado.toIso8601String(),
+      'elo': usuario.elo,
     });
   });
 
@@ -134,6 +136,7 @@ Handler crearManejador({
     return _json(200, {
       'jugadas': historial.jugadas,
       'ganadas': historial.ganadas,
+      'elo': usuario.elo,
       'partidas': [
         for (final partida in historial.partidas)
           {
@@ -148,6 +151,7 @@ Handler crearManejador({
                   'puntos': jugador.puntos,
                   'situacion': jugador.situacion,
                   'gano': jugador.gano,
+                  'cambioElo': jugador.cambioElo,
                 },
             ],
           },
@@ -179,6 +183,16 @@ Handler crearManejador({
 // avisa en la consola: el servidor sigue funcionando.
 void _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
   final partida = sala.partida!;
+  // Cambio de Elo de cada uno segun el lugar en que quedo (ver elo.dart).
+  final cambios = cambiosDeElo([
+    for (final participante in partida.participantes)
+      (
+        nombre: participante.nombre,
+        puntos: participante.puntos,
+        gano: partida.ganadores.contains(participante.nombre),
+        seRindio: participante.situacion == 'rendido',
+      ),
+  ]);
   try {
     baseDeDatos.guardarPartida(
       mapa: sala.mapa,
@@ -194,6 +208,7 @@ void _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
               puntos: participante.puntos,
               situacion: participante.situacion,
               gano: partida.ganadores.contains(participante.nombre),
+              cambioElo: cambios[participante.nombre] ?? 0,
             ),
       ],
     );

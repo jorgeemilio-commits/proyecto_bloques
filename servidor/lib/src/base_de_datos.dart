@@ -1,5 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
+import 'elo.dart';
+
 // Un usuario registrado. Solo se guarda el hash de su contraseña, nunca la
 // contraseña.
 class Usuario {
@@ -11,6 +13,8 @@ class Usuario {
   // creo, asi que solo vale el del ultimo inicio de sesion: la cuenta solo
   // puede estar abierta en un dispositivo.
   final int versionSesion;
+  // Elo de las partidas en linea (empieza en 1000).
+  final int elo;
 
   const Usuario({
     required this.id,
@@ -18,6 +22,7 @@ class Usuario {
     required this.hashContrasena,
     required this.creado,
     this.versionSesion = 0,
+    this.elo = eloInicial,
   });
 }
 
@@ -27,6 +32,7 @@ typedef ResultadoDeJugador = ({
   int puntos,
   String situacion,
   bool gano,
+  int cambioElo,
 });
 
 // Una partida del historial con el resultado de cada jugador.
@@ -35,7 +41,9 @@ class PartidaDelHistorial {
   final String mapa;
   final int meta;
   final int rondas;
-  final List<({String nombre, int puntos, String situacion, bool gano})>
+  final List<
+    ({String nombre, int puntos, String situacion, bool gano, int cambioElo})
+  >
   jugadores;
 
   const PartidaDelHistorial({
@@ -86,7 +94,8 @@ class BaseDeDatos {
         nombre_clave TEXT NOT NULL,
         hash_contrasena TEXT NOT NULL,
         creado TEXT NOT NULL,
-        version_sesion INTEGER NOT NULL DEFAULT 0
+        version_sesion INTEGER NOT NULL DEFAULT 0,
+        elo INTEGER NOT NULL DEFAULT $eloInicial
       );
     ''');
 
@@ -102,6 +111,13 @@ class BaseDeDatos {
       _db.execute(
         'ALTER TABLE usuarios ADD COLUMN version_sesion '
         'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    // Bases de datos creadas antes del Elo: todos empiezan con el inicial.
+    if (!columnas.any((columna) => columna['name'] == 'elo')) {
+      _db.execute(
+        'ALTER TABLE usuarios ADD COLUMN elo '
+        'INTEGER NOT NULL DEFAULT $eloInicial',
       );
     }
     _db.execute(
@@ -127,9 +143,18 @@ class BaseDeDatos {
         puntos INTEGER NOT NULL,
         situacion TEXT NOT NULL,
         gano INTEGER NOT NULL,
+        cambio_elo INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (partida_id, usuario_id)
       );
     ''');
+    // Historiales creados antes del Elo: esas partidas no cambiaron el Elo.
+    final columnasResultados = _db.select('PRAGMA table_info(resultados)');
+    if (!columnasResultados.any((columna) => columna['name'] == 'cambio_elo')) {
+      _db.execute(
+        'ALTER TABLE resultados ADD COLUMN cambio_elo '
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
 
   Usuario? usuarioPorNombre(String nombre) => _unUsuario(
@@ -179,7 +204,8 @@ class BaseDeDatos {
     _db.execute('DELETE FROM usuarios WHERE id = ?', [id]);
   }
 
-  // Guarda una partida en linea terminada con el resultado de cada jugador.
+  // Guarda una partida en linea terminada con el resultado de cada jugador, y
+  // le suma a cada uno su cambio de Elo (sin bajar de 0).
   void guardarPartida({
     required String mapa,
     required int meta,
@@ -198,16 +224,21 @@ class BaseDeDatos {
       for (final resultado in resultados) {
         _db.execute(
           'INSERT INTO resultados '
-          '(partida_id, usuario_id, puntos, situacion, gano) '
-          'VALUES (?, ?, ?, ?, ?)',
+          '(partida_id, usuario_id, puntos, situacion, gano, cambio_elo) '
+          'VALUES (?, ?, ?, ?, ?, ?)',
           [
             partidaId,
             resultado.usuarioId,
             resultado.puntos,
             resultado.situacion,
             resultado.gano ? 1 : 0,
+            resultado.cambioElo,
           ],
         );
+        _db.execute('UPDATE usuarios SET elo = MAX(0, elo + ?) WHERE id = ?', [
+          resultado.cambioElo,
+          resultado.usuarioId,
+        ]);
       }
       _db.execute('COMMIT');
     } catch (_) {
@@ -243,7 +274,8 @@ class BaseDeDatos {
             // Los jugadores que ya borraron su cuenta no aparecen.
             jugadores: [
               for (final fila in _db.select(
-                'SELECT u.nombre, r.puntos, r.situacion, r.gano '
+                'SELECT u.nombre, r.puntos, r.situacion, r.gano, '
+                'r.cambio_elo '
                 'FROM resultados r JOIN usuarios u ON u.id = r.usuario_id '
                 'WHERE r.partida_id = ? ORDER BY r.puntos DESC',
                 [partida['id']],
@@ -253,6 +285,7 @@ class BaseDeDatos {
                   puntos: fila['puntos'] as int,
                   situacion: fila['situacion'] as String,
                   gano: fila['gano'] == 1,
+                  cambioElo: fila['cambio_elo'] as int,
                 ),
             ],
           ),
@@ -274,6 +307,7 @@ class BaseDeDatos {
       hashContrasena: fila['hash_contrasena'] as String,
       creado: DateTime.parse(fila['creado'] as String),
       versionSesion: fila['version_sesion'] as int,
+      elo: fila['elo'] as int,
     );
   }
 }
