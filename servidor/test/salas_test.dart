@@ -639,6 +639,33 @@ void main() {
     },
   );
 
+  test('sin ninguna ronda jugada no se guarda ni cambia el Elo', () {
+    final terminadas = <Sala>[];
+    salas.cerrar();
+    salas = Salas(
+      usuarioDelToken: (token) =>
+          token.startsWith('token-') ? token.substring(6) : null,
+      alTerminarPartida: (sala) {
+        terminadas.add(sala);
+        return {'Ana': 20, 'Luis': -15};
+      },
+    );
+    final ana = conectar('Ana');
+    final luis = conectar('Luis');
+    mandar(ana, {'tipo': 'crearSala'});
+    mandar(luis, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
+    todosListos([ana, luis]);
+    mandar(ana, {'tipo': 'iniciar'});
+
+    // Luis se rinde en los valores iniciales: Ana gana sin jugar una ronda.
+    mandar(luis, {'tipo': 'rendirse'});
+
+    expect(ana.estado['fase'], 'terminada');
+    expect(ana.estado['ronda'], 0);
+    expect(terminadas, isEmpty);
+    expect(ana.enPartida['Ana']!['cambioElo'], isNull);
+  });
+
   test('por WebSocket de verdad: hola y crear sala', () async {
     final baseDeDatos = BaseDeDatos.enMemoria();
     final tokens = Tokens(crearSecreto());

@@ -44,6 +44,37 @@ void main() {
     expect(cambios, {'Ana': 25, 'Luis': 25, 'Eva': 0, 'Leo': 0, 'Mia': -15});
   });
 
+  test('solo cuenta si al terminar al menos dos no se rindieron', () {
+    // 2 jugadores: Luis se rinde y Ana gana sola -> no cuenta.
+    final porRendicion = cambiosDeElo([
+      jugador('Ana', 12, gano: true),
+      jugador('Luis', 15, seRindio: true),
+    ]);
+    // 2 jugadores: Ana llega a la meta y Luis seguia jugando -> cuenta.
+    final normal = cambiosDeElo([
+      jugador('Ana', 26, gano: true),
+      jugador('Luis', 15),
+    ]);
+    // 4 jugadores: dos se rinden pero dos siguen -> cuenta.
+    final dosSiguen = cambiosDeElo([
+      jugador('Ana', 22, gano: true),
+      jugador('Luis', 14),
+      jugador('Eva', 9, seRindio: true),
+      jugador('Leo', 4, seRindio: true),
+    ]);
+    // 3 jugadores: los otros dos se rinden -> no cuenta.
+    final quedaUno = cambiosDeElo([
+      jugador('Ana', 10, gano: true),
+      jugador('Luis', 14, seRindio: true),
+      jugador('Eva', 9, seRindio: true),
+    ]);
+
+    expect(porRendicion, {'Ana': 0, 'Luis': 0});
+    expect(normal, {'Ana': 20, 'Luis': -15});
+    expect(dosSiguen, {'Ana': 25, 'Luis': 10, 'Eva': -5, 'Leo': -15});
+    expect(quedaUno, {'Ana': 0, 'Luis': 0, 'Eva': 0});
+  });
+
   test('el Elo empieza en 1000, se suma al guardar y no baja de 0', () {
     final baseDeDatos = BaseDeDatos.enMemoria();
     final ana = baseDeDatos.crearUsuario('Ana', 'hash', DateTime.now())!;

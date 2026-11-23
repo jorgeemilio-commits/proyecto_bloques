@@ -157,6 +157,8 @@ En la partida (además de lo del lobby):
 - `cambioElo` (al terminar la partida): cuánto cambió el Elo de cada jugador.
   Son puntos fijos según el lugar (ganadores primero, luego por puntos y los
   que se rindieron al final); mientras la partida sigue llega como `null`.
+  Solo cuenta si se jugó al menos una ronda y, al terminar, al menos dos
+  jugadores no se habían rendido; si no, el cambio es 0 para todos.
 - `reclamos`: cuántas veces se ha reclamado cada región (por su id). Sirve
   para apagar las regiones ya reclamadas y mostrar los puntos que les quedan.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.

@@ -25,9 +25,15 @@ typedef FinalDeJugador = ({
 // ganadores, luego los demas de mas a menos puntos y al final los que se
 // rindieron. Los empatados (todos los ganadores, o mismos puntos en el mismo
 // grupo) reciben lo del mejor de sus lugares.
+//
+// La partida solo cuenta si al terminar al menos dos jugadores no se habian
+// rendido (por ejemplo, alguien llego a la meta y otro seguia jugando). Si
+// todos menos uno se rindieron, nadie gana ni pierde Elo: asi no se sube Elo
+// solo porque el rival se rindio.
 Map<String, int> cambiosDeElo(List<FinalDeJugador> jugadores) {
   final tabla = _cambiosPorLugar[jugadores.length];
-  if (tabla == null) {
+  final sinRendirse = jugadores.where((jugador) => !jugador.seRindio).length;
+  if (tabla == null || sinRendirse < 2) {
     return {for (final jugador in jugadores) jugador.nombre: 0};
   }
 
