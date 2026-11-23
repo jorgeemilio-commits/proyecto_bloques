@@ -591,7 +591,12 @@ void main() {
       salas = Salas(
         usuarioDelToken: (token) =>
             token.startsWith('token-') ? token.substring(6) : null,
-        alTerminarPartida: terminadas.add,
+        // Se "guarda" y devuelve el cambio de Elo de cada uno.
+        alTerminarPartida: (sala) {
+          terminadas.add(sala);
+          return {'Ana': 25, 'Luis': 0, 'Eva': -15};
+        },
+        eloDe: (nombre) => {'Ana': 1040, 'Luis': 990, 'Eva': 1000}[nombre],
       );
       final ana = conectar('Ana');
       final luis = conectar('Luis');
@@ -600,6 +605,11 @@ void main() {
       for (final quien in [luis, eva]) {
         mandar(quien, {'tipo': 'unirse', 'codigo': ana.estado['codigo']});
       }
+      // En la sala de espera se ve el Elo de cada uno.
+      final elosEnSala = {
+        for (final jugador in ana.estado['jugadores'] as List)
+          jugador['usuario']: jugador['elo'],
+      };
       todosListos([ana, luis, eva]);
       mandar(ana, {'tipo': 'iniciar'});
       for (final quien in [ana, luis, eva]) {
@@ -608,15 +618,24 @@ void main() {
           'valores': [1, 2, 3, 4, 5, 6],
         });
       }
+      final cambioEnRonda = ana.enPartida['Ana']!['cambioElo'];
 
       // Ya en la ronda 1, Luis y Eva se rinden: Ana gana y se guarda.
       mandar(luis, {'tipo': 'rendirse'});
       mandar(eva, {'tipo': 'rendirse'});
+      // Al terminar, cada uno ve cuanto cambio su Elo.
+      final cambiosAlTerminar = {
+        for (final MapEntry(:key, :value) in ana.enPartida.entries)
+          key: value['cambioElo'],
+      };
       // Ana sale de la partida terminada: no se guarda otra vez.
       mandar(ana, {'tipo': 'rendirse'});
 
       expect(terminadas, hasLength(1));
       expect(terminadas.single.partida!.ganadores, ['Ana']);
+      expect(elosEnSala, {'Ana': 1040, 'Luis': 990, 'Eva': 1000});
+      expect(cambioEnRonda, isNull);
+      expect(cambiosAlTerminar, {'Ana': 25, 'Luis': 0, 'Eva': -15});
     },
   );
 
@@ -653,8 +672,10 @@ void main() {
     expect(alEntrar['fase'], 'sinSala');
     expect(alEntrar['usuario'], 'Ana');
     expect(conSala['fase'], 'lobby');
+    // Con la base de datos de verdad, cada jugador trae su Elo (empieza en
+    // 1000).
     expect(conSala['jugadores'], [
-      {'usuario': 'Ana', 'conectado': true, 'listo': false},
+      {'usuario': 'Ana', 'conectado': true, 'listo': false, 'elo': 1000},
     ]);
   });
 }

@@ -53,6 +53,8 @@ void main() {
     servidor.mandarLobby();
     await tester.pump();
     final codigo = tester.widget<Text>(porLlave('codigo-sala')).data;
+    // En la sala se ve el Elo de cada jugador.
+    final eloDeLuis = tester.widget<Text>(porLlave('elo-Luis')).data;
     final luisDesconectado = find
         .descendant(
           of: porLlave('jugador-Luis'),
@@ -109,6 +111,7 @@ void main() {
     expect(pidio, {'tipo': 'crearSala'});
     expect(codigo, 'K7MQ2P');
     expect(luisDesconectado, isTrue);
+    expect(eloDeLuis, startsWith('Elo 980'));
     expect(puedeSinListos, isFalse);
     expect(pidioListo, {'tipo': 'listo', 'listo': true});
     expect(puedeConListos, isTrue);
@@ -280,6 +283,8 @@ void main() {
             'situacion': ganadores.contains('Ana') ? 'llegoALaMeta' : 'jugando',
             'yaJugo': yaJugue,
             'puntos': ganadores.contains('Ana') ? 26 : 0,
+            // Al terminar, cuanto cambio su Elo.
+            if (fase == 'terminada') 'cambioElo': 20,
             'iniciales': misIniciales,
             'casillas': <List<int>>[],
           },
@@ -324,6 +329,17 @@ void main() {
       );
       await tester.pumpAndSettle();
       final gano = find.text('¡Ganaste!').evaluate().isNotEmpty;
+      // El cambio de Elo aparece (animado) bajo el titulo.
+      final cambioElo = tester
+          .widget<Text>(
+            find
+                .descendant(
+                  of: porLlave('cambio-elo-resultados'),
+                  matching: find.byType(Text),
+                )
+                .first,
+          )
+          .data;
       final fondoAlGanar = porLlave(
         'fondo-$fondoResultados',
       ).evaluate().isNotEmpty;
@@ -335,6 +351,7 @@ void main() {
       expect(paso, {'tipo': 'pasar', 'ronda': 1});
       expect(esperando, isTrue);
       expect(gano, isTrue);
+      expect(cambioElo, '+20');
       // El fondo del juego en la ronda cambia al de resultados al ganar.
       expect((fondoEnRonda, fondoAlGanar), (true, true));
       mostrar(

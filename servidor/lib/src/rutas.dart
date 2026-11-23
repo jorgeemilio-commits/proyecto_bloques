@@ -43,6 +43,7 @@ Handler crearManejador({
         usuarioDelToken: (token) =>
             _usuarioDeSesion(token, baseDeDatos, tokens)?.nombre,
         alTerminarPartida: (sala) => _guardarPartida(sala, baseDeDatos),
+        eloDe: (nombre) => baseDeDatos.usuarioPorNombre(nombre)?.elo,
       );
 
   // El ping cada 10 segundos detecta pronto las conexiones caidas.
@@ -178,10 +179,11 @@ Handler crearManejador({
   return rutas.call;
 }
 
-// Guarda en el historial la partida que termino en la sala. Los jugadores que
+// Guarda en el historial la partida que termino en la sala y devuelve cuanto
+// cambio el Elo de cada jugador (vacio si no se pudo guardar). Los jugadores que
 // borraron su cuenta durante la partida no se guardan. Si algo falla, solo se
 // avisa en la consola: el servidor sigue funcionando.
-void _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
+Map<String, int> _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
   final partida = sala.partida!;
   // Cambio de Elo de cada uno segun el lugar en que quedo (ver elo.dart).
   final cambios = cambiosDeElo([
@@ -212,8 +214,10 @@ void _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
             ),
       ],
     );
+    return cambios;
   } on Object catch (error) {
     print('No se pudo guardar la partida de la sala ${sala.codigo}: $error');
+    return const {};
   }
 }
 

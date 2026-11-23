@@ -17,6 +17,10 @@ class JugadorEnSala {
   final bool conectado;
   // En el lobby: si marco que esta listo para empezar.
   final bool listo;
+  // En el lobby: su Elo (null si el servidor no lo manda).
+  final int? elo;
+  // Al terminar la partida: cuanto cambio su Elo.
+  final int? cambioElo;
   // 'jugando', 'llegoALaMeta' o 'rendido'.
   final String situacion;
   // Si ya mando su jugada de esta ronda (o sus valores iniciales).
@@ -34,6 +38,8 @@ class JugadorEnSala {
     this.usuario, {
     required this.conectado,
     this.listo = false,
+    this.elo,
+    this.cambioElo,
     this.situacion = 'jugando',
     this.yaJugo = false,
     this.puntos = 0,
@@ -48,6 +54,8 @@ class JugadorEnSala {
       datos['usuario'] as String,
       conectado: datos['conectado'] as bool,
       listo: datos['listo'] as bool? ?? false,
+      elo: datos['elo'] as int?,
+      cambioElo: datos['cambioElo'] as int?,
       situacion: datos['situacion'] as String? ?? 'jugando',
       yaJugo: datos['yaJugo'] as bool? ?? false,
       puntos: datos['puntos'] as int? ?? 0,

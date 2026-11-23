@@ -100,6 +100,7 @@ MockClient servidorFalso() {
         return json(200, {
           'jugadas': 3,
           'ganadas': 1,
+          'elo': 1020,
           'partidas': [
             {
               'terminada': '2026-11-08T18:30:00.000Z',
@@ -112,12 +113,14 @@ MockClient servidorFalso() {
                   'puntos': 27,
                   'situacion': 'llegoALaMeta',
                   'gano': true,
+                  'cambioElo': 20,
                 },
                 {
                   'usuario': 'Luis',
                   'puntos': 19,
                   'situacion': 'jugando',
                   'gano': false,
+                  'cambioElo': -15,
                 },
               ],
             },
@@ -172,11 +175,17 @@ class ServidorDeSalasFalso {
         'mapa': 'clasico',
         'maximo': 6,
         'jugadores': [
-          {'usuario': anfitrion, 'conectado': true, 'listo': todosListos},
+          {
+            'usuario': anfitrion,
+            'conectado': true,
+            'listo': todosListos,
+            'elo': 1040,
+          },
           {
             'usuario': anfitrion == 'Ana' ? 'Luis' : 'Ana',
             'conectado': anfitrion != 'Ana',
             'listo': todosListos,
+            'elo': 980,
           },
         ],
       });

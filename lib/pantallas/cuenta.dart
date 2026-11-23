@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
 import '../lector_mapas.dart';
+import '../widgets/elo_widget.dart';
 
 // Pantalla de la cuenta del jugador: su nombre, su historial de partidas en
 // linea, cerrar sesion y borrar la cuenta (pide la contraseña para
@@ -87,7 +88,10 @@ class _PantallaCuentaState extends State<PantallaCuenta> {
                       builder: (context, carga) {
                         final historial = carga.data;
                         if (historial != null) {
-                          return _Historial(historial: historial);
+                          return _Historial(
+                            historial: historial,
+                            usuario: widget.servicio.usuario,
+                          );
                         }
                         return Center(
                           child: carga.hasError
@@ -138,8 +142,10 @@ class _PantallaCuentaState extends State<PantallaCuenta> {
 // Las estadisticas del jugador y la lista de sus ultimas partidas.
 class _Historial extends StatelessWidget {
   final HistorialDeCuenta historial;
+  // Para encontrar mi cambio de Elo en la ultima partida.
+  final String? usuario;
 
-  const _Historial({required this.historial});
+  const _Historial({required this.historial, this.usuario});
 
   @override
   Widget build(BuildContext context) {
@@ -148,10 +154,19 @@ class _Historial extends StatelessWidget {
         ? 0
         : (historial.ganadas * 100 / historial.jugadas).round();
 
+    // Cuanto cambio mi Elo en la ultima partida (la primera de la lista).
+    final ultima = historial.partidas.isEmpty
+        ? null
+        : historial.partidas.first.jugadores
+              .where((jugador) => jugador.usuario == usuario)
+              .firstOrNull;
+
     return Column(
       key: const ValueKey('historial'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _TarjetaDeElo(elo: historial.elo, ultimoCambio: ultima?.cambioElo),
+        const SizedBox(height: 8),
         Row(
           children: [
             _Estadistica(
@@ -188,11 +203,83 @@ class _Historial extends StatelessWidget {
               : ListView.separated(
                   itemCount: historial.partidas.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, indice) =>
-                      _PartidaDelHistorial(partida: historial.partidas[indice]),
+                  itemBuilder: (context, indice) => _PartidaDelHistorial(
+                    partida: historial.partidas[indice],
+                    usuario: usuario,
+                  ),
                 ),
         ),
       ],
+    );
+  }
+}
+
+// Mi Elo en grande, y cuanto cambio en la ultima partida.
+class _TarjetaDeElo extends StatelessWidget {
+  final int elo;
+  final int? ultimoCambio;
+
+  const _TarjetaDeElo({required this.elo, this.ultimoCambio});
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+
+    return Container(
+      key: const ValueKey('tarjeta-elo'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [
+            naranjaLogo.withValues(alpha: 0.25),
+            rosaLogo.withValues(alpha: 0.25),
+          ],
+        ),
+        border: Border.all(color: naranjaLogo.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.military_tech_rounded, color: naranjaLogo, size: 32),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Elo',
+                style: tema.textTheme.labelLarge?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '$elo',
+                key: const ValueKey('elo'),
+                style: tema.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          if (ultimoCambio != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                CambioDeElo(
+                  key: const ValueKey('ultimo-cambio-elo'),
+                  cambio: ultimoCambio!,
+                  estilo: tema.textTheme.titleLarge,
+                ),
+                Text(
+                  'última partida',
+                  style: tema.textTheme.labelSmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -246,8 +333,10 @@ class _Estadistica extends StatelessWidget {
 // puntos de todos (el ganador con un trofeo).
 class _PartidaDelHistorial extends StatelessWidget {
   final PartidaJugada partida;
+  // Mi fila se marca en negritas.
+  final String? usuario;
 
-  const _PartidaDelHistorial({required this.partida});
+  const _PartidaDelHistorial({required this.partida, this.usuario});
 
   static String _dosDigitos(int numero) => numero.toString().padLeft(2, '0');
 
@@ -289,10 +378,25 @@ class _PartidaDelHistorial extends StatelessWidget {
                   color: jugador.gano ? Colors.amber : colores.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
-                Expanded(child: Text(jugador.usuario)),
+                Expanded(
+                  child: Text(
+                    jugador.usuario,
+                    style: jugador.usuario == usuario
+                        ? const TextStyle(fontWeight: FontWeight.w700)
+                        : null,
+                  ),
+                ),
                 Text(
                   '${jugador.puntos} pts',
                   style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                // Cuanto cambio su Elo en esa partida.
+                SizedBox(
+                  width: 44,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: CambioDeElo(cambio: jugador.cambioElo),
+                  ),
                 ),
               ],
             ),

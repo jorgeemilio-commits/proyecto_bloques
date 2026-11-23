@@ -550,9 +550,17 @@ class _SalaDeEspera extends StatelessWidget {
                         ? '${jugador.usuario} (tú)'
                         : jugador.usuario,
                   ),
-                  subtitle: jugador.conectado
+                  // Su Elo y, si se cayo, que se le espera.
+                  subtitle: jugador.elo == null && jugador.conectado
                       ? null
-                      : const Text('Desconectado, esperando que vuelva…'),
+                      : Text(
+                          [
+                            if (jugador.elo != null) 'Elo ${jugador.elo}',
+                            if (!jugador.conectado)
+                              'Desconectado, esperando que vuelva…',
+                          ].join(' · '),
+                          key: ValueKey('elo-${jugador.usuario}'),
+                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

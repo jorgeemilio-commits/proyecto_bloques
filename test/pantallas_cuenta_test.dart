@@ -113,6 +113,16 @@ void main() {
 
     expect(nombre, 'Ana');
     expect(estadisticas, ['3', '1', '33%']);
+    // El Elo en grande y cuanto cambio en la ultima partida.
+    expect(textoDe(tester, 'elo'), '1020');
+    expect(
+      find.descendant(
+        of: porLlave('ultimo-cambio-elo'),
+        matching: find.text('+20'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('−15'), findsOneWidget);
     expect(veLaPartida, isTrue);
     expect(salio, isTrue);
     expect(servicio.conSesion, isFalse);

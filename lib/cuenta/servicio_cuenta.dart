@@ -23,7 +23,10 @@ class PartidaJugada {
   final String mapa;
   final int meta;
   final int rondas;
-  final List<({String usuario, int puntos, String situacion, bool gano})>
+  // Como le fue a cada jugador, con cuanto cambio su Elo.
+  final List<
+    ({String usuario, int puntos, String situacion, bool gano, int cambioElo})
+  >
   jugadores;
 
   const PartidaJugada({
@@ -46,6 +49,7 @@ class PartidaJugada {
           puntos: jugador['puntos'] as int,
           situacion: jugador['situacion'] as String,
           gano: jugador['gano'] as bool,
+          cambioElo: jugador['cambioElo'] as int? ?? 0,
         ),
     ],
   );
@@ -55,11 +59,14 @@ class PartidaJugada {
 class HistorialDeCuenta {
   final int jugadas;
   final int ganadas;
+  // Elo actual del jugador (empieza en 1000).
+  final int elo;
   final List<PartidaJugada> partidas;
 
   const HistorialDeCuenta({
     required this.jugadas,
     required this.ganadas,
+    required this.elo,
     required this.partidas,
   });
 }
@@ -144,6 +151,7 @@ class ServicioDeCuenta extends ChangeNotifier {
     return HistorialDeCuenta(
       jugadas: datos['jugadas'] as int,
       ganadas: datos['ganadas'] as int,
+      elo: datos['elo'] as int? ?? 1000,
       partidas: [
         for (final partida in datos['partidas'] as List)
           PartidaJugada.desdeJson((partida as Map).cast<String, dynamic>()),

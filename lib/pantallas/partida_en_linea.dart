@@ -16,6 +16,7 @@ import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
+import '../widgets/elo_widget.dart';
 import '../widgets/estilo_cuenta.dart';
 import '../widgets/leyenda_regiones_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
@@ -887,6 +888,9 @@ class _Resultados extends StatelessWidget {
             color: gane ? naranjaLogo : null,
           ),
         ),
+        // Al terminar: cuanto cambio mi Elo, con una animacion.
+        if (estado.yo?.cambioElo case final cambio?)
+          _CambioDeEloAnimado(cambio: cambio),
         if (!termino)
           Text(
             'Los demás siguen jugando: arriba puedes ver sus tableros.',
@@ -922,6 +926,15 @@ class _Resultados extends StatelessWidget {
                         '${jugador.puntos} pts',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
+                      // Cuanto cambio su Elo (al terminar la partida).
+                      if (jugador.cambioElo case final cambio?)
+                        SizedBox(
+                          width: 44,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: CambioDeElo(cambio: cambio),
+                          ),
+                        ),
                     ],
                   ),
               ],
@@ -937,6 +950,45 @@ class _Resultados extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
+    );
+  }
+}
+
+// Mi cambio de Elo al terminar: aparece creciendo y el numero cuenta desde 0
+// hasta el cambio ("+25 Elo" en verde o "−15 Elo" en rojo).
+class _CambioDeEloAnimado extends StatelessWidget {
+  final int cambio;
+
+  const _CambioDeEloAnimado({required this.cambio});
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+
+    return TweenAnimationBuilder<double>(
+      key: const ValueKey('cambio-elo-resultados'),
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 1200),
+      curve: Curves.easeOutBack,
+      builder: (context, avance, _) => Transform.scale(
+        scale: 0.6 + 0.4 * avance.clamp(0, 1),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CambioDeElo(
+              cambio: (cambio * avance.clamp(0, 1)).round(),
+              estilo: tema.textTheme.headlineSmall,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Elo',
+              style: tema.textTheme.titleMedium?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

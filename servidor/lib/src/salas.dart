@@ -76,6 +76,9 @@ class Sala {
   DateTime? limite;
   // Si la partida ya se guardo en el historial (se guarda una sola vez).
   bool guardada = false;
+  // Cuanto cambio el Elo de cada jugador al terminar (por nombre); vacio
+  // mientras la partida sigue.
+  Map<String, int> cambiosDeElo = const {};
   // Jugadores del lobby que marcaron "Listo". La partida solo se puede
   // iniciar cuando todos lo estan.
   final Set<Jugador> listos = {};
@@ -93,8 +96,12 @@ class Salas {
   // Devuelve el nombre del usuario del token, o null si no es valido.
   final String? Function(String token) usuarioDelToken;
   // Se llama una vez cuando termina una partida (con al menos una ronda
-  // jugada), para guardarla en el historial.
-  final void Function(Sala sala)? alTerminarPartida;
+  // jugada), para guardarla en el historial. Devuelve cuanto cambio el Elo
+  // de cada jugador, para mostrarlo en los resultados.
+  final Map<String, int> Function(Sala sala)? alTerminarPartida;
+  // Elo de un jugador por su nombre (para mostrarlo en la sala de espera), o
+  // null si no se sabe.
+  final int? Function(String nombre)? eloDe;
   // Tiempo para mandar "hola" al conectarse.
   final Duration esperaHola;
   // Tiempo que un jugador desconectado sigue en la sala esperando volver.
@@ -125,6 +132,7 @@ class Salas {
   Salas({
     required this.usuarioDelToken,
     this.alTerminarPartida,
+    this.eloDe,
     this.esperaHola = const Duration(seconds: 10),
     this.esperaReconexion = const Duration(seconds: 15),
     this.esperaValoresIniciales = const Duration(minutes: 1),
@@ -553,7 +561,7 @@ class Salas {
   void _terminar(Sala sala) {
     if (!sala.guardada && sala.partida!.ronda > 0) {
       sala.guardada = true;
-      alTerminarPartida?.call(sala);
+      sala.cambiosDeElo = alTerminarPartida?.call(sala) ?? const {};
     }
     sala.limite = null;
     sala.temporizador?.cancel();
@@ -725,6 +733,7 @@ class Salas {
                 'usuario': otro.nombre,
                 'conectado': otro.conectado,
                 'listo': sala.listos.contains(otro),
+                'elo': ?eloDe?.call(otro.nombre),
               },
           ]
         else ...{
@@ -770,6 +779,8 @@ class Salas {
       'puntos': participante.puntos,
       'iniciales': verIniciales ? participante.iniciales : null,
       'casillas': participante.casillas,
+      // Al terminar: cuanto cambio su Elo.
+      'cambioElo': sala.cambiosDeElo[participante.nombre],
       'ultimoReclamo': reclamo == null
           ? null
           : {'region': reclamo.region, 'puntos': reclamo.puntos},

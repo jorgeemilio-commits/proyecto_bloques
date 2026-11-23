@@ -105,8 +105,8 @@ En el lobby:
   "segundosPorRonda": null,
   "maximo": 6,
   "jugadores": [
-    {"usuario": "Ana", "conectado": true, "listo": true},
-    {"usuario": "Luis", "conectado": false, "listo": false}
+    {"usuario": "Ana", "conectado": true, "listo": true, "elo": 1040},
+    {"usuario": "Luis", "conectado": false, "listo": false, "elo": 980}
   ]
 }
 ```
@@ -153,6 +153,10 @@ En la partida (además de lo del lobby):
 - `iniciales`: sus 6 valores iniciales en el orden de las casillas iniciales
   del mapa (`null` mientras no los tenga). Los de los rivales **no se ven
   hasta que empieza la ronda 1**: mientras tanto llegan como `null`.
+- `elo` (en el lobby): el Elo de cada jugador (empieza en 1000).
+- `cambioElo` (al terminar la partida): cuánto cambió el Elo de cada jugador.
+  Son puntos fijos según el lugar (ganadores primero, luego por puntos y los
+  que se rindieron al final); mientras la partida sigue llega como `null`.
 - `reclamos`: cuántas veces se ha reclamado cada región (por su id). Sirve
   para apagar las regiones ya reclamadas y mostrar los puntos que les quedan.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.
