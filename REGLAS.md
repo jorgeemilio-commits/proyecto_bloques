@@ -34,7 +34,7 @@
 - Cuando un jugador **llena por completo una región**, la reclama y gana puntos.
 - Los reclamos son **por región**, no por color: cada una de las 9 regiones tiene sus propios reclamos.
 - Cada región se puede reclamar **3 veces** entre todos los jugadores. El primero en llenarla gana el primer premio, el segundo el siguiente, etc.
-- Después del tercer reclamo, llenar esa región **ya no da puntos**.
+- Después del tercer reclamo, llenar esa región **sigue dando el último premio** (el mínimo). Por ejemplo, en azul: 7, 5, 3 y luego 3 cada vez.
 - **Empate en un reclamo:** si varios jugadores llenan la misma región en la misma tirada, **todos ganan ese premio**, y el siguiente reclamo pasa al siguiente nivel.
   - Ejemplo (azul): dos jugadores la llenan a la vez y ganan 7 cada uno; el próximo que la llene gana 5.
 

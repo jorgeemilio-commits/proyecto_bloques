@@ -75,7 +75,9 @@ class _FilaRegion extends StatelessWidget {
       for (var nivel = 1; nivel <= region.puntuaciones.length; nivel++)
         region.puntuaciones[nivel]!,
     ];
-    final agotada = vecesReclamada >= premios.length;
+    // Despues del tercer reclamo sigue dando el ultimo premio (el minimo).
+    final soloElMinimo = vecesReclamada >= premios.length;
+    final actual = soloElMinimo ? premios.length - 1 : vecesReclamada;
 
     return Row(
       children: [
@@ -107,7 +109,9 @@ class _FilaRegion extends StatelessWidget {
                 ),
               ),
               Text(
-                agotada ? 'Ya no da puntos.' : tipo.descripcion,
+                soloElMinimo
+                    ? 'Ya solo da el mínimo: ${premios.last}.'
+                    : tipo.descripcion,
                 style: tema.textTheme.bodySmall?.copyWith(
                   color: tema.colorScheme.onSurfaceVariant,
                 ),
@@ -120,8 +124,8 @@ class _FilaRegion extends StatelessWidget {
           _Premio(
             puntos: puntos,
             // indice 0 es el primer reclamo, 1 el segundo, etc.
-            yaReclamado: indice < vecesReclamada,
-            esElActual: indice == vecesReclamada,
+            yaReclamado: indice < actual,
+            esElActual: indice == actual,
           ),
       ],
     );

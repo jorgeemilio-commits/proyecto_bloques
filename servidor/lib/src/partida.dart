@@ -148,14 +148,16 @@ class Partida {
 
     // Si varios completaron la misma region en esta ronda, todos ganan el
     // mismo premio y la region avanza un solo nivel. Despues del tercer
-    // reclamo la region ya no da puntos.
+    // reclamo la region sigue dando el ultimo premio (el minimo).
     for (final MapEntry(key: region, value: quienes)
         in reclamosDeLaRonda.entries) {
       final veces = reclamos[region] ?? 0;
       reclamos[region] = veces + 1;
       for (final participante in quienes) {
         final premios = participante.jugada!.premios;
-        final puntos = veces < premios.length ? premios[veces] : 0;
+        final puntos = premios.isEmpty
+            ? 0
+            : premios[min(veces, premios.length - 1)];
         participante.puntos += puntos;
         participante.ultimoReclamo = (region: region, puntos: puntos);
       }

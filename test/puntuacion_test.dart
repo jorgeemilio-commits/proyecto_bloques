@@ -35,7 +35,7 @@ void main() {
   });
 
   group('RegistroDeReclamos', () {
-    test('cada reclamo da el siguiente premio y despues del tercero 0', () {
+    test('cada reclamo da el siguiente premio y despues el minimo', () {
       final registro = RegistroDeReclamos();
       final azulUno = region('Z1');
 
@@ -43,7 +43,8 @@ void main() {
         for (var vez = 0; vez < 5; vez++) registro.reclamar(azulUno),
       ];
 
-      expect(premios, [7, 5, 3, 0, 0]);
+      // Despues del tercer reclamo sigue dando el ultimo premio.
+      expect(premios, [7, 5, 3, 3, 3]);
       expect(registro.vecesReclamada(azulUno), 5);
       mostrar('Reclamos sucesivos de una region azul: $premios.');
     });

@@ -204,7 +204,8 @@ En la partida (además de lo del lobby):
      en la misma ronda, **todos ganan el mismo premio** (el siguiente que toca)
      y la región avanza solo un nivel. Ejemplo: dos jugadores ganan 7 y el
      próximo que la complete gana 5.
-   - Tras el tercer reclamo, la región ya no da puntos (premio 0).
+   - Tras el tercer reclamo, la región sigue dando el último premio (el
+     mínimo).
    - Se suman los puntos y se actualizan los tableros de todos.
 5. **Meta:** quien llega a la meta queda en `llegoALaMeta` y ya no juega.
    - **Gana** el primero en llegar. Si varios llegan en la misma ronda, gana el

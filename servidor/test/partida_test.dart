@@ -88,7 +88,7 @@ void main() {
     },
   );
 
-  test('despues del tercer reclamo la region ya no da puntos', () {
+  test('despues del tercer reclamo la region da el premio minimo', () {
     final nombres = ['A', 'B', 'C', 'D'];
     final partida = empezada(nombres);
     for (final participante in partida.participantes) {
@@ -97,7 +97,7 @@ void main() {
       partida.empezarRonda(Random(1));
     }
 
-    expect([for (final p in partida.participantes) p.puntos], [7, 5, 3, 0]);
+    expect([for (final p in partida.participantes) p.puntos], [7, 5, 3, 3]);
   });
 
   test('meta: gana el de mas puntos de los que llegan; los demas siguen', () {

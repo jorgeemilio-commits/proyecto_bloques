@@ -107,8 +107,9 @@ void main() {
       registro.reclamar(region('Z1'));
     }
 
-    expect(vistos, ['7', '5', '3', null]);
-    expect(find.text('Ya no da puntos.'), findsOneWidget);
+    // Despues del tercer reclamo se queda en el ultimo premio (el minimo).
+    expect(vistos, ['7', '5', '3', '3']);
+    expect(find.text('Ya solo da el mínimo: 3.'), findsOneWidget);
     // AzulDos tiene sus propios reclamos y sigue en su primer premio.
     expect(actual(1).$1, '7');
     mostrar(

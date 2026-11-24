@@ -8,7 +8,7 @@ import '../tipo.dart';
 import 'menu_casilla_widget.dart';
 
 // Brillo de una region segun cuantas veces se ha reclamado: cada reclamo la
-// apaga un poco mas, hasta el tercero (cuando ya no da puntos).
+// apaga un poco mas, hasta el tercero (desde ahi solo da el premio minimo).
 const List<double> _brilloPorReclamos = [1.0, 0.7, 0.45, 0.25];
 
 // Color de una casilla segun el tipo de su region: conserva el tono pero con

@@ -109,7 +109,7 @@ Z1: 9 8 7
     // Z1 usa sus puntos; Z2, del mismo color, usa los del azul.
     expect(porId['Z1']!.puntuaciones, {1: 9, 2: 8, 3: 7});
     expect(porId['Z2']!.puntuaciones, TipoRegion.azul.puntuaciones);
-    expect(premiosZ1, [9, 8, 7, 0]);
+    expect(premiosZ1, [9, 8, 7, 7]);
     mostrar('Z1 con puntos propios da $premiosZ1; Z2 usa los del azul.');
   });
 

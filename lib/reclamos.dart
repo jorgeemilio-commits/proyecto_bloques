@@ -8,9 +8,16 @@ class RegistroDeReclamos {
 
   int vecesReclamada(Region region) => _reclamos[region] ?? 0;
 
-  // Puntos que daria reclamar la region ahora (0 si ya se agotaron).
-  int puntosDisponibles(Region region) =>
-      region.puntuaciones[vecesReclamada(region) + 1] ?? 0;
+  // Puntos que daria reclamar la region ahora. Despues del tercer reclamo
+  // sigue dando el ultimo premio (el minimo).
+  int puntosDisponibles(Region region) {
+    final ultimo = region.puntuaciones.length;
+    if (ultimo == 0) {
+      return 0;
+    }
+    final nivel = vecesReclamada(region) + 1;
+    return region.puntuaciones[nivel > ultimo ? ultimo : nivel] ?? 0;
+  }
 
   // Registra un reclamo de la region y devuelve los puntos que da.
   int reclamar(Region region) {
