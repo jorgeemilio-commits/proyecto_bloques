@@ -73,6 +73,28 @@ void main() {
     mostrar('Modo de control: tocar por defecto; elegir arrastrar se guarda.');
   });
 
+  test('sin volumen guardado, la musica y los efectos empiezan en 0', () async {
+    Sonidos.volumenMusica.value = 0.7;
+    Sonidos.volumenEfectos.value = 0.7;
+    await Sonidos.cargarVolumen();
+
+    expect(Sonidos.volumenMusica.value, 0);
+    expect(Sonidos.volumenEfectos.value, 0);
+    mostrar('La primera vez que se abre la app el sonido esta silenciado.');
+  });
+
+  testWidgets('silenciado por defecto, el boton lo activa al 100%', (
+    tester,
+  ) async {
+    Sonidos.volumenMusica.value = 0;
+    await abrirVentana(tester);
+
+    await tester.tap(find.byKey(const ValueKey('silenciar-musica')));
+    await tester.pump();
+    expect(Sonidos.volumenMusica.value, 1);
+    mostrar('Con la musica silenciada, tocar el boton la pone al 100%.');
+  });
+
   test('cargarVolumen lee lo guardado', () async {
     SharedPreferences.setMockInitialValues({
       'volumenMusica': 0.25,

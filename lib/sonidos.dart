@@ -24,10 +24,11 @@ class Sonidos {
   // Volumen elegido por el jugador (0 a 1) para la musica y los efectos. Se
   // multiplica por el volumen propio de cada sonido, asi que 1 es como sonaba
   // antes. Se guardan en el dispositivo para la proxima vez. La musica que ya
-  // esta sonando cambia de volumen al mover la barra.
-  static final ValueNotifier<double> volumenMusica = ValueNotifier<double>(1)
+  // esta sonando cambia de volumen al mover la barra. Sin nada guardado
+  // empiezan silenciados (0); se activan en Configuracion.
+  static final ValueNotifier<double> volumenMusica = ValueNotifier<double>(0)
     ..addListener(_ajustarMusica);
-  static final ValueNotifier<double> volumenEfectos = ValueNotifier(1);
+  static final ValueNotifier<double> volumenEfectos = ValueNotifier(0);
 
   static const String _claveMusica = 'volumenMusica';
   static const String _claveEfectos = 'volumenEfectos';
@@ -36,10 +37,10 @@ class Sonidos {
   static Future<void> cargarVolumen() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      volumenMusica.value = preferencias.getDouble(_claveMusica) ?? 1;
-      volumenEfectos.value = preferencias.getDouble(_claveEfectos) ?? 1;
+      volumenMusica.value = preferencias.getDouble(_claveMusica) ?? 0;
+      volumenEfectos.value = preferencias.getDouble(_claveEfectos) ?? 0;
     } catch (_) {
-      // Sin preferencias guardadas se queda el volumen completo.
+      // Sin preferencias guardadas se queda silenciado.
     }
   }
 
