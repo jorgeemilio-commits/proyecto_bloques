@@ -12,11 +12,7 @@ class Celda {
   bool esInsertable;
 
   // Crea una celda indicando su posicion y, opcionalmente, su numero inicial.
-  Celda({
-    required this.coordenada,
-    this.numero,
-    this.esInsertable = false,
-  });
+  Celda({required this.coordenada, this.numero, this.esInsertable = false});
 }
 
 class Tablero {
@@ -38,12 +34,10 @@ class Tablero {
     required this.columnas,
     required List<Region> regiones,
     required List<Coordenada> coordenadasIniciales,
-  })  : regiones = List.unmodifiable(regiones),
-        celdas = _crearCeldas(filas, columnas) {
+  }) : regiones = List.unmodifiable(regiones),
+       celdas = _crearCeldas(filas, columnas) {
     // Relaciona las coordenadas del mapa con las celdas reales del tablero.
-    celdasIniciales = List.unmodifiable(
-      coordenadasIniciales.map(obtenerCelda),
-    );
+    celdasIniciales = List.unmodifiable(coordenadasIniciales.map(obtenerCelda));
     for (final celda in celdasIniciales) {
       celda.esInsertable = true;
     }
@@ -51,8 +45,10 @@ class Tablero {
 
   // Devuelve la celda que ocupa la coordenada indicada.
   Celda obtenerCelda(Coordenada coordenada) {
-    if (coordenada.x < 0 || coordenada.x >= columnas ||
-        coordenada.y < 0 || coordenada.y >= filas) {
+    if (coordenada.x < 0 ||
+        coordenada.x >= columnas ||
+        coordenada.y < 0 ||
+        coordenada.y >= filas) {
       throw RangeError('La coordenada esta fuera de los limites del tablero.');
     }
 
@@ -93,9 +89,9 @@ class Tablero {
 
   // Numeros que ya estan colocados dentro de una region.
   List<int> numerosEnRegion(Region region) => [
-        for (final coordenada in region.coordenadas)
-          ?obtenerCelda(coordenada).numero,
-      ];
+    for (final coordenada in region.coordenadas)
+      ?obtenerCelda(coordenada).numero,
+  ];
 
   // Numeros del 1 al 6 que acepta una casilla inicial segun la regla de su
   // region, tomando en cuenta los numeros de las otras casillas iniciales de
@@ -120,8 +116,8 @@ class Tablero {
 
   // Indica si todas las casillas de la region ya tienen un numero.
   bool regionCompleta(Region region) => region.coordenadas.every(
-        (coordenada) => obtenerCelda(coordenada).numero != null,
-      );
+    (coordenada) => obtenerCelda(coordenada).numero != null,
+  );
 
   // Indica si se puede colocar [numero] en [destino] usando [ancla]:
   // el destino debe estar vacio, tener al lado una casilla con el numero del
@@ -131,9 +127,9 @@ class Tablero {
       return false;
     }
 
-    final tieneAnclaAlLado = vecinas(destino).any(
-      (vecina) => vecina.numero == ancla,
-    );
+    final tieneAnclaAlLado = vecinas(
+      destino,
+    ).any((vecina) => vecina.numero == ancla);
     if (!tieneAnclaAlLado) {
       return false;
     }
@@ -145,16 +141,13 @@ class Tablero {
 
   // Todas las celdas donde se puede colocar [numero] usando [ancla].
   Set<Celda> destinosValidos({required int numero, required int ancla}) => {
-        for (final fila in celdas)
-          for (final celda in fila)
-            if (puedeColocar(celda, numero: numero, ancla: ancla)) celda,
-      };
+    for (final fila in celdas)
+      for (final celda in fila)
+        if (puedeColocar(celda, numero: numero, ancla: ancla)) celda,
+  };
 
   // Crea una matriz de celdas vacias con las dimensiones solicitadas.
-  static List<List<Celda>> _crearCeldas(
-    int filas,
-    int columnas,
-  ) {
+  static List<List<Celda>> _crearCeldas(int filas, int columnas) {
     // El bucle exterior crea las filas y el interior crea sus columnas.
     return [
       for (int y = 0; y < filas; y++)

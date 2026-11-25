@@ -65,11 +65,9 @@ class ValoresInicialesBloc extends ChangeNotifier {
         return true;
       }
       final celda = celdas[indice];
-      final opciones = tablero
-          .numerosPermitidosEnInicial(celda)
-          .difference(usados)
-          .toList()
-        ..shuffle(aleatorio);
+      final opciones =
+          tablero.numerosPermitidosEnInicial(celda).difference(usados).toList()
+            ..shuffle(aleatorio);
       for (final numero in opciones) {
         celda.numero = numero;
         if (asignarDesde(indice + 1, {...usados, numero})) {
@@ -86,17 +84,17 @@ class ValoresInicialesBloc extends ChangeNotifier {
 
   // Crea una fotografia de los numeros actuales de las celdas iniciales.
   ValoresInicialesEstado get estado => ValoresInicialesEstado(
-        valores: List.unmodifiable(
-          tablero.celdasIniciales.map((celda) => celda.numero),
-        ),
-        mensajeError: _mensajeError,
-        confirmado: _confirmado,
-        cumplenRegiones: tablero.celdasIniciales.every(
-          (celda) =>
-              celda.numero == null ||
-              tablero.numerosPermitidosEnInicial(celda).contains(celda.numero),
-        ),
-      );
+    valores: List.unmodifiable(
+      tablero.celdasIniciales.map((celda) => celda.numero),
+    ),
+    mensajeError: _mensajeError,
+    confirmado: _confirmado,
+    cumplenRegiones: tablero.celdasIniciales.every(
+      (celda) =>
+          celda.numero == null ||
+          tablero.numerosPermitidosEnInicial(celda).contains(celda.numero),
+    ),
+  );
 
   // Lee el estado actual y decide si el juego puede continuar.
   bool avanzar() {
@@ -115,8 +113,8 @@ class ValoresInicialesBloc extends ChangeNotifier {
     _mensajeError = !estadoActual.estanCompletos
         ? 'Debes completar las seis celdas iniciales.'
         : !estadoActual.noHayRepetidos
-            ? 'Los valores iniciales no pueden repetirse.'
-            : 'Hay un numero que no cumple la regla de su region.';
+        ? 'Los valores iniciales no pueden repetirse.'
+        : 'Hay un numero que no cumple la regla de su region.';
     notifyListeners();
     return false;
   }
