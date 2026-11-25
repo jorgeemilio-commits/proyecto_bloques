@@ -12,16 +12,17 @@ import '../region.dart';
 import '../sonidos.dart';
 import '../tablero.dart';
 import '../valores_iniciales_bloc.dart';
-import '../widgets/celda_widget.dart';
 import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
 import '../widgets/dados_widget.dart';
-import '../widgets/elo_widget.dart';
-import '../widgets/estilo_cuenta.dart';
 import '../widgets/leyenda_regiones_widget.dart';
 import '../widgets/menu_regiones_widget.dart';
 import '../widgets/panel_lateral_widget.dart';
 import '../widgets/tablero_widget.dart';
+import 'partida_en_linea/aviso_reclamo.dart';
+import 'partida_en_linea/encabezado.dart';
+import 'partida_en_linea/resultados.dart';
+import 'partida_en_linea/rivales.dart';
 
 // La partida en linea. Todo lo que se ve sale del ultimo estado del
 // servidor (los dados, los tableros, los puntos y el tiempo); aqui solo se
@@ -61,7 +62,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   // El mapa ya leido, para saber el color de las regiones en los avisos.
   Mapa? _mapaLeido;
   // Avisos de regiones que completaron los rivales, que se ven un momento.
-  final List<_Reclamo> _reclamos = [];
+  final List<ReclamoDeRival> _reclamos = [];
   int _siguienteReclamo = 0;
   // Ultima region que complete yo, para que brille en mi tablero.
   Destello? _destello;
@@ -134,7 +135,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
             .where((region) => region.id == reclamo.region)
             .firstOrNull;
         _reclamos.add(
-          _Reclamo(
+          ReclamoDeRival(
             id: _siguienteReclamo++,
             usuario: jugador.usuario,
             region: region,
@@ -214,7 +215,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
                     child: Column(
                       children: [
-                        _Encabezado(estado: _estado, mapa: mapa),
+                        EncabezadoDePartida(estado: _estado, mapa: mapa),
                         const SizedBox(height: 10),
                         Expanded(
                           child: Center(
@@ -266,7 +267,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                         const LeyendaRegiones(),
                         const SizedBox(height: 10),
                         // Los tableros de los demas, debajo del mio.
-                        _Rivales(estado: _estado, mapa: mapa),
+                        RivalesDePartida(estado: _estado, mapa: mapa),
                       ],
                     ),
                   ),
@@ -286,7 +287,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (final reclamo in _reclamos)
-                      _AvisoDeReclamo(
+                      AvisoDeReclamo(
                         key: ValueKey('aviso-reclamo-${reclamo.id}'),
                         reclamo: reclamo,
                         alTerminar: () =>
@@ -333,7 +334,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   // Mi tablero como lo tiene el servidor (valores iniciales y numeros
   // colocados), mas la jugada de esta ronda si ya la mande.
   Tablero _tableroDelServidor(Mapa mapa, JugadorEnSala? yo) {
-    final tablero = _tableroDe(mapa, yo);
+    final tablero = tableroDeJugador(mapa, yo);
     final pendiente = _pendiente;
     if (pendiente != null && pendiente.ronda == _estado.ronda) {
       tablero.obtenerCelda(Coordenada(pendiente.x, pendiente.y)).numero ??=
@@ -392,7 +393,7 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
     );
 
     if (_estado.fase == 'terminada' || yo == null || !yo.jugando) {
-      return _Resultados(estado: _estado);
+      return ResultadosDePartida(estado: _estado);
     }
     if (eligiendoValores) {
       final valores = _valoresBloc?.estado;
@@ -522,167 +523,6 @@ class _PartidaEnLineaState extends State<PartidaEnLinea> {
   }
 }
 
-// Tablero de un jugador como lo manda el servidor: sus valores iniciales y
-// los numeros que coloco. No se puede tocar.
-Tablero _tableroDe(Mapa mapa, JugadorEnSala? jugador) {
-  final tablero = mapa.crearTablero();
-  final iniciales = jugador?.iniciales;
-  for (var i = 0; i < tablero.celdasIniciales.length; i++) {
-    final celda = tablero.celdasIniciales[i];
-    celda.esInsertable = false;
-    if (iniciales != null && i < iniciales.length) {
-      celda.numero = iniciales[i];
-    }
-  }
-  for (final (x, y, numero) in jugador?.casillas ?? const <(int, int, int)>[]) {
-    if (x < tablero.columnas && y < tablero.filas) {
-      tablero.obtenerCelda(Coordenada(x, y)).numero = numero;
-    }
-  }
-  return tablero;
-}
-
-// Arriba: la fase, el tiempo que queda, mis puntos y la meta, y el aviso de
-// la region que complete en la ronda anterior.
-class _Encabezado extends StatelessWidget {
-  final EstadoSala estado;
-  final Mapa mapa;
-
-  const _Encabezado({required this.estado, required this.mapa});
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final yo = estado.yo;
-    final reclamo = yo?.ultimoReclamo;
-    final titulo = switch (estado.fase) {
-      'valoresIniciales' => 'Valores iniciales',
-      'terminada' => 'Partida terminada',
-      _ => 'Ronda ${estado.ronda}',
-    };
-
-    String? aviso;
-    if (reclamo != null) {
-      final region = mapa.regiones
-          .where((region) => region.id == reclamo.region)
-          .firstOrNull;
-      final nombre = region?.tipo.nombre ?? reclamo.region;
-      aviso = reclamo.puntos > 0
-          ? '¡Completaste una región $nombre! +${reclamo.puntos} puntos.'
-          : 'Completaste una región $nombre, pero ya no da puntos.';
-    } else if (estado.fase == 'valoresIniciales' && yo?.iniciales == null) {
-      aviso = 'Pon tus seis valores iniciales (1 a 6, sin repetir).';
-    } else if (estado.fase == 'ronda' && (yo?.jugando ?? false)) {
-      aviso = Configuracion.modoDeControl.value == ModoDeControl.tocarAncla
-          ? 'Toca el dado ancla y luego la casilla donde va el otro, o pasa.'
-          : 'Arrastra un dado junto al número del otro dado, o pasa.';
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                titulo,
-                key: const ValueKey('titulo-fase'),
-                style: tema.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (estado.limite != null) ...[
-              _CuentaRegresiva(limite: estado.limite!),
-              const SizedBox(width: 12),
-            ],
-            Text(
-              '${yo?.puntos ?? 0}/${estado.meta ?? '?'} pts',
-              key: const ValueKey('marcador'),
-              style: tema.textTheme.titleMedium?.copyWith(
-                color: tema.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        if (aviso != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            aviso,
-            style: tema.textTheme.bodyMedium?.copyWith(
-              color: reclamo != null
-                  ? Colors.amber.shade300
-                  : tema.colorScheme.onSurfaceVariant,
-              fontWeight: reclamo != null ? FontWeight.w600 : null,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-// Segundos que faltan; se pone roja en los ultimos 10.
-class _CuentaRegresiva extends StatefulWidget {
-  final DateTime limite;
-
-  const _CuentaRegresiva({required this.limite});
-
-  @override
-  State<_CuentaRegresiva> createState() => _CuentaRegresivaState();
-}
-
-class _CuentaRegresivaState extends State<_CuentaRegresiva> {
-  late final Timer _reloj = Timer.periodic(
-    const Duration(milliseconds: 250),
-    (_) => setState(() {}),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    _reloj;
-  }
-
-  @override
-  void dispose() {
-    _reloj.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colores = Theme.of(context).colorScheme;
-    final restante = widget.limite.difference(DateTime.now());
-    final segundos = restante.isNegative
-        ? 0
-        : (restante.inMilliseconds / 1000).ceil();
-    final urgente = segundos <= 10;
-
-    return Row(
-      key: const ValueKey('cuenta-regresiva'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.timer_outlined,
-          size: 18,
-          color: urgente ? colores.error : colores.onSurfaceVariant,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '${segundos}s',
-          style: TextStyle(
-            color: urgente ? colores.error : colores.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // Barra fija abajo de la partida, con los controles: los dados y "Pasar", o
 // los valores iniciales, o los resultados.
 class _BarraDeJuego extends StatelessWidget {
@@ -707,420 +547,6 @@ class _BarraDeJuego extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: child,
-      ),
-    );
-  }
-}
-
-// Tira con el tablero en miniatura de cada rival, sus puntos y su
-// situacion. Al tocar uno se ve en grande.
-class _Rivales extends StatelessWidget {
-  final EstadoSala estado;
-  final Mapa mapa;
-
-  const _Rivales({required this.estado, required this.mapa});
-
-  @override
-  Widget build(BuildContext context) {
-    final rivales = [
-      for (final jugador in estado.jugadores)
-        if (jugador.usuario != estado.usuario) jugador,
-    ];
-
-    return SizedBox(
-      height: 118,
-      child: ListView.separated(
-        key: const ValueKey('rivales'),
-        scrollDirection: Axis.horizontal,
-        itemCount: rivales.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, indice) =>
-            _Rival(jugador: rivales[indice], estado: estado, mapa: mapa),
-      ),
-    );
-  }
-}
-
-class _Rival extends StatelessWidget {
-  final JugadorEnSala jugador;
-  final EstadoSala estado;
-  final Mapa mapa;
-
-  const _Rival({
-    required this.jugador,
-    required this.estado,
-    required this.mapa,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final colores = tema.colorScheme;
-    final ganador = estado.ganadores.contains(jugador.usuario);
-
-    // Que esta haciendo: ganador, en la meta, rendido, desconectado o si ya
-    // jugo esta ronda.
-    final (IconData icono, Color color) = ganador
-        ? (Icons.emoji_events, Colors.amber)
-        : !jugador.jugando
-        ? (
-            jugador.situacion == 'rendido' ? Icons.flag : Icons.check_circle,
-            jugador.situacion == 'rendido' ? colores.error : naranjaLogo,
-          )
-        : !jugador.conectado
-        ? (Icons.wifi_off, colores.error)
-        : jugador.yaJugo
-        ? (Icons.check, colores.primary)
-        : (Icons.hourglass_empty, colores.onSurfaceVariant);
-
-    return InkWell(
-      key: ValueKey('rival-${jugador.usuario}'),
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _verEnGrande(context),
-      child: Container(
-        width: 96,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: colores.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Opacity(
-                opacity: jugador.situacion == 'rendido' ? 0.4 : 1,
-                child: IgnorePointer(
-                  child: TableroWidget(
-                    tablero: _tableroDe(mapa, jugador),
-                    vecesReclamada: (region) => estado.reclamos[region.id] ?? 0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(icono, size: 13, color: color),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(
-                    jugador.usuario,
-                    overflow: TextOverflow.ellipsis,
-                    style: tema.textTheme.labelSmall,
-                  ),
-                ),
-                Text(
-                  '${jugador.puntos}',
-                  style: tema.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _verEnGrande(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (contexto) => AlertDialog(
-        title: Text('${jugador.usuario} · ${jugador.puntos} pts'),
-        content: SizedBox(
-          width: 320,
-          child: IgnorePointer(
-            child: TableroWidget(
-              tablero: _tableroDe(mapa, jugador),
-              vecesReclamada: (region) => estado.reclamos[region.id] ?? 0,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(contexto).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Al terminar: los ganadores y la tabla de puntos.
-//
-// Tambien sale cuando la partida se acabo solo para mi (me rendi o llegue a
-// la meta) mientras los demas siguen: entonces lo dice, y arriba se siguen
-// viendo los tableros de los demas, que se actualizan cada ronda.
-class _Resultados extends StatelessWidget {
-  final EstadoSala estado;
-
-  const _Resultados({required this.estado});
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final gane = estado.ganadores.contains(estado.usuario);
-    final termino = estado.fase == 'terminada';
-    final situacion = estado.yo?.situacion;
-    final tabla = [...estado.jugadores]
-      ..sort((a, b) => b.puntos.compareTo(a.puntos));
-
-    return Column(
-      key: const ValueKey('resultados'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          gane
-              ? '¡Ganaste!'
-              : situacion == 'rendido'
-              ? 'Te rendiste'
-              : !termino
-              ? 'Llegaste a la meta'
-              : estado.ganadores.isEmpty
-              ? 'Nadie ganó'
-              : 'Ganó ${estado.ganadores.join(' y ')}',
-          key: const ValueKey('titulo-resultados'),
-          textAlign: TextAlign.center,
-          style: tema.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: gane ? naranjaLogo : null,
-          ),
-        ),
-        // Al terminar: cuanto cambio mi Elo, con una animacion.
-        if (estado.yo?.cambioElo case final cambio?)
-          _CambioDeEloAnimado(cambio: cambio),
-        if (!termino)
-          Text(
-            'Los demás siguen jugando: arriba puedes ver sus tableros.',
-            textAlign: TextAlign.center,
-            style: tema.textTheme.bodySmall?.copyWith(
-              color: tema.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        const SizedBox(height: 8),
-        // La tabla hace scroll si son muchos; el boton queda fijo abajo.
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 150),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                for (final jugador in tabla)
-                  Row(
-                    children: [
-                      Icon(
-                        estado.ganadores.contains(jugador.usuario)
-                            ? Icons.emoji_events
-                            : jugador.situacion == 'rendido'
-                            ? Icons.flag
-                            : Icons.person,
-                        size: 18,
-                        color: estado.ganadores.contains(jugador.usuario)
-                            ? Colors.amber
-                            : tema.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(jugador.usuario)),
-                      Text(
-                        '${jugador.puntos} pts',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      // Cuanto cambio su Elo (al terminar la partida).
-                      if (jugador.cambioElo case final cambio?)
-                        SizedBox(
-                          width: 44,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: CambioDeElo(cambio: cambio),
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Grande y con el degradado del logo, como "Jugar" en el menu.
-        BotonDegradado(
-          key: const ValueKey('boton-volver-menu'),
-          texto: termino ? 'Volver al menú' : 'Salir de la partida',
-          cargando: false,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ],
-    );
-  }
-}
-
-// Mi cambio de Elo al terminar: aparece creciendo y el numero cuenta desde 0
-// hasta el cambio ("+25 Elo" en verde o "−15 Elo" en rojo).
-class _CambioDeEloAnimado extends StatelessWidget {
-  final int cambio;
-
-  const _CambioDeEloAnimado({required this.cambio});
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-
-    return TweenAnimationBuilder<double>(
-      key: const ValueKey('cambio-elo-resultados'),
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.easeOutBack,
-      builder: (context, avance, _) => Transform.scale(
-        scale: 0.6 + 0.4 * avance.clamp(0, 1),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CambioDeElo(
-              cambio: (cambio * avance.clamp(0, 1)).round(),
-              estilo: tema.textTheme.headlineSmall,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Elo',
-              style: tema.textTheme.titleMedium?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Una region que completo un rival, para avisarlo.
-class _Reclamo {
-  final int id;
-  final String usuario;
-  // null si la region no esta en el mapa (no deberia pasar).
-  final Region? region;
-  final int puntos;
-
-  const _Reclamo({
-    required this.id,
-    required this.usuario,
-    required this.region,
-    required this.puntos,
-  });
-}
-
-// Aviso pequeño de que un rival completo una region: entra deslizandose
-// desde la izquierda, se queda un momento y se regresa por donde vino. Al
-// terminar se quita.
-class _AvisoDeReclamo extends StatefulWidget {
-  final _Reclamo reclamo;
-  final VoidCallback alTerminar;
-
-  const _AvisoDeReclamo({
-    super.key,
-    required this.reclamo,
-    required this.alTerminar,
-  });
-
-  @override
-  State<_AvisoDeReclamo> createState() => _AvisoDeReclamoState();
-}
-
-class _AvisoDeReclamoState extends State<_AvisoDeReclamo>
-    with SingleTickerProviderStateMixin {
-  // Todo el aviso dura 3.5 segundos: entra en el primer 10% del tiempo, se
-  // queda, y en el ultimo 15% se regresa a la izquierda por donde vino.
-  late final AnimationController _tiempo = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 3500),
-  )..forward().whenComplete(widget.alTerminar);
-
-  late final Animation<Offset> _posicion = TweenSequence<Offset>([
-    TweenSequenceItem(
-      tween: Tween(
-        begin: const Offset(-1.2, 0),
-        end: Offset.zero,
-      ).chain(CurveTween(curve: Curves.easeOutCubic)),
-      weight: 10,
-    ),
-    TweenSequenceItem(tween: ConstantTween(Offset.zero), weight: 75),
-    TweenSequenceItem(
-      tween: Tween(
-        begin: Offset.zero,
-        end: const Offset(-1.2, 0),
-      ).chain(CurveTween(curve: Curves.easeInCubic)),
-      weight: 15,
-    ),
-  ]).animate(_tiempo);
-
-  @override
-  void dispose() {
-    _tiempo.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final reclamo = widget.reclamo;
-    final region = reclamo.region;
-    final color = region == null ? naranjaLogo : colorDeRegion(region.tipo);
-    final premio = reclamo.puntos > 0 ? '+${reclamo.puntos}' : 'sin puntos';
-
-    return SlideTransition(
-      position: _posicion,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        constraints: const BoxConstraints(maxWidth: 250),
-        padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
-        decoration: BoxDecoration(
-          color: tema.colorScheme.surfaceContainerHighest,
-          borderRadius: const BorderRadius.horizontal(
-            right: Radius.circular(12),
-          ),
-          border: Border(left: BorderSide(color: color, width: 4)),
-          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: reclamo.usuario,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    TextSpan(
-                      text:
-                          ' completó una región '
-                          '${region?.tipo.nombre ?? ''} · ',
-                    ),
-                    TextSpan(
-                      text: premio,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: reclamo.puntos > 0 ? naranjaLogo : null,
-                      ),
-                    ),
-                  ],
-                ),
-                key: const ValueKey('texto-aviso-reclamo'),
-                style: tema.textTheme.bodySmall,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
