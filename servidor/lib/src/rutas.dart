@@ -186,10 +186,14 @@ Handler crearManejador({
 Map<String, int> _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
   final partida = sala.partida!;
   // Cambio de Elo de cada uno segun el lugar en que quedo (ver elo.dart).
+  // (Se usa el Elo con el que llego cada uno; si borro su cuenta, el inicial.)
   final cambios = cambiosDeElo([
     for (final participante in partida.participantes)
       (
         nombre: participante.nombre,
+        elo:
+            baseDeDatos.usuarioPorNombre(participante.nombre)?.elo ??
+            eloInicial,
         puntos: participante.puntos,
         gano: partida.ganadores.contains(participante.nombre),
         seRindio: participante.situacion == 'rendido',

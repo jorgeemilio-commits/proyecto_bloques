@@ -5,18 +5,36 @@ import 'package:test/test.dart';
 FinalDeJugador jugador(
   String nombre,
   int puntos, {
+  int elo = 1000,
   bool gano = false,
   bool seRindio = false,
-}) => (nombre: nombre, puntos: puntos, gano: gano, seRindio: seRindio);
+}) =>
+    (nombre: nombre, elo: elo, puntos: puntos, gano: gano, seRindio: seRindio);
 
 void main() {
-  test('dos jugadores: el ganador sube 20 y el otro baja 15', () {
+  test('dos jugadores parejos: el ganador sube 16 y el otro baja 16', () {
     final cambios = cambiosDeElo([
       jugador('Ana', 26, gano: true),
       jugador('Luis', 12),
     ]);
 
-    expect(cambios, {'Ana': 20, 'Luis': -15});
+    expect(cambios, {'Ana': 16, 'Luis': -16});
+  });
+
+  test('ganarle a alguien mas fuerte da mas que a alguien mas debil', () {
+    // Ana (1000) le gana a Luis (1200): era poco probable.
+    final sorpresa = cambiosDeElo([
+      jugador('Ana', 26, gano: true),
+      jugador('Luis', 12, elo: 1200),
+    ]);
+    // Luis (1200) le gana a Ana (1000): era lo esperado.
+    final esperado = cambiosDeElo([
+      jugador('Ana', 12),
+      jugador('Luis', 26, elo: 1200, gano: true),
+    ]);
+
+    expect(sorpresa, {'Ana': 24, 'Luis': -24});
+    expect(esperado, {'Ana': -8, 'Luis': 8});
   });
 
   test('con 4: ganador, luego por puntos, y el que se rindio al final', () {
@@ -28,10 +46,11 @@ void main() {
       jugador('Luis', 14),
     ]);
 
-    expect(cambios, {'Ana': 25, 'Luis': 10, 'Leo': -5, 'Eva': -15});
+    // Todos con 1000: duelos de 0.5 esperado contra 1, 0.5 o 0.
+    expect(cambios, {'Ana': 16, 'Luis': 5, 'Leo': -5, 'Eva': -16});
   });
 
-  test('empates: los ganadores y los mismos puntos reciben el mejor lugar', () {
+  test('empates: entre ganadores y con los mismos puntos cuentan medio', () {
     final cambios = cambiosDeElo([
       jugador('Ana', 26, gano: true),
       jugador('Luis', 26, gano: true),
@@ -40,8 +59,7 @@ void main() {
       jugador('Mia', 3),
     ]);
 
-    // Con 5: [25, 10, 0, -10, -15]. Ana y Luis 1.º; Eva y Leo 3.º; Mia 5.º.
-    expect(cambios, {'Ana': 25, 'Luis': 25, 'Eva': 0, 'Leo': 0, 'Mia': -15});
+    expect(cambios, {'Ana': 12, 'Luis': 12, 'Eva': -4, 'Leo': -4, 'Mia': -16});
   });
 
   test('solo cuenta si al terminar al menos dos no se rindieron', () {
@@ -49,11 +67,6 @@ void main() {
     final porRendicion = cambiosDeElo([
       jugador('Ana', 12, gano: true),
       jugador('Luis', 15, seRindio: true),
-    ]);
-    // 2 jugadores: Ana llega a la meta y Luis seguia jugando -> cuenta.
-    final normal = cambiosDeElo([
-      jugador('Ana', 26, gano: true),
-      jugador('Luis', 15),
     ]);
     // 4 jugadores: dos se rinden pero dos siguen -> cuenta.
     final dosSiguen = cambiosDeElo([
@@ -70,8 +83,7 @@ void main() {
     ]);
 
     expect(porRendicion, {'Ana': 0, 'Luis': 0});
-    expect(normal, {'Ana': 20, 'Luis': -15});
-    expect(dosSiguen, {'Ana': 25, 'Luis': 10, 'Eva': -5, 'Leo': -15});
+    expect(dosSiguen, {'Ana': 16, 'Luis': 5, 'Eva': -5, 'Leo': -16});
     expect(quedaUno, {'Ana': 0, 'Luis': 0, 'Eva': 0});
   });
 

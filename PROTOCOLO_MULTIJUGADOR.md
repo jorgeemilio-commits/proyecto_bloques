@@ -154,11 +154,15 @@ En la partida (además de lo del lobby):
   del mapa (`null` mientras no los tenga). Los de los rivales **no se ven
   hasta que empieza la ronda 1**: mientras tanto llegan como `null`.
 - `elo` (en el lobby): el Elo de cada jugador (empieza en 1000).
-- `cambioElo` (al terminar la partida): cuánto cambió el Elo de cada jugador.
-  Son puntos fijos según el lugar (ganadores primero, luego por puntos y los
-  que se rindieron al final); mientras la partida sigue llega como `null`.
-  Solo cuenta si se jugó al menos una ronda y, al terminar, al menos dos
-  jugadores no se habían rendido; si no, el cambio es 0 para todos.
+- `cambioElo` (al terminar la partida): cuánto cambió el Elo de cada jugador;
+  mientras la partida sigue llega como `null`. Se calcula **por pares**: cada
+  jugador tiene un duelo contra cada rival (quedar arriba vale 1, empatar 0.5,
+  quedar abajo 0, con el orden ganadores > por puntos > rendidos) y se compara
+  con la probabilidad de ganarle según el Elo de los dos,
+  1 / (1 + 10^((Elo rival − Elo propio) / 400)). El cambio es
+  32 / (número de rivales) × la suma de (resultado − probabilidad). Solo
+  cuenta si se jugó al menos una ronda y, al terminar, al menos dos jugadores
+  no se habían rendido; si no, el cambio es 0 para todos.
 - `reclamos`: cuántas veces se ha reclamado cada región (por su id). Sirve
   para apagar las regiones ya reclamadas y mostrar los puntos que les quedan.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.
