@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../../constantes.dart';
-import '../../region.dart';
+import '../../juego/constantes.dart';
+import '../../juego/region.dart';
 import '../../widgets/celda_widget.dart';
 
 // Una region que completo un rival, para avisarlo.

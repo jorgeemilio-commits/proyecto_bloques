@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../../constantes.dart';
 import '../../cuenta/servicio_cuenta.dart';
-import '../../lector_mapas.dart';
+import '../../juego/constantes.dart';
+import '../../juego/lector_mapas.dart';
 import '../../widgets/elo_widget.dart';
 
 // Las estadisticas del jugador y la lista de sus ultimas partidas.

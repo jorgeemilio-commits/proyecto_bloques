@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
+import '../juego/constantes.dart';
 import '../widgets/estilo_cuenta.dart';
 
 // Pantalla para crear una cuenta nueva. Al crearla, inicia sesion con ella.

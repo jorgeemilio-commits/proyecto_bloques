@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
+import '../juego/constantes.dart';
 
 // Panel que se desliza desde la derecha. Una pestaña pegada a su borde
 // izquierdo lo abre o cierra al tocarla, y tanto la pestaña como el panel se

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
+import '../juego/constantes.dart';
 import 'cuenta/historial.dart';
 
 // Pantalla de la cuenta del jugador: su nombre, su historial de partidas en

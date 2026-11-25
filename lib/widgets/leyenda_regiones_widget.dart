@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../tipo.dart';
+import '../juego/tipo.dart';
 import 'celda_widget.dart';
 
 // Leyenda compacta con el color y la regla de cada tipo de region.

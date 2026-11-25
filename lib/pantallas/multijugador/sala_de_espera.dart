@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../constantes.dart';
+import '../../juego/constantes.dart';
 import '../../multijugador/servicio_sala.dart';
 import 'opciones_sala.dart';
 

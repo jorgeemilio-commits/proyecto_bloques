@@ -8,7 +8,7 @@
   - No puede haber números repetidos entre las casillas iniciales.
 - Al presionar **Listo**, las casillas iniciales quedan bloqueadas.
 
-> Las coordenadas de las casillas iniciales se definen en el código (`coordenadasIniciales` en `lib/region.dart`). Siempre son 6 y deben elegirse de forma que **no queden dos dentro de la misma región azul**, porque la regla de "sin repetidos" chocaría con la regla azul de "todos iguales".
+> Las coordenadas de las casillas iniciales se definen en el código (`coordenadasIniciales` en `lib/juego/region.dart`). Siempre son 6 y deben elegirse de forma que **no queden dos dentro de la misma región azul**, porque la regla de "sin repetidos" chocaría con la regla azul de "todos iguales".
 
 ## Turno
 

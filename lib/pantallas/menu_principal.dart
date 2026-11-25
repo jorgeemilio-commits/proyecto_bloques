@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
-import '../lector_mapas.dart';
-import '../mapa.dart';
-import '../region.dart';
+import '../juego/constantes.dart';
+import '../juego/lector_mapas.dart';
+import '../juego/mapa.dart';
+import '../juego/region.dart';
+import '../multijugador/servicio_sala.dart';
 import '../widgets/celda_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/volumen_widget.dart';
-import '../multijugador/servicio_sala.dart';
 import 'cuenta.dart';
 import 'multijugador.dart';
 import 'seleccion_mapa.dart';

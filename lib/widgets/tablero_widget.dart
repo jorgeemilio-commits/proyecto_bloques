@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../region.dart';
-import '../tablero.dart';
+import '../juego/region.dart';
+import '../juego/tablero.dart';
 import 'celda_widget.dart';
 import 'celebracion_widget.dart';
 

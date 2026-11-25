@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../region.dart';
+import '../juego/region.dart';
 import 'celda_widget.dart';
 
 // Codigo de colores del tablero: cada region con su muestra (apagada segun

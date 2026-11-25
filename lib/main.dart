@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'configuracion.dart';
 import 'cuenta/servicio_cuenta.dart';
-import 'lector_mapas.dart';
+import 'juego/lector_mapas.dart';
 import 'pantallas/inicio_sesion.dart';
 import 'pantallas/menu_principal.dart';
 import 'sonidos.dart';

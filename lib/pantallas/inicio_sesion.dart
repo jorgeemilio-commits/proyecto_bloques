@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
 import '../cuenta/servicio_cuenta.dart';
+import '../juego/constantes.dart';
 import '../widgets/estilo_cuenta.dart';
 import 'crear_cuenta.dart';
 

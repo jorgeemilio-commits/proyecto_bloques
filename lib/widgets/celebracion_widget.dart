@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
-import '../tipo.dart';
+import '../juego/constantes.dart';
+import '../juego/tipo.dart';
 
 // Una region que el jugador acaba de completar, para celebrarla en su
 // tablero. Cada reclamo lleva su propio [id] para que la animacion se repita

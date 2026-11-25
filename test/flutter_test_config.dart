@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:proyecto_bloques/juego/turno_bloc.dart';
 import 'package:proyecto_bloques/sonidos.dart';
-import 'package:proyecto_bloques/turno_bloc.dart';
 import 'package:proyecto_bloques/widgets/fondo_animado_widget.dart';
 
 // Flutter ejecuta este archivo antes de todas las pruebas de la carpeta test/.

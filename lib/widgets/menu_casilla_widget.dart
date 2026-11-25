@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../numero_celda_bloc.dart';
+import '../juego/numero_celda_bloc.dart';
 
 class MenuCasillaWidget extends StatefulWidget {
   final Widget child;

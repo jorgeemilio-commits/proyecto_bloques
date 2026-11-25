@@ -1,17 +1,16 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../configuracion.dart';
-import '../constantes.dart';
-import '../mapa.dart';
-import '../reclamos.dart';
+import '../juego/constantes.dart';
+import '../juego/mapa.dart';
+import '../juego/reclamos.dart';
+import '../juego/tablero.dart';
+import '../juego/turno_bloc.dart';
+import '../juego/valores_iniciales_bloc.dart';
 import '../sonidos.dart';
-import '../tablero.dart';
-import '../turno_bloc.dart';
-import '../valores_iniciales_bloc.dart';
-import '../widgets/celebracion_widget.dart';
 import '../widgets/brillo_ronda_widget.dart';
+import '../widgets/celebracion_widget.dart';
 import '../widgets/dados_widget.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/leyenda_regiones_widget.dart';

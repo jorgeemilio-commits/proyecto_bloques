@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../constantes.dart';
+import '../juego/constantes.dart';
 
 // Aviso de que empezo una ronda nueva: el borde de [child] (el tablero) brilla
 // un instante con los colores del logo, y el telefono vibra muy suave. Se

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../numero_celda_bloc.dart';
-import '../region.dart';
-import '../tablero.dart';
-import '../tipo.dart';
+import '../juego/numero_celda_bloc.dart';
+import '../juego/region.dart';
+import '../juego/tablero.dart';
+import '../juego/tipo.dart';
 import 'menu_casilla_widget.dart';
 
 // Brillo de una region segun cuantas veces se ha reclamado: cada reclamo la

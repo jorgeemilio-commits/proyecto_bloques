@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
-import '../lector_mapas.dart';
-import '../mapa.dart';
+import '../juego/constantes.dart';
+import '../juego/lector_mapas.dart';
+import '../juego/mapa.dart';
 import '../widgets/tablero_widget.dart';
 import 'partida.dart';
 

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../configuracion.dart';
-import '../constantes.dart';
-import '../turno_bloc.dart';
+import '../juego/constantes.dart';
+import '../juego/turno_bloc.dart';
 
 // Muestra los dos dados del turno y el boton para pasar. Cada dado se puede
 // arrastrar a una casilla; el otro dado funciona como ancla.

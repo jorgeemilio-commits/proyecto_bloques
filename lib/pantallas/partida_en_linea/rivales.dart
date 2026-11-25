@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../../constantes.dart';
-import '../../mapa.dart';
+import '../../juego/constantes.dart';
+import '../../juego/mapa.dart';
+import '../../juego/region.dart';
+import '../../juego/tablero.dart';
 import '../../multijugador/servicio_sala.dart';
-import '../../region.dart';
-import '../../tablero.dart';
 import '../../widgets/tablero_widget.dart';
 
 // Tablero de un jugador como lo manda el servidor: sus valores iniciales y

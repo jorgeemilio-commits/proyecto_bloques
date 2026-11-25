@@ -4,8 +4,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../lector_mapas.dart';
-import '../../mapa.dart';
+import '../../juego/lector_mapas.dart';
+import '../../juego/mapa.dart';
 import '../seleccion_mapa.dart';
 
 // Mapa de la sala con su vista previa, como en la eleccion de mapa offline.

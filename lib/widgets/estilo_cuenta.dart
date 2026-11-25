@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
+import '../juego/constantes.dart';
 import 'fondo_animado_widget.dart';
 
 // Piezas con el estilo de las pantallas de iniciar sesion y crear cuenta.

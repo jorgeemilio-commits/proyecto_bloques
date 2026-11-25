@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../configuracion.dart';
-import '../../mapa.dart';
+import '../../juego/mapa.dart';
 import '../../multijugador/servicio_sala.dart';
 
 // Arriba: la fase, el tiempo que queda, mis puntos y la meta, y el aviso de

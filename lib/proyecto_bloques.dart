@@ -1,8 +1,8 @@
-export 'lector_mapas.dart';
-export 'mapa.dart';
-export 'reclamos.dart';
-export 'region.dart';
-export 'tablero.dart';
-export 'tipo.dart';
-export 'turno_bloc.dart';
-export 'valores_iniciales_bloc.dart';
+export 'juego/lector_mapas.dart';
+export 'juego/mapa.dart';
+export 'juego/reclamos.dart';
+export 'juego/region.dart';
+export 'juego/tablero.dart';
+export 'juego/tipo.dart';
+export 'juego/turno_bloc.dart';
+export 'juego/valores_iniciales_bloc.dart';

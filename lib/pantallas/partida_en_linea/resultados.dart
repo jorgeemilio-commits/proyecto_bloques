@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../constantes.dart';
+import '../../juego/constantes.dart';
 import '../../multijugador/servicio_sala.dart';
 import '../../widgets/elo_widget.dart';
 import '../../widgets/estilo_cuenta.dart';

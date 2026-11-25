@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../constantes.dart';
+import '../juego/constantes.dart';
 import '../multijugador/servicio_sala.dart';
 import '../sonidos.dart';
 import '../widgets/fondo_animado_widget.dart';
 import '../widgets/volumen_widget.dart';
-import 'partida_en_linea.dart';
 import 'multijugador/entrada_sala.dart';
 import 'multijugador/sala_de_espera.dart';
+import 'partida_en_linea.dart';
 
 // Pantalla para jugar en linea. Se conecta al servidor al abrirse y muestra,
 // segun el estado: entrar a una sala (crear o unirse con codigo), la sala de
