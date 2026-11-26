@@ -12,13 +12,13 @@ FinalDeJugador jugador(
     (nombre: nombre, elo: elo, puntos: puntos, gano: gano, seRindio: seRindio);
 
 void main() {
-  test('dos jugadores parejos: el ganador sube 16 y el otro baja 16', () {
+  test('dos jugadores parejos: el ganador sube 32 y el otro baja 32', () {
     final cambios = cambiosDeElo([
       jugador('Ana', 26, gano: true),
       jugador('Luis', 12),
     ]);
 
-    expect(cambios, {'Ana': 16, 'Luis': -16});
+    expect(cambios, {'Ana': 32, 'Luis': -32});
   });
 
   test('ganarle a alguien mas fuerte da mas que a alguien mas debil', () {
@@ -33,8 +33,8 @@ void main() {
       jugador('Luis', 26, elo: 1200, gano: true),
     ]);
 
-    expect(sorpresa, {'Ana': 24, 'Luis': -24});
-    expect(esperado, {'Ana': -8, 'Luis': 8});
+    expect(sorpresa, {'Ana': 49, 'Luis': -49});
+    expect(esperado, {'Ana': -15, 'Luis': 15});
   });
 
   test('con 4: ganador, luego por puntos, y el que se rindio al final', () {
@@ -47,7 +47,7 @@ void main() {
     ]);
 
     // Todos con 1000: duelos de 0.5 esperado contra 1, 0.5 o 0.
-    expect(cambios, {'Ana': 16, 'Luis': 5, 'Leo': -5, 'Eva': -16});
+    expect(cambios, {'Ana': 32, 'Luis': 11, 'Leo': -11, 'Eva': -32});
   });
 
   test('empates: entre ganadores y con los mismos puntos cuentan medio', () {
@@ -59,7 +59,7 @@ void main() {
       jugador('Mia', 3),
     ]);
 
-    expect(cambios, {'Ana': 12, 'Luis': 12, 'Eva': -4, 'Leo': -4, 'Mia': -16});
+    expect(cambios, {'Ana': 24, 'Luis': 24, 'Eva': -8, 'Leo': -8, 'Mia': -32});
   });
 
   test('solo cuenta si al terminar al menos dos no se rindieron', () {
@@ -83,7 +83,7 @@ void main() {
     ]);
 
     expect(porRendicion, {'Ana': 0, 'Luis': 0});
-    expect(dosSiguen, {'Ana': 16, 'Luis': 5, 'Eva': -5, 'Leo': -16});
+    expect(dosSiguen, {'Ana': 32, 'Luis': 11, 'Eva': -11, 'Leo': -32});
     expect(quedaUno, {'Ana': 0, 'Luis': 0, 'Eva': 0});
   });
 

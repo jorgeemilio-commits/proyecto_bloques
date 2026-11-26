@@ -11,7 +11,7 @@ const int eloInicial = 1000;
 
 // Cuanto se puede mover el Elo en una partida: entre dos jugadores parejos,
 // ganar da unos K/2.
-const double factorK = 32;
+const double factorK = 64;
 
 // Como termino un jugador la partida y con cuanto Elo llego.
 typedef FinalDeJugador = ({
