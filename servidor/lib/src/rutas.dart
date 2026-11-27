@@ -198,7 +198,7 @@ Map<String, int> _guardarPartida(Sala sala, BaseDeDatos baseDeDatos) {
         gano: partida.ganadores.contains(participante.nombre),
         seRindio: participante.situacion == 'rendido',
       ),
-  ]);
+  ], rondas: partida.ronda);
   try {
     baseDeDatos.guardarPartida(
       mapa: sala.mapa,

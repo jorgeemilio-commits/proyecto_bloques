@@ -13,6 +13,10 @@ const int eloInicial = 1000;
 // ganar da unos K/2.
 const double factorK = 64;
 
+// Si todos menos uno se rinden, la partida solo cuenta para el Elo cuando ya
+// se jugaron mas de estas rondas.
+const int rondasParaContarRendicion = 10;
+
 // Como termino un jugador la partida y con cuanto Elo llego.
 typedef FinalDeJugador = ({
   String nombre,
@@ -34,13 +38,20 @@ double probabilidadDeGanar(int elo, int eloRival) =>
 // quedar abajo 0; a eso se le resta la probabilidad de ganar segun el Elo, se
 // suma por todos los rivales y se multiplica por K entre el numero de rivales.
 //
-// La partida solo cuenta si al terminar al menos dos jugadores no se habian
-// rendido (por ejemplo, alguien llego a la meta y otro seguia jugando). Si
-// todos menos uno se rindieron, nadie gana ni pierde Elo: asi no se sube Elo
-// solo porque el rival se rindio.
-Map<String, int> cambiosDeElo(List<FinalDeJugador> jugadores) {
+// Si al terminar al menos dos jugadores no se habian rendido (por ejemplo,
+// alguien llego a la meta y otro seguia jugando), la partida cuenta. Si todos
+// menos uno se rindieron, solo cuenta cuando ya se habian jugado mas de
+// [rondasParaContarRendicion] rondas: asi rendirse al principio no le regala
+// Elo a nadie, pero rendirse cuando ya se va perdiendo si cuesta.
+Map<String, int> cambiosDeElo(
+  List<FinalDeJugador> jugadores, {
+  required int rondas,
+}) {
   final sinRendirse = jugadores.where((jugador) => !jugador.seRindio).length;
-  if (jugadores.length < 2 || sinRendirse < 2) {
+  final cuenta =
+      sinRendirse >= 2 ||
+      (sinRendirse == 1 && rondas > rondasParaContarRendicion);
+  if (jugadores.length < 2 || !cuenta) {
     return {for (final jugador in jugadores) jugador.nombre: 0};
   }
 

@@ -160,9 +160,10 @@ En la partida (además de lo del lobby):
   quedar abajo 0, con el orden ganadores > por puntos > rendidos) y se compara
   con la probabilidad de ganarle según el Elo de los dos,
   1 / (1 + 10^((Elo rival − Elo propio) / 400)). El cambio es
-  32 / (número de rivales) × la suma de (resultado − probabilidad). Solo
+  64 / (número de rivales) × la suma de (resultado − probabilidad). Solo
   cuenta si se jugó al menos una ronda y, al terminar, al menos dos jugadores
-  no se habían rendido; si no, el cambio es 0 para todos.
+  no se habían rendido, o si todos menos uno se rindieron después de la ronda
+  10 (con más de 10 rondas jugadas); si no, el cambio es 0 para todos.
 - `reclamos`: cuántas veces se ha reclamado cada región (por su id). Sirve
   para apagar las regiones ya reclamadas y mostrar los puntos que les quedan.
 - `casillas`: los números que colocó después, como lista de `[x, y, numero]`.

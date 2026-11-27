@@ -13,7 +13,7 @@ FinalDeJugador jugador(
 
 void main() {
   test('dos jugadores parejos: el ganador sube 32 y el otro baja 32', () {
-    final cambios = cambiosDeElo([
+    final cambios = cambiosDeElo(rondas: 5, [
       jugador('Ana', 26, gano: true),
       jugador('Luis', 12),
     ]);
@@ -23,12 +23,12 @@ void main() {
 
   test('ganarle a alguien mas fuerte da mas que a alguien mas debil', () {
     // Ana (1000) le gana a Luis (1200): era poco probable.
-    final sorpresa = cambiosDeElo([
+    final sorpresa = cambiosDeElo(rondas: 5, [
       jugador('Ana', 26, gano: true),
       jugador('Luis', 12, elo: 1200),
     ]);
     // Luis (1200) le gana a Ana (1000): era lo esperado.
-    final esperado = cambiosDeElo([
+    final esperado = cambiosDeElo(rondas: 5, [
       jugador('Ana', 12),
       jugador('Luis', 26, elo: 1200, gano: true),
     ]);
@@ -38,7 +38,7 @@ void main() {
   });
 
   test('con 4: ganador, luego por puntos, y el que se rindio al final', () {
-    final cambios = cambiosDeElo([
+    final cambios = cambiosDeElo(rondas: 5, [
       // Eva se rindio con mas puntos que Leo, pero queda ultima.
       jugador('Eva', 18, seRindio: true),
       jugador('Leo', 5),
@@ -51,7 +51,7 @@ void main() {
   });
 
   test('empates: entre ganadores y con los mismos puntos cuentan medio', () {
-    final cambios = cambiosDeElo([
+    final cambios = cambiosDeElo(rondas: 5, [
       jugador('Ana', 26, gano: true),
       jugador('Luis', 26, gano: true),
       jugador('Eva', 9),
@@ -64,19 +64,19 @@ void main() {
 
   test('solo cuenta si al terminar al menos dos no se rindieron', () {
     // 2 jugadores: Luis se rinde y Ana gana sola -> no cuenta.
-    final porRendicion = cambiosDeElo([
+    final porRendicion = cambiosDeElo(rondas: 5, [
       jugador('Ana', 12, gano: true),
       jugador('Luis', 15, seRindio: true),
     ]);
     // 4 jugadores: dos se rinden pero dos siguen -> cuenta.
-    final dosSiguen = cambiosDeElo([
+    final dosSiguen = cambiosDeElo(rondas: 5, [
       jugador('Ana', 22, gano: true),
       jugador('Luis', 14),
       jugador('Eva', 9, seRindio: true),
       jugador('Leo', 4, seRindio: true),
     ]);
     // 3 jugadores: los otros dos se rinden -> no cuenta.
-    final quedaUno = cambiosDeElo([
+    final quedaUno = cambiosDeElo(rondas: 5, [
       jugador('Ana', 10, gano: true),
       jugador('Luis', 14, seRindio: true),
       jugador('Eva', 9, seRindio: true),
@@ -85,6 +85,32 @@ void main() {
     expect(porRendicion, {'Ana': 0, 'Luis': 0});
     expect(dosSiguen, {'Ana': 32, 'Luis': 11, 'Eva': -11, 'Leo': -32});
     expect(quedaUno, {'Ana': 0, 'Luis': 0, 'Eva': 0});
+  });
+
+  test('si todos menos uno se rinden, solo cuenta despues de la ronda 10', () {
+    List<FinalDeJugador> unoContraUno() => [
+      jugador('Ana', 12, gano: true),
+      jugador('Luis', 15, seRindio: true),
+    ];
+    List<FinalDeJugador> quedaUnoDeTres() => [
+      jugador('Ana', 10, gano: true),
+      jugador('Luis', 14, seRindio: true),
+      jugador('Eva', 9, seRindio: true),
+    ];
+
+    expect(cambiosDeElo(unoContraUno(), rondas: 10), {'Ana': 0, 'Luis': 0});
+    expect(cambiosDeElo(unoContraUno(), rondas: 11), {'Ana': 32, 'Luis': -32});
+    expect(cambiosDeElo(quedaUnoDeTres(), rondas: 3), {
+      'Ana': 0,
+      'Luis': 0,
+      'Eva': 0,
+    });
+    // Los dos que se rindieron pierden contra Ana; entre ellos, por puntos.
+    expect(cambiosDeElo(quedaUnoDeTres(), rondas: 20), {
+      'Ana': 32,
+      'Luis': 0,
+      'Eva': -32,
+    });
   });
 
   test('el Elo empieza en 1000, se suma al guardar y no baja de 0', () {
